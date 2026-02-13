@@ -1,0 +1,623 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   SF Pro Text — Local font faces for chat content
+   Weights: Thin 100 (default), Regular 400, Semibold 600, Black 900
+   ============================================================================ */
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/sf-pro/SF-Pro-Text-Thin.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/sf-pro/SF-Pro-Text-ThinItalic.otf') format('opentype');
+  font-weight: 100;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/sf-pro/SF-Pro-Text-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/sf-pro/SF-Pro-Text-RegularItalic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/sf-pro/SF-Pro-Text-Semibold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/sf-pro/SF-Pro-Text-SemiboldItalic.otf') format('opentype');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/sf-pro/SF-Pro-Text-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/sf-pro/SF-Pro-Text-BlackItalic.otf') format('opentype');
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ============================================================================
+   PhantomX Trading Platform — Claude Design System (Dual Theme)
+   Forensically extracted from Claude.ai, Claude Desktop, Anthropic brand.
+   Warm palette · Terracotta accent · Dual-layer shadows · Serif chat text
+   Light theme DEFAULT · Dark theme override
+   ============================================================================ */
+
+:root {
+  /* ==================== LIGHT THEME (DEFAULT) ==================== */
+
+  /* Core backgrounds — warm cream, never cold white */
+  --cl-bg-page: #F5F5F0;
+  --cl-bg-surface: #FFFFFF;
+  --cl-bg-sidebar: #F0EFEA;
+  --cl-bg-sidebar-hover: #E8E7E2;
+  --cl-bg-sidebar-active: #DDDCD7;
+  --cl-bg-user-msg: #DDD9CE;
+  --cl-bg-hover: #E8E7E2;
+  --cl-bg-code: #F7F6F3;
+  --cl-bg-muted: #EEEDE8;
+
+  /* Text — warm darks */
+  --cl-text-primary: #1A1A18;
+  --cl-text-secondary: #6B6A68;
+  --cl-text-muted: #6B6A68;
+  --cl-text-faint: #8A8984;
+  --cl-text-inverse: #EEEEEE;
+
+  /* Accent — Terracotta (SAME both themes) */
+  --cl-accent: #AE5630;
+  --cl-accent-hover: #C4633A;
+  --cl-accent-brand: #C15F3C;
+  --cl-accent-soft: rgba(174, 86, 48, 0.08);
+
+  /* Borders — subtle on light */
+  --cl-border: rgba(0, 0, 0, 0.08);
+  --cl-border-hover: rgba(0, 0, 0, 0.15);
+  --cl-border-focus: rgba(0, 0, 0, 0.2);
+  --cl-border-subtle: rgba(0, 0, 0, 0.05);
+
+  /* Semantic — darker tones for light bg readability */
+  --cl-success: #2D8547;
+  --cl-success-hover: #248A3F;
+  --cl-warning: #B8860B;
+  --cl-error: #D4183D;
+  --cl-info: #1C6BBB;
+
+  /* Trading semantics */
+  --color-long: #2D8547;
+  --color-short: #D4183D;
+  --color-profit: #2D8547;
+  --color-loss: #D4183D;
+  --color-warning: #B8860B;
+  --color-neutral: #6B6A68;
+
+  /* Neutral fills (opacity backgrounds) */
+  --cl-fill-control: rgba(0, 0, 0, 0.04);
+  --cl-fill-hover: rgba(0, 0, 0, 0.06);
+  --cl-fill-active: rgba(0, 0, 0, 0.1);
+
+  /* Accent fills */
+  --cl-fill-accent: rgba(174, 86, 48, 0.06);
+  --cl-fill-accent-subtle: rgba(174, 86, 48, 0.03);
+  --cl-fill-accent-hover: rgba(174, 86, 48, 0.1);
+  --cl-fill-accent-active: rgba(174, 86, 48, 0.15);
+
+  /* Success fills */
+  --cl-fill-success: rgba(45, 133, 71, 0.08);
+  --cl-fill-success-subtle: rgba(45, 133, 71, 0.04);
+  --cl-fill-success-hover: rgba(45, 133, 71, 0.12);
+  --cl-fill-success-active: rgba(45, 133, 71, 0.2);
+
+  /* Error fills */
+  --cl-fill-error: rgba(212, 24, 61, 0.08);
+  --cl-fill-error-subtle: rgba(212, 24, 61, 0.04);
+  --cl-fill-error-hover: rgba(212, 24, 61, 0.12);
+  --cl-fill-error-active: rgba(212, 24, 61, 0.2);
+
+  /* Warning fills */
+  --cl-fill-warning: rgba(184, 134, 11, 0.08);
+  --cl-fill-warning-subtle: rgba(184, 134, 11, 0.04);
+  --cl-fill-warning-hover: rgba(184, 134, 11, 0.12);
+
+  /* Info fills */
+  --cl-fill-info: rgba(28, 107, 187, 0.08);
+  --cl-fill-info-subtle: rgba(28, 107, 187, 0.04);
+
+  /* Semantic borders */
+  --cl-accent-border: rgba(174, 86, 48, 0.2);
+  --cl-accent-border-focus: rgba(174, 86, 48, 0.35);
+  --cl-accent-focus-ring: rgba(174, 86, 48, 0.1);
+  --cl-success-border: rgba(45, 133, 71, 0.2);
+  --cl-error-border: rgba(212, 24, 61, 0.2);
+  --cl-warning-border: rgba(184, 134, 11, 0.2);
+  --cl-info-border: rgba(28, 107, 187, 0.2);
+
+  /* Glow for status dots */
+  --cl-success-glow: rgba(45, 133, 71, 0.4);
+
+  /* Shadows — light, subtle */
+  --cl-shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.05);
+  --cl-shadow-card-hover: 0 4px 12px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.08);
+  --cl-shadow-composer: 0 0.25rem 1.25rem rgba(0,0,0,0.1), 0 0 0 0.5px rgba(0,0,0,0.05);
+  --cl-shadow-modal: 0 8px 32px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.08);
+
+  /* Scrollbar */
+  --cl-scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --cl-scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
+
+  /* ==================== SHARED (both themes) ==================== */
+
+  /* Radii */
+  --cl-radius-full: 9999px;
+  --cl-radius-2xl: 16px;
+  --cl-radius-xl: 12px;
+  --cl-radius-lg: 8px;
+  --cl-radius-md: 6px;
+  --cl-radius-sm: 4px;
+
+  /* Typography */
+  --cl-font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --cl-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --cl-font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, ui-monospace, monospace;
+  --cl-font-chat: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+
+  /* Animation */
+  --cl-ease: cubic-bezier(0.165, 0.85, 0.45, 1);
+  --cl-duration-fast: 150ms;
+  --cl-duration-normal: 200ms;
+  --cl-duration-smooth: 300ms;
+
+  /* Layout */
+  --cl-sidebar-width: 380px;
+  --cl-header-height: 48px;
+
+  /* Legacy compat for @theme inline */
+  --background: var(--cl-bg-page);
+  --foreground: var(--cl-text-primary);
+}
+
+/* ============================================================================
+   DARK THEME — warm charcoal, never blue-gray
+   ============================================================================ */
+
+[data-theme="dark"] {
+  --cl-bg-page: #2B2A27;
+  --cl-bg-surface: #1F1E1B;
+  --cl-bg-sidebar: #242320;
+  --cl-bg-sidebar-hover: #333230;
+  --cl-bg-sidebar-active: #3D3C39;
+  --cl-bg-user-msg: #393937;
+  --cl-bg-hover: #393937;
+  --cl-bg-code: #1F1E1B;
+  --cl-bg-muted: #333230;
+
+  --cl-text-primary: #EEEEEE;
+  --cl-text-secondary: #9A9893;
+  --cl-text-muted: #9A9893;
+  --cl-text-faint: #B8B5A9;
+  --cl-text-inverse: #2B2A27;
+
+  --cl-accent-soft: rgba(174, 86, 48, 0.15);
+
+  --cl-border: rgba(108, 106, 96, 0.25);
+  --cl-border-hover: rgba(108, 106, 96, 0.40);
+  --cl-border-focus: rgba(108, 106, 96, 0.50);
+  --cl-border-subtle: rgba(108, 106, 96, 0.15);
+
+  --cl-success: #5FB87A;
+  --cl-success-hover: #4EA86A;
+  --cl-warning: #D4A84A;
+  --cl-error: #E05555;
+  --cl-info: #5A9ED4;
+
+  --color-long: #5FB87A;
+  --color-short: #E05555;
+  --color-profit: #5FB87A;
+  --color-loss: #E05555;
+  --color-warning: #D4A84A;
+  --color-neutral: #9A9893;
+
+  --cl-fill-control: rgba(108, 106, 96, 0.08);
+  --cl-fill-hover: rgba(108, 106, 96, 0.12);
+  --cl-fill-active: rgba(108, 106, 96, 0.2);
+
+  --cl-fill-accent: rgba(174, 86, 48, 0.1);
+  --cl-fill-accent-subtle: rgba(174, 86, 48, 0.05);
+  --cl-fill-accent-hover: rgba(174, 86, 48, 0.18);
+  --cl-fill-accent-active: rgba(174, 86, 48, 0.3);
+
+  --cl-fill-success: rgba(95, 184, 122, 0.1);
+  --cl-fill-success-subtle: rgba(95, 184, 122, 0.05);
+  --cl-fill-success-hover: rgba(95, 184, 122, 0.18);
+  --cl-fill-success-active: rgba(95, 184, 122, 0.3);
+
+  --cl-fill-error: rgba(224, 85, 85, 0.1);
+  --cl-fill-error-subtle: rgba(224, 85, 85, 0.05);
+  --cl-fill-error-hover: rgba(224, 85, 85, 0.18);
+  --cl-fill-error-active: rgba(224, 85, 85, 0.3);
+
+  --cl-fill-warning: rgba(212, 168, 74, 0.1);
+  --cl-fill-warning-subtle: rgba(212, 168, 74, 0.05);
+  --cl-fill-warning-hover: rgba(212, 168, 74, 0.18);
+
+  --cl-fill-info: rgba(90, 158, 212, 0.12);
+  --cl-fill-info-subtle: rgba(90, 158, 212, 0.05);
+
+  --cl-accent-border: rgba(174, 86, 48, 0.25);
+  --cl-accent-border-focus: rgba(174, 86, 48, 0.4);
+  --cl-accent-focus-ring: rgba(174, 86, 48, 0.15);
+  --cl-success-border: rgba(95, 184, 122, 0.25);
+  --cl-error-border: rgba(224, 85, 85, 0.25);
+  --cl-warning-border: rgba(212, 168, 74, 0.25);
+  --cl-info-border: rgba(90, 158, 212, 0.25);
+
+  --cl-success-glow: rgba(95, 184, 122, 0.5);
+
+  --cl-shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(108,106,96,0.12);
+  --cl-shadow-card-hover: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(108,106,96,0.2);
+  --cl-shadow-composer: 0 0.25rem 1.25rem rgba(0,0,0,0.4), 0 0 0 0.5px rgba(108,106,96,0.15);
+  --cl-shadow-modal: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(108,106,96,0.2);
+
+  --cl-scrollbar-thumb: rgba(108, 106, 96, 0.25);
+  --cl-scrollbar-thumb-hover: rgba(108, 106, 96, 0.4);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--cl-font-sans);
+  --font-mono: var(--cl-font-mono);
+  --font-serif: var(--cl-font-serif);
+}
+
+/* ============================================================================
+   Base
+   ============================================================================ */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cl-scrollbar-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--cl-scrollbar-thumb);
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--cl-scrollbar-thumb-hover);
+}
+
+body {
+  background: var(--cl-bg-page);
+  color: var(--cl-text-primary);
+  font-family: var(--cl-font-sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================================
+   Cards — Claude dual-layer shadow style
+   ============================================================================ */
+
+.cl-card {
+  background: var(--cl-bg-surface);
+  border: 0.5px solid var(--cl-border);
+  border-radius: var(--cl-radius-xl);
+  box-shadow: var(--cl-shadow-card);
+  transition: box-shadow var(--cl-duration-normal) var(--cl-ease),
+              border-color var(--cl-duration-normal) var(--cl-ease);
+}
+
+.cl-card:hover {
+  box-shadow: var(--cl-shadow-card-hover);
+  border-color: var(--cl-border-hover);
+}
+
+/* Legacy glass-card alias */
+.glass-card {
+  background: var(--cl-bg-surface);
+  border: 0.5px solid var(--cl-border);
+  border-radius: var(--cl-radius-xl);
+  box-shadow: var(--cl-shadow-card);
+}
+
+.glass-card-hover:hover {
+  box-shadow: var(--cl-shadow-card-hover);
+  border-color: var(--cl-border-hover);
+}
+
+/* ============================================================================
+   Panels & Layout
+   ============================================================================ */
+
+.panel {
+  background: var(--cl-bg-surface);
+  border: 0.5px solid var(--cl-border);
+  border-radius: var(--cl-radius-xl);
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--cl-border);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--cl-text-secondary);
+}
+
+/* ============================================================================
+   Trading Semantics
+   ============================================================================ */
+
+.price-up { color: var(--color-long); }
+.price-down { color: var(--color-short); }
+.profit { color: var(--color-profit); }
+.loss { color: var(--color-loss); }
+
+@keyframes flash-green {
+  0% { background-color: var(--cl-fill-success-active); }
+  100% { background-color: transparent; }
+}
+
+@keyframes flash-red {
+  0% { background-color: var(--cl-fill-error-active); }
+  100% { background-color: transparent; }
+}
+
+.flash-profit { animation: flash-green 0.5s var(--cl-ease); }
+.flash-loss { animation: flash-red 0.5s var(--cl-ease); }
+
+/* ============================================================================
+   Panic Button — urgent but not garish
+   ============================================================================ */
+
+.panic-button {
+  background: linear-gradient(135deg, var(--cl-error), #B01530);
+  color: white;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+  border: 1px solid var(--cl-error-border);
+  border-radius: var(--cl-radius-lg);
+  padding: 12px 24px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--cl-duration-normal) var(--cl-ease);
+  box-shadow: 0 2px 8px var(--cl-fill-error-active);
+}
+
+.panic-button:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 20px var(--cl-fill-error-active);
+  transform: scale(1.01);
+}
+
+.panic-button:active {
+  transform: scale(0.98);
+}
+
+.panic-button::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  animation: panic-shimmer 3s infinite;
+}
+
+@keyframes panic-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ============================================================================
+   Kill Switch Banner
+   ============================================================================ */
+
+.kill-banner {
+  background: var(--cl-fill-error);
+  border: 0.5px solid var(--cl-error-border);
+  border-radius: var(--cl-radius-xl);
+  padding: 16px;
+  animation: kill-pulse 2.5s infinite;
+}
+
+@keyframes kill-pulse {
+  0%, 100% { border-color: var(--cl-error-border); }
+  50% { border-color: var(--cl-error); }
+}
+
+/* ============================================================================
+   Status Indicators
+   ============================================================================ */
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.live {
+  background: var(--cl-success);
+  box-shadow: 0 0 8px var(--cl-success-glow);
+  animation: pulse-dot 2s infinite;
+}
+
+.status-dot.paused {
+  background: var(--cl-warning);
+}
+
+.status-dot.killed {
+  background: var(--cl-error);
+}
+
+.status-dot.disconnected {
+  background: var(--color-neutral);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ============================================================================
+   AI Chat — thinking animation (terracotta dots)
+   ============================================================================ */
+
+.ai-thinking {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+}
+
+.ai-thinking span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cl-accent);
+  animation: thinking-bounce 1.4s infinite;
+}
+
+.ai-thinking span:nth-child(2) { animation-delay: 0.2s; }
+.ai-thinking span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes thinking-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ============================================================================
+   Risk Level Badges — softer, warm palette
+   ============================================================================ */
+
+.risk-badge {
+  padding: 4px 10px;
+  border-radius: var(--cl-radius-full);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.risk-badge.conservative {
+  background: var(--cl-fill-info);
+  color: var(--cl-info);
+  border: 0.5px solid var(--cl-info-border);
+}
+
+.risk-badge.moderate {
+  background: var(--cl-fill-warning);
+  color: var(--cl-warning);
+  border: 0.5px solid var(--cl-warning-border);
+}
+
+.risk-badge.aggressive {
+  background: var(--cl-fill-accent);
+  color: var(--cl-accent-hover);
+  border: 0.5px solid var(--cl-accent-border);
+}
+
+.risk-badge.degen {
+  background: var(--cl-fill-error);
+  color: var(--cl-error);
+  border: 0.5px solid var(--cl-error-border);
+}
+
+/* ============================================================================
+   Chart Container
+   ============================================================================ */
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--cl-bg-page);
+  border-radius: var(--cl-radius-xl);
+  overflow: hidden;
+}
+
+.chart-container .tv-lightweight-charts {
+  border-radius: var(--cl-radius-xl);
+}
+
+/* ============================================================================
+   Utility: Claude-style focus rings
+   ============================================================================ */
+
+.cl-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--cl-accent-soft);
+}
+
+/* ============================================================================
+   Utility: SF Pro Text for AI conversation
+   Base: Thin 100 · Bold: Semibold 600 · Heavy: Black 900
+   ============================================================================ */
+
+.cl-serif {
+  font-family: var(--cl-font-chat);
+  font-weight: 100;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================================
+   Theme transition (smooth color changes when toggling)
+   ============================================================================ */
+
+html {
+  transition: background-color var(--cl-duration-smooth) var(--cl-ease),
+              color var(--cl-duration-smooth) var(--cl-ease);
+}
