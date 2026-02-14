@@ -36,6 +36,27 @@ yarn-error.log*
 # vercel
 .vercel
 
+# journal chart snapshots (local only)
+/public/journal-snapshots/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Playwright test results
+/test-results/
+/playwright-report/
+
+# IDE / Assistant specific
+.windsurf/
+openmemory.md
+
+# Research / docs (not source code)
+*.pdf
+QA_REPORT.md
+
+# Jira scripts (local tooling)
+/scripts/create-jira-tickets.py
+
+# OpenMemory - IDE/Assistant specific rules
+.windsurf\rules\openmemory.md
