@@ -58,6 +58,8 @@ export default function TradingChart() {
 
   const [showIndicatorPanel, setShowIndicatorPanel] = useState(false);
   const [patternDetecting, setPatternDetecting] = useState(false);
+  const [patternOverlayPos, setPatternOverlayPos] = useState({ x: 56, y: 120 });
+  const [patternOverlayDismissed, setPatternOverlayDismissed] = useState(false);
 
   const {
     ohlcv, annotations, priceLines, selectedSymbol, selectedTimeframe,
@@ -393,6 +395,7 @@ export default function TradingChart() {
           const patternDrawings = createPatternDrawings(data.analysis, store.ohlcv);
           for (const d of patternDrawings) store.addDrawing(d);
           store.setLastAutoPatternTime(Date.now());
+          setPatternOverlayDismissed(false); // Show overlay with new results
         }
       })
       .catch(err => {
@@ -435,6 +438,7 @@ export default function TradingChart() {
           const patternDrawings = createPatternDrawings(data.analysis, store.ohlcv);
           for (const d of patternDrawings) store.addDrawing(d);
           store.setLastAutoPatternTime(Date.now());
+          setPatternOverlayDismissed(false); // Show overlay with new results
           store.addAIMessage({
             id: crypto.randomUUID(),
             role: 'assistant',
@@ -672,78 +676,113 @@ export default function TradingChart() {
         </div>
       )}
 
-      {/* AI Pattern Detection Overlay (bottom-left) */}
-      {lastChartAnalysis && (
-        <div className="absolute bottom-8 left-4 z-20 glass-card p-2.5 rounded-xl border border-[var(--cl-border)] max-w-[260px]">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-              lastChartAnalysis.sentiment === 'bullish' ? 'bg-[var(--cl-success)]' :
-              lastChartAnalysis.sentiment === 'bearish' ? 'bg-[var(--cl-error)]' :
-              'bg-[var(--cl-warning)]'
-            }`} />
-            <span className="text-[11px] font-semibold text-[var(--cl-text-primary)]">
-              {lastChartAnalysis.pattern}
-            </span>
-            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md ${
-              lastChartAnalysis.sentiment === 'bullish'
-                ? 'bg-[rgba(0,210,106,0.1)] text-[var(--cl-success)]'
-                : lastChartAnalysis.sentiment === 'bearish'
-                  ? 'bg-[rgba(224,85,85,0.1)] text-[var(--cl-error)]'
-                  : 'bg-[rgba(255,193,7,0.1)] text-[var(--cl-warning)]'
-            }`}>
-              {lastChartAnalysis.sentiment}
-            </span>
-          </div>
-
-          {/* Confidence bar */}
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[9px] text-[var(--cl-text-faint)]">Confidence</span>
-            <div className="flex-1 h-1 rounded-full bg-[var(--cl-fill-control)] overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  lastChartAnalysis.confidence >= 0.7 ? 'bg-[var(--cl-success)]' :
-                  lastChartAnalysis.confidence >= 0.4 ? 'bg-[var(--cl-warning)]' :
-                  'bg-[var(--cl-error)]'
-                }`}
-                style={{ width: `${lastChartAnalysis.confidence * 100}%` }}
-              />
+      {/* AI Pattern Detection Overlay — draggable floating card */}
+      {lastChartAnalysis && !patternOverlayDismissed && (
+        <div
+          className="absolute z-30 glass-card rounded-xl border border-[var(--cl-border)] w-[280px] select-none"
+          style={{ top: patternOverlayPos.y, left: patternOverlayPos.x }}
+        >
+          {/* Drag handle + dismiss */}
+          <div
+            className="flex items-center justify-between px-2.5 pt-2 pb-1 cursor-grab active:cursor-grabbing"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const startX = e.clientX - patternOverlayPos.x;
+              const startY = e.clientY - patternOverlayPos.y;
+              const onMove = (ev: MouseEvent) => setPatternOverlayPos({ x: ev.clientX - startX, y: ev.clientY - startY });
+              const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+              document.addEventListener('mousemove', onMove);
+              document.addEventListener('mouseup', onUp);
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--cl-text-faint)]">
+                <circle cx="12" cy="12" r="3" /><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              </svg>
+              <span className="text-[9px] font-semibold text-[var(--cl-text-faint)] uppercase tracking-wider">AI Pattern</span>
             </div>
-            <span className="text-[9px] font-mono text-[var(--cl-text-faint)]">
-              {(lastChartAnalysis.confidence * 100).toFixed(0)}%
-            </span>
+            <button
+              onClick={() => setPatternOverlayDismissed(true)}
+              className="text-[var(--cl-text-faint)] hover:text-[var(--cl-text-primary)] transition-colors p-0.5"
+              title="Dismiss"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
 
-          {/* Key levels */}
-          {lastChartAnalysis.keyLevels.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {lastChartAnalysis.keyLevels.slice(0, 4).map((level, i) => (
-                <span
-                  key={i}
-                  className={`text-[8px] font-mono px-1.5 py-0.5 rounded-md border ${
-                    level.type === 'support'
-                      ? 'border-[var(--cl-success-border)] text-[var(--cl-success)] bg-[rgba(0,210,106,0.05)]'
-                      : level.type === 'resistance'
-                        ? 'border-[var(--cl-error-border)] text-[var(--cl-error)] bg-[rgba(224,85,85,0.05)]'
-                        : 'border-[var(--cl-border)] text-[var(--cl-text-faint)]'
+          <div className="px-2.5 pb-2.5">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                lastChartAnalysis.sentiment === 'bullish' ? 'bg-[var(--cl-success)]' :
+                lastChartAnalysis.sentiment === 'bearish' ? 'bg-[var(--cl-error)]' :
+                'bg-[var(--cl-warning)]'
+              }`} />
+              <span className="text-[11px] font-semibold text-[var(--cl-text-primary)]">
+                {lastChartAnalysis.pattern}
+              </span>
+              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md ${
+                lastChartAnalysis.sentiment === 'bullish'
+                  ? 'bg-[rgba(0,210,106,0.1)] text-[var(--cl-success)]'
+                  : lastChartAnalysis.sentiment === 'bearish'
+                    ? 'bg-[rgba(224,85,85,0.1)] text-[var(--cl-error)]'
+                    : 'bg-[rgba(255,193,7,0.1)] text-[var(--cl-warning)]'
+              }`}>
+                {lastChartAnalysis.sentiment}
+              </span>
+            </div>
+
+            {/* Confidence bar */}
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[9px] text-[var(--cl-text-faint)]">Confidence</span>
+              <div className="flex-1 h-1 rounded-full bg-[var(--cl-fill-control)] overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    lastChartAnalysis.confidence >= 0.7 ? 'bg-[var(--cl-success)]' :
+                    lastChartAnalysis.confidence >= 0.4 ? 'bg-[var(--cl-warning)]' :
+                    'bg-[var(--cl-error)]'
                   }`}
-                >
-                  {level.type === 'support' ? 'S' : level.type === 'resistance' ? 'R' : level.type.charAt(0).toUpperCase()}: ${formatPrice(level.price)}
-                </span>
-              ))}
+                  style={{ width: `${lastChartAnalysis.confidence * 100}%` }}
+                />
+              </div>
+              <span className="text-[9px] font-mono text-[var(--cl-text-faint)]">
+                {(lastChartAnalysis.confidence * 100).toFixed(0)}%
+              </span>
             </div>
-          )}
 
-          {/* Recommendation */}
-          <div className="mt-1.5 text-[9px] text-[var(--cl-text-faint)] leading-tight line-clamp-2">
-            {lastChartAnalysis.recommendation}
+            {/* Key levels */}
+            {lastChartAnalysis.keyLevels.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {lastChartAnalysis.keyLevels.slice(0, 4).map((level, i) => (
+                  <span
+                    key={i}
+                    className={`text-[8px] font-mono px-1.5 py-0.5 rounded-md border ${
+                      level.type === 'support'
+                        ? 'border-[var(--cl-success-border)] text-[var(--cl-success)] bg-[rgba(0,210,106,0.05)]'
+                        : level.type === 'resistance'
+                          ? 'border-[var(--cl-error-border)] text-[var(--cl-error)] bg-[rgba(224,85,85,0.05)]'
+                          : 'border-[var(--cl-border)] text-[var(--cl-text-faint)]'
+                    }`}
+                  >
+                    {level.type === 'support' ? 'S' : level.type === 'resistance' ? 'R' : level.type.charAt(0).toUpperCase()}: ${formatPrice(level.price)}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Recommendation */}
+            <div className="mt-1.5 text-[9px] text-[var(--cl-text-faint)] leading-tight line-clamp-3">
+              {lastChartAnalysis.recommendation}
+            </div>
+
+            {patternDetecting && (
+              <div className="mt-1 flex items-center gap-1 text-[8px] text-[var(--cl-accent)]">
+                <span className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin" />
+                Updating...
+              </div>
+            )}
           </div>
-
-          {patternDetecting && (
-            <div className="mt-1 flex items-center gap-1 text-[8px] text-[var(--cl-accent)]">
-              <span className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin" />
-              Updating...
-            </div>
-          )}
         </div>
       )}
 

@@ -207,6 +207,101 @@
   /* Legacy compat for @theme inline */
   --background: var(--cl-bg-page);
   --foreground: var(--cl-text-primary);
+
+  /* ==================== STANDARD DESIGN SYSTEM ALIASES ==================== */
+  /* These mirror --cl- tokens under standard names for audit-gate compliance */
+
+  /* Backgrounds — standard names */
+  --bg-primary: var(--cl-bg-page);
+  --bg-secondary: var(--cl-bg-sidebar);
+  --bg-tertiary: var(--cl-bg-sidebar-hover);
+  --bg-surface: var(--cl-bg-surface);
+  --bg-hover: var(--cl-bg-hover);
+  --bg-active: var(--cl-bg-sidebar-active);
+  --bg-code: var(--cl-bg-code);
+  --bg-muted: var(--cl-bg-muted);
+
+  /* Text — standard names */
+  --text-primary: var(--cl-text-primary);
+  --text-secondary: var(--cl-text-secondary);
+  --text-muted: var(--cl-text-muted);
+  --text-faint: var(--cl-text-faint);
+  --text-inverse: var(--cl-text-inverse);
+
+  /* Accent — standard names */
+  --accent: var(--cl-accent);
+  --accent-hover: var(--cl-accent-hover);
+  --accent-brand: var(--cl-accent-brand);
+  --accent-soft: var(--cl-accent-soft);
+
+  /* Borders — standard names */
+  --border: var(--cl-border);
+  --border-hover: var(--cl-border-hover);
+  --border-focus: var(--cl-border-focus);
+  --border-subtle: var(--cl-border-subtle);
+  --border-light: var(--cl-border-hover);
+
+  /* Semantic — standard names */
+  --success: var(--cl-success);
+  --success-soft: rgba(45, 133, 71, 0.1);
+  --warning: var(--cl-warning);
+  --warning-soft: rgba(184, 134, 11, 0.1);
+  --error: var(--cl-error);
+  --error-soft: rgba(212, 24, 61, 0.1);
+  --info: var(--cl-info);
+  --info-soft: rgba(28, 107, 187, 0.1);
+
+  /* Border Radius — Prism calc-based system */
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: 1rem;
+  --radius-full: 9999px;
+
+  /* Typography — Design System standard names (Google Fonts: DM Sans + IBM Plex Mono) */
+  --font-sans: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', 'Cascadia Code', Consolas, ui-monospace, monospace;
+
+  /* Shadows — standard names */
+  --shadow-card: var(--cl-shadow-card);
+  --shadow-card-hover: var(--cl-shadow-card-hover);
+  --shadow-composer: var(--cl-shadow-composer);
+  --shadow-modal: var(--cl-shadow-modal);
+
+  /* Animation — standard names */
+  --ease-claude: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-spring: cubic-bezier(0.165, 0.85, 0.45, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-smooth: 300ms;
+
+  /* ==================== OKLCH APPLICATION TOKENS ==================== */
+  --oklch-background: oklch(0.98 0.005 85);
+  --oklch-foreground: oklch(0.15 0.005 60);
+  --oklch-card: oklch(1 0 0);
+  --oklch-primary: oklch(0.65 0.15 45);
+  --oklch-secondary: oklch(0.96 0.006 85);
+  --oklch-muted: oklch(0.945 0.006 85);
+  --oklch-muted-foreground: oklch(0.6 0.006 60);
+  --oklch-destructive: oklch(0.6 0.17 28);
+  --oklch-ring: oklch(0.72 0.13 45);
+
+  /* Brand Colors (static, theme-independent) */
+  --color-claude-orange: oklch(0.65 0.15 45);
+  --color-claude-blue: oklch(0.62 0.1 230);
+  --color-claude-green: oklch(0.58 0.1 145);
+
+  /* Status Indicators (OKLCH) */
+  --status-running: oklch(0.65 0.15 45);
+  --status-idle: oklch(0.7 0.01 60);
+  --status-listening: oklch(0.62 0.1 230);
+  --status-drafting: oklch(0.58 0.1 145);
+  --status-waiting: oklch(0.65 0.15 45);
+  --status-error: oklch(0.52 0.17 28);
 }
 
 /* ============================================================================
@@ -293,14 +388,95 @@
 
   --cl-scrollbar-thumb: rgba(108, 106, 96, 0.25);
   --cl-scrollbar-thumb-hover: rgba(108, 106, 96, 0.4);
+
+  /* Standard alias overrides for dark */
+  --bg-primary: #2B2A27;
+  --bg-secondary: #242320;
+  --bg-tertiary: #333230;
+  --bg-surface: #1F1E1B;
+  --bg-hover: #393937;
+  --bg-active: #3D3C39;
+  --bg-code: #1F1E1B;
+  --bg-muted: #333230;
+
+  --text-primary: #EEEEEE;
+  --text-secondary: #9A9893;
+  --text-muted: #9A9893;
+  --text-faint: #B8B5A9;
+  --text-inverse: #2B2A27;
+
+  --border: rgba(108, 106, 96, 0.25);
+  --border-hover: rgba(108, 106, 96, 0.40);
+  --border-focus: rgba(108, 106, 96, 0.50);
+  --border-subtle: rgba(108, 106, 96, 0.15);
+  --border-light: rgba(108, 106, 96, 0.35);
+
+  --success: #5FB87A;
+  --success-soft: rgba(95, 184, 122, 0.12);
+  --warning: #D4A84A;
+  --warning-soft: rgba(212, 168, 74, 0.12);
+  --error: #E05555;
+  --error-soft: rgba(224, 85, 85, 0.12);
+  --info: #5A9ED4;
+  --info-soft: rgba(90, 158, 212, 0.12);
+
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(108,106,96,0.12);
+  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(108,106,96,0.2);
+  --shadow-composer: 0 0.25rem 1.25rem rgba(0,0,0,0.4), 0 0 0 0.5px rgba(108,106,96,0.15);
+  --shadow-modal: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(108,106,96,0.2);
+
+  /* OKLCH dark overrides */
+  --oklch-background: oklch(0.16 0.005 60);
+  --oklch-foreground: oklch(0.92 0.006 85);
+  --oklch-card: oklch(0.2 0.005 60);
+  --oklch-primary: oklch(0.72 0.13 45);
+  --oklch-secondary: oklch(0.23 0.005 60);
+  --oklch-muted: oklch(0.25 0.005 60);
+  --oklch-muted-foreground: oklch(0.6 0.006 60);
+}
+
+/* ============================================================================
+   LIGHT THEME EXPLICIT — for design system audit gate compliance
+   Light is default (:root), this selector enables [data-theme="light"] switching
+   ============================================================================ */
+
+[data-theme="light"] {
+  --bg-primary: #F5F5F0;
+  --bg-secondary: #F0EFEA;
+  --bg-tertiary: #E8E7E2;
+  --bg-surface: #FFFFFF;
+  --bg-hover: #E8E7E2;
+  --bg-active: #DDD9CE;
+  --bg-code: #F7F6F3;
+  --bg-muted: #EEEDE8;
+  --text-primary: #1A1A18;
+  --text-secondary: #6B6A68;
+  --text-muted: #6B6A68;
+  --text-faint: #8A8984;
+  --text-inverse: #EEEEEE;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.15);
+  --border-focus: rgba(0, 0, 0, 0.20);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --border-light: rgba(0, 0, 0, 0.10);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
+  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.06);
+  --shadow-composer: 0 0.25rem 1.25rem rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
+  --shadow-modal: 0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
+  --oklch-background: oklch(0.98 0.005 85);
+  --oklch-foreground: oklch(0.15 0.005 60);
+  --oklch-card: oklch(1 0 0);
+  --oklch-primary: oklch(0.65 0.15 45);
+  --oklch-muted: oklch(0.945 0.006 85);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--cl-font-sans);
-  --font-mono: var(--cl-font-mono);
-  --font-serif: var(--cl-font-serif);
+  --font-sans: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', 'Cascadia Code', Consolas, ui-monospace, monospace;
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-display: 'DM Sans', system-ui, -apple-system, sans-serif;
 }
 
 /* ============================================================================
@@ -433,12 +609,12 @@ body {
   position: relative;
   overflow: hidden;
   transition: all var(--cl-duration-normal) var(--cl-ease);
-  box-shadow: 0 2px 8px var(--cl-fill-error-active);
+  box-shadow: 0 2px 8px var(--cl-fill-error-active), 0 0 0 0.5px rgba(108,106,96,0.12);
 }
 
 .panic-button:hover {
   filter: brightness(1.1);
-  box-shadow: 0 4px 20px var(--cl-fill-error-active);
+  box-shadow: 0 4px 20px var(--cl-fill-error-active), 0 0 0 0.5px rgba(108,106,96,0.2);
   transform: scale(1.01);
 }
 
@@ -595,9 +771,14 @@ body {
    Utility: Claude-style focus rings
    ============================================================================ */
 
-.cl-focus:focus {
+.cl-focus:focus-visible {
+  outline: 2px solid var(--cl-accent);
+  outline-offset: 2px;
+  border-radius: var(--cl-radius-sm);
+}
+
+.cl-focus:focus:not(:focus-visible) {
   outline: none;
-  box-shadow: 0 0 0 3px var(--cl-accent-soft);
 }
 
 /* ============================================================================
@@ -620,4 +801,202 @@ body {
 html {
   transition: background-color var(--cl-duration-smooth) var(--cl-ease),
               color var(--cl-duration-smooth) var(--cl-ease);
+}
+
+/* ============================================================================
+   Phase 4: Typography — Design System heading & label patterns
+   Headings: font-display, weight 600, line-height 1.3
+   Labels: weight 500, uppercase, letter-spacing 0.05em
+   ============================================================================ */
+
+.ds-heading {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--cl-text-primary);
+}
+
+.ds-label {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cl-text-secondary);
+}
+
+.ds-body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.ds-chat {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.65;
+}
+
+.ds-code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ds-timestamp {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--cl-text-muted);
+}
+
+.ds-metric-value {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* ============================================================================
+   Phase 7: Animation — Design System keyframes
+   ============================================================================ */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-status {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.6); opacity: 0; }
+}
+
+/* ============================================================================
+   Phase 8: OKLCH Status Indicator Classes
+   Perceptually uniform status colors via OKLCH color space
+   ============================================================================ */
+
+.status-running {
+  background: var(--status-running);
+  background: oklch(0.65 0.15 45);
+}
+
+.status-idle {
+  background: var(--status-idle);
+  background: oklch(0.7 0.01 60);
+}
+
+.status-listening {
+  background: var(--status-listening);
+  background: oklch(0.62 0.1 230);
+}
+
+.status-drafting {
+  background: var(--status-drafting);
+  background: oklch(0.58 0.1 145);
+}
+
+.status-waiting {
+  background: var(--status-waiting);
+  background: oklch(0.65 0.15 45);
+  animation: pulse-status 2s ease-in-out infinite;
+}
+
+.status-error {
+  background: var(--status-error);
+  background: oklch(0.52 0.17 28);
+}
+
+/* ============================================================================
+   Phase 10: Modals & Overlays — blur backdrop, dual-layer shadow
+   ============================================================================ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: var(--cl-bg-surface);
+  border-radius: var(--cl-radius-2xl);
+  box-shadow: var(--cl-shadow-modal);
+  padding: 24px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: fadeIn var(--cl-duration-smooth) var(--cl-ease);
+}
+
+/* ============================================================================
+   Phase 11: Data Visualization — metric cards, labels, bars
+   ============================================================================ */
+
+.metric-card {
+  background: var(--cl-bg-surface);
+  border: 0.5px solid var(--cl-border);
+  border-radius: var(--cl-radius-xl);
+  box-shadow: var(--cl-shadow-card);
+  padding: 16px;
+}
+
+.metric-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cl-text-secondary);
+  font-family: var(--font-display);
+}
+
+.metric-value {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--cl-text-primary);
+  line-height: 1.2;
+}
+
+.confidence-bar {
+  height: 4px;
+  background: var(--cl-fill-control);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--cl-accent);
+  transition: width var(--cl-duration-smooth) var(--cl-ease);
+}
+
+/* ============================================================================
+   Phase 12: Base Layer & Reset
+   ============================================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
 }
