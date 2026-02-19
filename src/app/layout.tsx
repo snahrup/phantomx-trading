@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import ClientErrorBoundary from "@/components/ClientErrorBoundary";
 import ThemeProvider from "@/components/ThemeProvider";
+import DataProvider from "@/components/DataProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,6 +26,7 @@ export default function RootLayout({
             var stored = JSON.parse(localStorage.getItem('phantomx-trading-store') || '{}');
             var theme = (stored.state && stored.state.theme) || 'light';
             document.documentElement.setAttribute('data-theme', theme);
+            if (theme === 'dark') document.documentElement.classList.add('dark');
           } catch(e) {
             document.documentElement.setAttribute('data-theme', 'light');
           }
@@ -31,7 +34,13 @@ export default function RootLayout({
       </head>
       <body className="antialiased overflow-hidden">
         <ThemeProvider>
-          <ClientErrorBoundary>{children}</ClientErrorBoundary>
+          <TooltipProvider delayDuration={200}>
+            <DataProvider>
+              <ClientErrorBoundary>
+                {children}
+              </ClientErrorBoundary>
+            </DataProvider>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

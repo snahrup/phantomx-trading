@@ -3,26 +3,56 @@
 import { useEffect, useCallback } from 'react';
 import { useTradingStore } from '@/store/trading-store';
 import type { AgentStatus, AgentSentiment } from '@/types/trading';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { FadeIn, ConfidenceBar } from '@/components/motion';
+import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers — return Tailwind class names (NOT CSS variable strings)
 // ---------------------------------------------------------------------------
 
-function sentimentColor(sentiment: AgentSentiment | undefined): string {
-  if (!sentiment) return 'var(--cl-text-secondary)';
+/** Returns a Tailwind text-color class for the given sentiment. */
+function sentimentTextClass(sentiment: AgentSentiment | undefined): string {
+  if (!sentiment) return 'text-muted-foreground';
   switch (sentiment) {
-    case 'bullish': return 'var(--cl-success)';
-    case 'bearish': return 'var(--cl-error)';
-    default: return 'var(--cl-text-secondary)';
+    case 'bullish': return 'text-claude-green';
+    case 'bearish': return 'text-destructive';
+    default: return 'text-muted-foreground';
   }
 }
 
-function stateIndicator(state: string): { color: string; label: string } {
+/**
+ * For SVG inline fill/stroke that cannot use className, resolve to an
+ * `hsl(var(--...))` / oklch reference so the value is theme-aware.
+ */
+function sentimentSvgColor(sentiment: AgentSentiment | undefined): string {
+  if (!sentiment) return 'oklch(var(--muted-foreground))';
+  switch (sentiment) {
+    case 'bullish': return 'oklch(0.58 0.1 145)'; // --claude-green
+    case 'bearish': return 'oklch(var(--destructive))';
+    default: return 'oklch(var(--muted-foreground))';
+  }
+}
+
+interface StateIndicator {
+  /** SVG-safe color string */
+  svgColor: string;
+  /** Tailwind className for non-SVG contexts */
+  className: string;
+  label: string;
+}
+
+function stateIndicator(state: string): StateIndicator {
   switch (state) {
-    case 'running': return { color: 'var(--cl-success)', label: 'Running' };
-    case 'error': return { color: 'var(--cl-error)', label: 'Error' };
-    case 'idle': return { color: 'var(--cl-warning)', label: 'Idle' };
-    default: return { color: 'var(--cl-text-secondary)', label: 'Stopped' };
+    case 'running':
+      return { svgColor: 'oklch(0.58 0.1 145)', className: 'bg-claude-green', label: 'Running' };
+    case 'error':
+      return { svgColor: 'oklch(var(--destructive))', className: 'bg-destructive', label: 'Error' };
+    case 'idle':
+      return { svgColor: 'oklch(0.72 0.12 80)', className: 'bg-yellow-500', label: 'Idle' };
+    default:
+      return { svgColor: 'oklch(var(--muted-foreground))', className: 'bg-muted-foreground', label: 'Stopped' };
   }
 }
 
@@ -58,14 +88,14 @@ function NetworkGraph({ agents, isExecuting }: { agents: Map<string, AgentStatus
           <g key={`conn-${agent.id}`}>
             <line
               x1={agent.gx} y1={agent.gy} x2={CMD.x} y2={CMD.y}
-              stroke={isActive ? 'var(--cl-accent)' : 'var(--cl-border)'}
+              className={isActive ? 'stroke-primary' : 'stroke-border'}
               strokeWidth={isActive ? 1.5 : 0.5}
               strokeDasharray={isActive ? 'none' : '4 4'}
               opacity={isActive ? 0.5 : 0.15}
             />
             {/* Animated signal dot flowing to Commander */}
             {isActive && status?.latestSignal && (
-              <circle r="3" fill={sentimentColor(status.latestSignal.sentiment)}
+              <circle r="3" fill={sentimentSvgColor(status.latestSignal.sentiment)}
                 filter="url(#agent-glow)" opacity="0.9">
                 <animateMotion dur="2.5s" repeatCount="indefinite"
                   path={`M ${agent.gx} ${agent.gy} L ${CMD.x} ${CMD.y}`} />
@@ -78,20 +108,22 @@ function NetworkGraph({ agents, isExecuting }: { agents: Map<string, AgentStatus
       {/* Commander node — center hub */}
       <g>
         <circle cx={CMD.x} cy={CMD.y} r="30"
-          fill="var(--cl-bg-surface)"
-          stroke={isExecuting ? 'var(--cl-accent)' : 'var(--cl-border)'}
+          className={cn(
+            'fill-card',
+            isExecuting ? 'stroke-primary' : 'stroke-border',
+          )}
           strokeWidth={isExecuting ? 2 : 1} />
         {isExecuting && (
-          <circle cx={CMD.x} cy={CMD.y} r="30" fill="none"
-            stroke="var(--cl-accent)" strokeWidth="1" opacity="0.5">
+          <circle cx={CMD.x} cy={CMD.y} r="30"
+            className="fill-none stroke-primary" strokeWidth="1" opacity="0.5">
             <animate attributeName="r" values="30;38;30" dur="3s" repeatCount="indefinite" />
             <animate attributeName="opacity" values="0.5;0;0.5" dur="3s" repeatCount="indefinite" />
           </circle>
         )}
         <text x={CMD.x} y={CMD.y - 5} textAnchor="middle"
-          fill="var(--cl-accent)" fontSize="10" fontWeight="600">Commander</text>
+          className="fill-primary" fontSize="10" fontWeight="600">Commander</text>
         <text x={CMD.x} y={CMD.y + 8} textAnchor="middle"
-          fill="var(--cl-text-secondary)" fontSize="8">
+          className="fill-muted-foreground" fontSize="8">
           {isExecuting ? 'Active' : 'Standby'}
         </text>
       </g>
@@ -109,29 +141,29 @@ function NetworkGraph({ agents, isExecuting }: { agents: Map<string, AgentStatus
             {/* Outer sentiment ring */}
             <circle cx={agent.gx} cy={agent.gy} r="22"
               fill="none"
-              stroke={isActive && sentiment ? sentimentColor(sentiment) : 'var(--cl-border)'}
+              stroke={isActive && sentiment ? sentimentSvgColor(sentiment) : undefined}
+              className={!(isActive && sentiment) ? 'stroke-border' : undefined}
               strokeWidth={isActive ? 2 : 0.5}
               opacity={isActive ? 0.8 : 0.2} />
             {/* Inner circle */}
             <circle cx={agent.gx} cy={agent.gy} r="18"
-              fill="var(--cl-bg-surface)"
-              stroke="var(--cl-border-subtle)" strokeWidth="1" />
+              className="fill-card stroke-border" strokeWidth="1" />
             {/* Name */}
             <text x={agent.gx} y={agent.gy - 2} textAnchor="middle"
               fontSize="9" fontWeight="600"
-              fill={isActive ? 'var(--cl-text-primary)' : 'var(--cl-text-secondary)'}>
+              className={isActive ? 'fill-foreground' : 'fill-muted-foreground'}>
               {agent.name.length > 7 ? agent.name.slice(0, 6) : agent.name}
             </text>
             {/* Confidence or descriptor */}
             <text x={agent.gx} y={agent.gy + 9} textAnchor="middle" fontSize="7"
-              fill={sentiment ? sentimentColor(sentiment) : 'var(--cl-text-secondary)'}>
+              className={sentiment ? sentimentTextClass(sentiment).replace('text-', 'fill-') : 'fill-muted-foreground'}>
               {confidence ? `${confidence}%` : (isActive ? '...' : 'Off')}
             </text>
             {/* State dot (top-right) */}
-            <circle cx={agent.gx + 16} cy={agent.gy - 16} r="3.5" fill={si.color} />
+            <circle cx={agent.gx + 16} cy={agent.gy - 16} r="3.5" fill={si.svgColor} />
             {isActive && (
               <circle cx={agent.gx + 16} cy={agent.gy - 16} r="3.5"
-                fill="none" stroke={si.color} strokeWidth="1">
+                fill="none" stroke={si.svgColor} strokeWidth="1">
                 <animate attributeName="r" values="3.5;7;3.5" dur="2s" repeatCount="indefinite" />
                 <animate attributeName="opacity" values="0.8;0;0.8" dur="2s" repeatCount="indefinite" />
               </circle>
@@ -186,11 +218,11 @@ export default function AgentNetworkPanel() {
   const statusMap = new Map(agentStatuses.map(a => [a.id, a]));
 
   return (
-    <div className="flex flex-col h-full">
+    <FadeIn className="flex flex-col h-full">
       {/* Header */}
-      <div className="panel-header">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border text-[13px] font-medium tracking-[0.01em] text-muted-foreground">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-md bg-[var(--cl-accent)] flex items-center justify-center">
+          <div className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
               <circle cx="12" cy="12" r="3" />
               <line x1="12" y1="1" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="23" />
@@ -200,7 +232,7 @@ export default function AgentNetworkPanel() {
           <span>Agent Intelligence</span>
         </div>
         <button onClick={fetchStatus}
-          className="text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-primary)] transition-colors p-1"
+          className="text-muted-foreground hover:text-foreground transition-colors p-1"
           title="Refresh agent status">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
@@ -211,53 +243,62 @@ export default function AgentNetworkPanel() {
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {/* Signal Consensus Bar */}
-        <div className="glass-card p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] text-[var(--cl-text-secondary)] uppercase tracking-wider font-semibold">
-              Signal Consensus
-            </span>
-            {signalConsensus && (
-              <span className={`text-[11px] font-semibold ${
-                signalConsensus.consensusSentiment === 'bullish' ? 'text-[var(--cl-success)]' :
-                signalConsensus.consensusSentiment === 'bearish' ? 'text-[var(--cl-error)]' :
-                'text-[var(--cl-text-faint)]'
-              }`}>
-                {signalConsensus.consensusSentiment.toUpperCase()} {signalConsensus.consensusConfidence}%
+        <Card className="py-0 gap-0 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                Signal Consensus
               </span>
-            )}
-          </div>
-          {signalConsensus ? (
-            <>
-              <div className="relative h-2 rounded-full bg-[var(--cl-fill-control)] overflow-hidden">
-                <div
-                  className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
-                  style={{
-                    width: `${signalConsensus.consensusConfidence}%`,
-                    backgroundColor: sentimentColor(signalConsensus.consensusSentiment),
-                    opacity: 0.8,
-                  }}
-                />
-              </div>
-              <div className="flex justify-between mt-1.5">
-                <span className="text-[9px] text-[var(--cl-text-secondary)]">
-                  {signalConsensus.totalSignals} active signal{signalConsensus.totalSignals !== 1 ? 's' : ''}
+              {signalConsensus && (
+                <span className={cn(
+                  'text-[11px] font-semibold',
+                  signalConsensus.consensusSentiment === 'bullish' ? 'text-claude-green' :
+                  signalConsensus.consensusSentiment === 'bearish' ? 'text-destructive' :
+                  'text-foreground'
+                )}>
+                  {signalConsensus.consensusSentiment.toUpperCase()} {signalConsensus.consensusConfidence}%
                 </span>
-                <span className="text-[9px] text-[var(--cl-text-secondary)]">
-                  {Object.keys(signalConsensus.byAgent).length} agent{Object.keys(signalConsensus.byAgent).length !== 1 ? 's' : ''} reporting
-                </span>
-              </div>
-            </>
-          ) : (
-            <div className="text-[10px] text-[var(--cl-text-secondary)]">
-              Agents offline — start autopilot to activate
+              )}
             </div>
-          )}
-        </div>
+            {signalConsensus ? (
+              <>
+                <div className="relative h-2 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={cn(
+                      'absolute inset-y-0 left-0 rounded-full transition-all duration-500',
+                      signalConsensus.consensusSentiment === 'bullish' ? 'bg-claude-green' :
+                      signalConsensus.consensusSentiment === 'bearish' ? 'bg-destructive' :
+                      'bg-muted-foreground'
+                    )}
+                    style={{
+                      width: `${signalConsensus.consensusConfidence}%`,
+                      opacity: 0.8,
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between mt-1.5">
+                  <span className="text-[9px] text-muted-foreground">
+                    {signalConsensus.totalSignals} active signal{signalConsensus.totalSignals !== 1 ? 's' : ''}
+                  </span>
+                  <span className="text-[9px] text-muted-foreground">
+                    {Object.keys(signalConsensus.byAgent).length} agent{Object.keys(signalConsensus.byAgent).length !== 1 ? 's' : ''} reporting
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="text-[10px] text-muted-foreground">
+                Agents offline — start autopilot to activate
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Network Graph */}
-        <div className="glass-card p-2">
-          <NetworkGraph agents={statusMap} isExecuting={isExecuting} />
-        </div>
+        <Card className="py-0 gap-0 shadow-sm">
+          <CardContent className="p-2">
+            <NetworkGraph agents={statusMap} isExecuting={isExecuting} />
+          </CardContent>
+        </Card>
 
         {/* Agent Status Cards */}
         {AGENTS.map(agent => {
@@ -267,100 +308,112 @@ export default function AgentNetworkPanel() {
           const age = signal ? Math.round((Date.now() - signal.timestamp) / 1000) : null;
 
           return (
-            <div key={agent.id} className="glass-card p-2.5">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: si.color }} />
-                  <span className="text-[11px] font-semibold text-[var(--cl-text-primary)]">{agent.name}</span>
-                </div>
-                <span className="text-[9px] text-[var(--cl-text-secondary)]">{si.label}</span>
-              </div>
-              <div className="text-[9px] text-[var(--cl-text-secondary)] mb-1">{agent.desc}</div>
-              {signal ? (
-                <div className="space-y-0.5">
-                  <div className="flex items-center justify-between">
-                    <span className={`text-[10px] font-medium ${
-                      signal.sentiment === 'bullish' ? 'text-[var(--cl-success)]' :
-                      signal.sentiment === 'bearish' ? 'text-[var(--cl-error)]' :
-                      'text-[var(--cl-text-faint)]'
-                    }`}>
-                      {signal.sentiment.toUpperCase()} {signal.confidence}%
-                    </span>
-                    <span className="text-[9px] text-[var(--cl-text-secondary)]">
-                      {age !== null ? (age < 60 ? `${age}s ago` : `${Math.round(age / 60)}m ago`) : ''}
-                    </span>
+            <Card key={agent.id} className="py-0 gap-0 shadow-sm">
+              <CardContent className="p-2.5">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn('w-2 h-2 rounded-full flex-shrink-0', si.className)} />
+                    <span className="text-[11px] font-semibold text-foreground">{agent.name}</span>
                   </div>
-                  <p className="text-[9px] text-[var(--cl-text-faint)] line-clamp-2">{signal.summary}</p>
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">
+                    {si.label}
+                  </Badge>
                 </div>
-              ) : (
-                <div className="text-[9px] text-[var(--cl-text-secondary)]">
-                  {status?.state === 'running' ? 'Initializing...' : 'No signal'}
-                </div>
-              )}
-              {status?.tickCount !== undefined && status.tickCount > 0 && (
-                <div className="mt-1 text-[8px] text-[var(--cl-text-secondary)]">
-                  Tick #{status.tickCount}
-                  {status.lastError && (
-                    <span className="text-[var(--cl-error)] ml-2">Last error: {status.lastError}</span>
-                  )}
-                </div>
-              )}
-            </div>
+                <div className="text-[9px] text-muted-foreground mb-1">{agent.desc}</div>
+                {signal ? (
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className={cn(
+                        'text-[10px] font-medium',
+                        sentimentTextClass(signal.sentiment)
+                      )}>
+                        {signal.sentiment.toUpperCase()} {signal.confidence}%
+                      </span>
+                      <span className="text-[9px] text-muted-foreground">
+                        {age !== null ? (age < 60 ? `${age}s ago` : `${Math.round(age / 60)}m ago`) : ''}
+                      </span>
+                    </div>
+                    {signal.confidence != null && (
+                      <ConfidenceBar value={signal.confidence / 100} showLabel={false} />
+                    )}
+                    <p className="text-[9px] text-foreground line-clamp-2">{signal.summary}</p>
+                  </div>
+                ) : (
+                  <div className="text-[9px] text-muted-foreground">
+                    {status?.state === 'running' ? 'Initializing...' : 'No signal'}
+                  </div>
+                )}
+                {status?.tickCount !== undefined && status.tickCount > 0 && (
+                  <div className="mt-1 text-[8px] text-muted-foreground">
+                    Tick #{status.tickCount}
+                    {status.lastError && (
+                      <span className="text-destructive ml-2">Last error: {status.lastError}</span>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           );
         })}
 
         {/* Knowledge Base Indicator */}
-        <div className="glass-card p-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--cl-accent)" strokeWidth="2">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-              </svg>
-              <span className="text-[10px] font-semibold text-[var(--cl-text-primary)]">Knowledge Base</span>
+        <Card className="py-0 gap-0 shadow-sm">
+          <CardContent className="p-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  className="text-primary">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+                <span className="text-[10px] font-semibold text-foreground">Knowledge Base</span>
+              </div>
+              <span className="text-[10px] text-primary font-medium">{knowledgeCount} entries</span>
             </div>
-            <span className="text-[10px] text-[var(--cl-accent)] font-medium">{knowledgeCount} entries</span>
-          </div>
-          <p className="text-[9px] text-[var(--cl-text-secondary)] mt-1">
-            Type{' '}
-            <code className="text-[var(--cl-accent)] bg-[var(--cl-fill-control)] px-1 rounded text-[8px]">
-              learn: Title | Content
-            </code>{' '}
-            in chat to teach the Commander
-          </p>
-        </div>
+            <p className="text-[9px] text-muted-foreground mt-1">
+              Type{' '}
+              <code className="text-primary bg-muted px-1 rounded text-[8px]">
+                learn: Title | Content
+              </code>{' '}
+              in chat to teach the Commander
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Recent Agent Events */}
         {agentEvents.length > 0 && (
-          <div className="glass-card p-2.5">
-            <div className="text-[10px] text-[var(--cl-text-secondary)] uppercase tracking-wider font-semibold mb-1.5">
-              Recent Events
-            </div>
-            <div className="space-y-1 max-h-32 overflow-y-auto">
-              {agentEvents.slice(-10).reverse().map((evt, i) => {
-                const age = Math.round((Date.now() - evt.timestamp) / 1000);
-                return (
-                  <div key={i} className="flex items-center gap-1.5 text-[9px]">
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                      evt.type === 'agent_signal' ? 'bg-[var(--cl-accent)]' :
-                      evt.type === 'agent_error' ? 'bg-[var(--cl-error)]' :
-                      evt.type === 'agent_started' ? 'bg-[var(--cl-success)]' :
-                      evt.type === 'agent_stopped' ? 'bg-[var(--cl-warning)]' :
-                      'bg-[var(--cl-text-secondary)]'
-                    }`} />
-                    <span className="text-[var(--cl-text-faint)] truncate flex-1">
-                      {evt.type.replace('agent_', '').replace('orchestrator_', '')} — {String(evt.agentId)}
-                    </span>
-                    <span className="text-[var(--cl-text-secondary)] flex-shrink-0">
-                      {age < 60 ? `${age}s` : `${Math.round(age / 60)}m`}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <Card className="py-0 gap-0 shadow-sm">
+            <CardContent className="p-2.5">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5">
+                Recent Events
+              </div>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {agentEvents.slice(-10).reverse().map((evt, i) => {
+                  const evtAge = Math.round((Date.now() - evt.timestamp) / 1000);
+                  return (
+                    <div key={i} className="flex items-center gap-1.5 text-[9px]">
+                      <span className={cn(
+                        'w-1.5 h-1.5 rounded-full flex-shrink-0',
+                        evt.type === 'agent_signal' ? 'bg-primary' :
+                        evt.type === 'agent_error' ? 'bg-destructive' :
+                        evt.type === 'agent_started' ? 'bg-claude-green' :
+                        evt.type === 'agent_stopped' ? 'bg-yellow-500' :
+                        'bg-muted-foreground'
+                      )} />
+                      <span className="text-foreground truncate flex-1">
+                        {evt.type.replace('agent_', '').replace('orchestrator_', '')} — {String(evt.agentId)}
+                      </span>
+                      <span className="text-muted-foreground flex-shrink-0">
+                        {evtAge < 60 ? `${evtAge}s` : `${Math.round(evtAge / 60)}m`}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
-    </div>
+    </FadeIn>
   );
 }

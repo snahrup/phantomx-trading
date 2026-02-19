@@ -4,7 +4,9 @@
 // ============================================================================
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
-import { ensureOAuthEnv, getClaudeCodePath } from './credentials';
+import { withPoolSlot } from './query-queue';
+import { getClaudeCodePath } from './credentials';
+import { getPhantomXMcpServer } from './phantomx-mcp-tools';
 import type {
   AIMessage, ChartAnalysis, TradingContext, RiskParameters,
   Position, OHLCV
@@ -100,6 +102,32 @@ You can draw on the chart by including price lines and annotations. Include a dr
 
 When you analyze a chart or discuss levels, DRAW THEM. Don't just list numbers — put them on the chart so the user can see exactly what you mean.
 
+## System Control — Research Engine & Paper Trading
+You can control the background Research Engine and Paper Trading system. Include a system block:
+
+\`\`\`phantomx_system
+{"action": "start_research", "config": {"symbols": ["SOL/USDT:USDT", "BTC/USDT:USDT"], "riskProfile": "aggressive"}}
+\`\`\`
+
+Available system actions:
+- **start_research** — Start the background research engine (also starts paper trading). Optional: config (symbols, riskProfile, focusAreas), virtualBalance (default $100,000).
+- **stop_research** — Stop the research engine and paper trading.
+- **pause_research** — Pause scanning without losing state.
+- **resume_research** — Resume a paused research engine.
+- **configure_research** — Update research config (symbols, risk profile, focus areas) while running. Requires: config.
+- **start_paper_trading** — Start paper trading independently. Optional: virtualBalance.
+- **stop_paper_trading** — Stop paper trading.
+- **get_research_status** — Get current research engine status, findings count, and top opportunities.
+- **get_paper_trading_status** — Get paper trading equity, P&L, open positions, and win rate.
+
+Rules for system commands:
+- When the user says "start scanning", "research everything", "find me opportunities" — START THE RESEARCH ENGINE.
+- When the user asks "what did you find?", "any opportunities?", "research status" — GET STATUS first, then discuss findings.
+- When the user says "paper trade this", "simulate it" — START PAPER TRADING.
+- When the user says "stop scanning", "pause research" — PAUSE or STOP accordingly.
+- Always include the system block AND explain what you're doing. The frontend will update in real-time to show research progress.
+- You can combine system commands with trade commands and draw commands in the same response.
+
 ## Response Format
 - Keep responses concise and scannable
 - Use bullet points for key data
@@ -114,6 +142,8 @@ When you analyze a chart or discuss levels, DRAW THEM. Don't just list numbers �
 interface StreamCallbacks {
   onText?: (chunk: string) => void;
   onThinking?: (chunk: string) => void;
+  onToolUse?: (toolName: string, input: unknown) => void;
+  onToolResult?: (toolName: string, preview: string) => void;
   onDone?: () => void;
   onError?: (error: string) => void;
 }
@@ -126,20 +156,28 @@ async function runQuery(
   callbacks?: StreamCallbacks,
   imageBase64?: string,
 ): Promise<{ text: string; thinking: string }> {
-  ensureOAuthEnv();
-
   const claudeCodePath = getClaudeCodePath();
+
+  // Inject MCP tools so Claude can dynamically fetch market data
+  const mcpServer = getPhantomXMcpServer();
 
   const queryOptions: Record<string, unknown> = {
     pathToClaudeCodeExecutable: claudeCodePath,
     model: 'claude-opus-4-6',
-    maxTurns: 1,
+    fallbackModel: 'claude-sonnet-4-5-20250929',
+    maxTurns: 10,
     includePartialMessages: true,
-    maxThinkingTokens: 16000,
+    thinking: { type: 'adaptive' },
+    effort: 'max',
+    permissionMode: 'bypassPermissions',
+    allowDangerouslySkipPermissions: true,
     systemPrompt: {
       type: 'preset',
       preset: 'claude_code',
       append: SYSTEM_PROMPT,
+    },
+    mcpServers: {
+      'phantomx-trading': mcpServer,
     },
   };
 
@@ -179,52 +217,63 @@ async function runQuery(
     };
   }
 
-  let fullText = '';
-  let thinkingText = '';
+  // Run through the pool — withPoolSlot holds a concurrent slot while
+  // streaming live (callbacks fire in real-time, not buffered)
+  return withPoolSlot(async () => {
+    let fullText = '';
+    let thinkingText = '';
 
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for await (const message of query(queryInput as any)) {
+    try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const msg = message as any;
+      for await (const message of query(queryInput as any)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const msg = message as any;
 
-      if (msg.type === 'stream_event') {
-        const event = msg.event;
+        if (msg.type === 'stream_event') {
+          const event = msg.event;
 
-        if (event?.type === 'content_block_delta') {
-          const delta = event.delta;
+          if (event?.type === 'content_block_delta') {
+            const delta = event.delta;
 
-          if (delta?.type === 'thinking_delta' && delta.thinking) {
-            thinkingText += delta.thinking;
-            callbacks?.onThinking?.(delta.thinking);
-          } else if (delta?.type === 'text_delta' && delta.text) {
-            fullText += delta.text;
-            callbacks?.onText?.(delta.text);
+            if (delta?.type === 'thinking_delta' && delta.thinking) {
+              thinkingText += delta.thinking;
+              callbacks?.onThinking?.(delta.thinking);
+            } else if (delta?.type === 'text_delta' && delta.text) {
+              fullText += delta.text;
+              callbacks?.onText?.(delta.text);
+            }
           }
-        }
-      } else if (msg.type === 'assistant') {
-        // Complete assistant message — extract content blocks
-        const content = msg.message?.content || msg.content;
-        if (Array.isArray(content)) {
-          for (const block of content) {
-            if (block.type === 'text' && block.text) {
-              // Only use if we didn't get it from streaming
-              if (!fullText) fullText = block.text;
-            } else if (block.type === 'thinking' && block.thinking) {
-              if (!thinkingText) thinkingText = block.thinking;
+        } else if (msg.type === 'assistant') {
+          // Complete assistant message — extract content blocks + tool usage
+          const content = msg.message?.content || msg.content;
+          if (Array.isArray(content)) {
+            for (const block of content) {
+              if (block.type === 'text' && block.text) {
+                // Only use if we didn't get it from streaming
+                if (!fullText) fullText = block.text;
+              } else if (block.type === 'thinking' && block.thinking) {
+                if (!thinkingText) thinkingText = block.thinking;
+              } else if (block.type === 'tool_use') {
+                callbacks?.onToolUse?.(block.name ?? 'unknown', block.input ?? {});
+              } else if (block.type === 'tool_result') {
+                const preview = typeof block.content === 'string'
+                  ? block.content.slice(0, 120)
+                  : JSON.stringify(block.content).slice(0, 120);
+                callbacks?.onToolResult?.('tool', preview);
+              }
             }
           }
         }
       }
+    } catch (err) {
+      const errMsg = String(err);
+      callbacks?.onError?.(errMsg);
+      if (!fullText) fullText = `Error communicating with Claude: ${errMsg}`;
     }
-  } catch (err) {
-    const errMsg = String(err);
-    callbacks?.onError?.(errMsg);
-    if (!fullText) fullText = `Error communicating with Claude: ${errMsg}`;
-  }
 
-  callbacks?.onDone?.();
-  return { text: fullText, thinking: thinkingText };
+    callbacks?.onDone?.();
+    return { text: fullText, thinking: thinkingText };
+  }, 'high', 'chat');
 }
 
 // ---------------------------------------------------------------------------
@@ -241,7 +290,12 @@ export class TradingAssistant {
   async chat(
     userMessage: string,
     chartImage?: string,
-    streamCallback?: (chunk: string) => void
+    streamCallback?: (chunk: string) => void,
+    toolCallbacks?: {
+      onToolUse?: (toolName: string, input: unknown) => void;
+      onToolResult?: (toolName: string, preview: string) => void;
+      onThinking?: (chunk: string) => void;
+    },
   ): Promise<AIMessage> {
     const contextBlock = this.buildContextBlock();
     const fullPrompt = contextBlock
@@ -272,7 +326,12 @@ export class TradingAssistant {
       promptWithHistory,
       {
         onText: streamCallback,
-        onThinking: (chunk) => { thinkingContent += chunk; },
+        onThinking: (chunk) => {
+          thinkingContent += chunk;
+          toolCallbacks?.onThinking?.(chunk);
+        },
+        onToolUse: toolCallbacks?.onToolUse,
+        onToolResult: toolCallbacks?.onToolResult,
       },
       chartImage,
     );

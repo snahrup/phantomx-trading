@@ -3,6 +3,13 @@
 import { useConversation } from '@elevenlabs/react';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTradingStore } from '@/store/trading-store';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FadeIn, Collapse } from '@/components/motion';
+import { cn } from '@/lib/utils';
 
 export default function VoicePanel({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
@@ -117,9 +124,9 @@ export default function VoicePanel({ onClose }: { onClose: () => void }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="panel-header">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-md bg-[var(--cl-accent)] flex items-center justify-center">
+          <div className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
               <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
@@ -127,50 +134,66 @@ export default function VoicePanel({ onClose }: { onClose: () => void }) {
               <line x1="8" y1="23" x2="16" y2="23" />
             </svg>
           </div>
-          <span>Onyx Voice</span>
+          <span className="text-sm font-medium text-foreground">Onyx Voice</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">
-            <span className={`status-dot ${isConnected ? 'live' : isConnecting ? 'live' : 'disconnected'}`} />
-            <span className="text-[10px]">
+            <span className={cn(
+              'inline-block w-1.5 h-1.5 rounded-full',
+              isConnected ? 'bg-claude-green animate-pulse' : isConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-muted-foreground/40'
+            )} />
+            <span className="text-[10px] text-muted-foreground">
               {isConnected ? (conversation.isSpeaking ? 'Speaking...' : 'Listening...') : isConnecting ? 'Connecting...' : 'Ready'}
             </span>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={onClose}
-            className="text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-primary)] transition-colors p-0.5"
+            className="h-5 w-5 text-muted-foreground hover:text-foreground"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Voice visualizer */}
-      <div className="flex-shrink-0 flex items-center justify-center py-6 px-4">
+      <FadeIn className="flex-shrink-0 flex items-center justify-center py-6 px-4">
         <div className="relative">
-          {/* Outer ring — pulses when speaking */}
-          <div className={`w-28 h-28 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+          {/* Outer ring -- pulses when speaking */}
+          <div className={cn(
+            'w-28 h-28 rounded-full border-2 flex items-center justify-center transition-all duration-300',
             isConnected
               ? conversation.isSpeaking
-                ? 'border-[var(--cl-accent)] shadow-[0_0_30px_rgba(174,86,48,0.4)] scale-110'
-                : 'border-[var(--cl-success)] shadow-[0_0_20px_rgba(0,210,106,0.2)]'
-              : 'border-[var(--cl-border)]'
-          }`}>
+                ? 'border-primary shadow-[0_0_30px_hsl(var(--primary)/0.4)] scale-110'
+                : 'border-claude-green shadow-[0_0_20px_oklch(0.58_0.1_145/0.2)]'
+              : 'border-border'
+          )}>
             {/* Inner circle */}
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
+            <div className={cn(
+              'w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300',
               isConnected
                 ? conversation.isSpeaking
-                  ? 'bg-[var(--cl-accent-soft)] animate-pulse'
-                  : 'bg-[rgba(0,210,106,0.1)]'
-                : 'bg-[var(--cl-fill-control)]'
-            }`}>
+                  ? 'bg-primary/10 animate-pulse'
+                  : 'bg-claude-green/10'
+                : 'bg-muted'
+            )}>
               {isConnecting ? (
-                <div className="ai-thinking"><span /><span /><span /></div>
+                <div className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
+                </div>
               ) : (
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-                  stroke={isConnected ? (conversation.isSpeaking ? 'var(--cl-accent)' : 'var(--cl-success)') : 'var(--cl-text-secondary)'}
+                  className={cn(
+                    isConnected
+                      ? conversation.isSpeaking ? 'text-primary' : 'text-claude-green'
+                      : 'text-muted-foreground'
+                  )}
+                  stroke="currentColor"
                   strokeWidth="1.5"
                 >
                   <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
@@ -183,57 +206,66 @@ export default function VoicePanel({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Status label under the orb */}
-          <p className="text-center text-[11px] text-[var(--cl-text-secondary)] mt-3">
+          <p className="text-center text-[11px] text-muted-foreground mt-3">
             {isConnected
               ? conversation.isSpeaking ? 'Onyx is speaking' : 'Listening to you...'
               : isConnecting ? 'Connecting to Onyx...' : 'Tap to start voice session'
             }
           </p>
         </div>
-      </div>
+      </FadeIn>
 
       {/* Transcript */}
       <div className="flex-1 overflow-y-auto px-3 pb-2 space-y-2">
         {transcript.length === 0 && !isConnected && (
-          <div className="text-center text-[var(--cl-text-secondary)] text-[11px] py-4 opacity-60">
+          <FadeIn className="text-center text-muted-foreground text-[11px] py-4 opacity-60">
             Start a voice session to talk with Onyx.<br />
             Conversation transcript appears here.
-          </div>
+          </FadeIn>
         )}
         {transcript.map((t, i) => (
-          <div key={i} className={`flex gap-2 ${t.role === 'user' ? 'flex-row-reverse' : ''}`}>
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-              t.role === 'user' ? 'bg-[var(--cl-fill-active)]' : 'bg-[var(--cl-accent-soft)]'
-            }`}>
-              <span className={`text-[8px] font-semibold ${
-                t.role === 'user' ? 'text-[var(--cl-text-faint)]' : 'text-[var(--cl-accent)]'
-              }`}>
+          <FadeIn key={i} delay={0.05} className={`flex gap-2 ${t.role === 'user' ? 'flex-row-reverse' : ''}`}>
+            <div className={cn(
+              'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5',
+              t.role === 'user' ? 'bg-muted' : 'bg-primary/10'
+            )}>
+              <span className={cn(
+                'text-[8px] font-semibold',
+                t.role === 'user' ? 'text-foreground' : 'text-primary'
+              )}>
                 {t.role === 'user' ? 'U' : 'O'}
               </span>
             </div>
-            <div className={`glass-card p-2 text-[12px] max-w-[80%] ${
-              t.role === 'user' ? 'bg-[var(--cl-bg-hover)]' : ''
-            }`}>
-              {t.text}
-            </div>
-          </div>
+            <Card className={cn(
+              'py-0 gap-0 max-w-[80%] shadow-none',
+              t.role === 'user' ? 'bg-accent' : 'bg-card'
+            )}>
+              <CardContent className="p-2 text-[12px] text-card-foreground">
+                {t.text}
+              </CardContent>
+            </Card>
+          </FadeIn>
         ))}
         <div ref={transcriptEndRef} />
       </div>
 
       {/* Error display */}
       {error && (
-        <div className="mx-3 mb-2 p-2 rounded-lg bg-[var(--cl-fill-error)] border border-[var(--cl-error-border)] text-[11px] text-[var(--cl-error)]">
-          {error}
-        </div>
+        <FadeIn className="mx-3 mb-2">
+          <Alert variant="destructive" className="py-2">
+            <AlertDescription className="text-[11px]">
+              {error}
+            </AlertDescription>
+          </Alert>
+        </FadeIn>
       )}
 
       {/* Voice ID Override */}
       {!isConnected && (
-        <div className="px-3 pb-1">
+        <FadeIn className="px-3 pb-1">
           <button
             onClick={() => setShowVoiceInput(v => !v)}
-            className="text-[9px] text-[var(--cl-text-secondary)] hover:text-[var(--cl-accent)] transition-colors flex items-center gap-1"
+            className="text-[9px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
           >
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
               className={`transition-transform ${showVoiceInput ? 'rotate-90' : ''}`}
@@ -242,52 +274,53 @@ export default function VoicePanel({ onClose }: { onClose: () => void }) {
             </svg>
             Custom Voice ID
           </button>
-          {showVoiceInput && (
+          <Collapse open={showVoiceInput}>
             <div className="mt-1.5 flex gap-1.5">
-              <input
+              <Input
                 type="text"
                 value={customVoiceId}
                 onChange={e => setCustomVoiceId(e.target.value)}
                 placeholder="Paste ElevenLabs voice ID..."
-                className="flex-1 px-2 py-1.5 rounded-lg text-[11px] bg-[var(--cl-fill-control)] border border-[var(--cl-border)] text-[var(--cl-text-primary)] placeholder:text-[var(--cl-text-secondary)] focus:border-[var(--cl-accent)] focus:outline-none font-mono"
+                className="flex-1 h-7 px-2 py-1.5 text-[11px] font-mono"
               />
               {customVoiceId && (
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setCustomVoiceId('')}
-                  className="text-[9px] px-2 py-1 rounded-md border border-[var(--cl-border)] text-[var(--cl-text-secondary)] hover:text-[var(--cl-error)] hover:border-[var(--cl-error)] transition-colors"
+                  className="text-[9px] h-7 px-2 hover:text-destructive hover:border-destructive"
                 >
                   Clear
-                </button>
+                </Button>
               )}
             </div>
-          )}
+          </Collapse>
           {customVoiceId && (
-            <div className="mt-1 text-[8px] text-[var(--cl-accent)] font-mono truncate">
+            <div className="mt-1 text-[8px] text-primary font-mono truncate">
               Voice override: {customVoiceId}
             </div>
           )}
-        </div>
+        </FadeIn>
       )}
 
       {/* Controls */}
-      <div className="p-3 border-t border-[var(--cl-border)] flex items-center gap-2">
+      <div className="p-3 border-t border-border flex items-center gap-2">
         {isConnected ? (
-          <>
-            <button
-              onClick={endSession}
-              className="flex-1 py-2.5 rounded-xl text-[12px] font-medium bg-[var(--cl-fill-error-hover)] border border-[var(--cl-error-border)] text-[var(--cl-error)] hover:bg-[var(--cl-error)] hover:text-white transition-all flex items-center justify-center gap-2"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
-              </svg>
-              End Session
-            </button>
-          </>
+          <Button
+            variant="destructive"
+            onClick={endSession}
+            className="flex-1 py-2.5 rounded-xl text-[12px] font-medium"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
+            </svg>
+            End Session
+          </Button>
         ) : (
-          <button
+          <Button
             onClick={startSession}
             disabled={isConnecting}
-            className="flex-1 py-2.5 rounded-xl text-[12px] font-medium bg-[var(--cl-accent)] text-white hover:bg-[var(--cl-accent-hover)] disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg"
+            className="flex-1 py-2.5 rounded-xl text-[12px] font-medium shadow-lg"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
@@ -296,7 +329,7 @@ export default function VoicePanel({ onClose }: { onClose: () => void }) {
               <line x1="8" y1="23" x2="16" y2="23" />
             </svg>
             {isConnecting ? 'Connecting...' : 'Start Voice Session'}
-          </button>
+          </Button>
         )}
       </div>
     </div>

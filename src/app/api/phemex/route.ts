@@ -283,8 +283,10 @@ Respond with ONLY a valid JSON object (no markdown, no code fences):
           prompt: aiPrompt,
           options: {
             pathToClaudeCodeExecutable: claudeCodePath,
-            model: 'claude-sonnet-4-5-20250929',
+            model: 'claude-opus-4-6',
             maxTurns: 1,
+            thinking: { type: 'adaptive' },
+            effort: 'max',
             systemPrompt: 'You are a crypto trading AI. Respond only with the requested JSON.',
           },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -3,6 +3,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTradingStore } from '@/store/trading-store';
 import { formatPrice, formatUsd } from '@/lib/format';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 import type { JournalEntry, JournalEntryType } from '@/types/trading';
 
 interface HeartbeatEvent {
@@ -258,7 +262,7 @@ export default function HeartbeatPanel() {
             if (captureChart) {
               const img = captureChart();
               if (img) {
-                // Save async — update journal entry path when done
+                // Save async -- update journal entry path when done
                 fetch('/api/journal', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -350,49 +354,53 @@ export default function HeartbeatPanel() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="panel-header flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span>Autopilot</span>
+      <Card className="rounded-none border-x-0 border-t-0 py-0 gap-0 shadow-none">
+        <CardHeader className="px-3 py-2 flex-row items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-sm">Autopilot</CardTitle>
+            {isRunning && (
+              <Badge variant="outline" className="flex items-center gap-1 px-1.5 py-0.5 bg-[#2D8547]/8 border-[#2D8547]/20 text-[#2D8547]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2D8547] animate-pulse" />
+                <span className="text-[9px] font-bold">LIVE</span>
+              </Badge>
+            )}
+            {autopilotMode === 'portfolio' && (
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 bg-primary/5 text-primary border-primary/20">
+                PORTFOLIO
+              </Badge>
+            )}
+          </div>
           {isRunning && (
-            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--cl-fill-success)] border border-[var(--cl-success-border)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--cl-success)] animate-pulse" />
-              <span className="text-[9px] text-[var(--cl-success)] font-bold">LIVE</span>
-            </span>
+            <span className="text-[9px] text-muted-foreground">Tick #{tickCount}</span>
           )}
-          {autopilotMode === 'portfolio' && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--cl-fill-accent)] text-[var(--cl-accent)] border border-[var(--cl-accent-border)]">
-              PORTFOLIO
-            </span>
-          )}
-        </div>
-        {isRunning && (
-          <span className="text-[9px] text-[var(--cl-text-secondary)]">Tick #{tickCount}</span>
-        )}
-      </div>
+        </CardHeader>
+      </Card>
 
       <div className="flex-1 overflow-y-auto">
         {/* Controls */}
-        <div className="p-3 space-y-3 border-b border-[var(--cl-border-subtle)]">
+        <div className="p-3 space-y-3 border-b border-border/50">
           {/* Mode toggle */}
           {!isRunning && (
-            <div className="flex gap-1 p-0.5 rounded-lg bg-[var(--cl-fill-control)] border border-[var(--cl-border-subtle)]">
+            <div className="flex gap-1 p-0.5 rounded-lg bg-muted border border-border/50">
               <button
                 onClick={() => setAutopilotMode('single')}
-                className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${
+                className={cn(
+                  'flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all',
                   autopilotMode === 'single'
-                    ? 'bg-[var(--cl-bg-surface)] text-[var(--cl-text-primary)] shadow-sm'
-                    : 'text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-faint)]'
-                }`}
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-muted-foreground'
+                )}
               >
                 Single Symbol
               </button>
               <button
                 onClick={() => setAutopilotMode('portfolio')}
-                className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${
+                className={cn(
+                  'flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all',
                   autopilotMode === 'portfolio'
-                    ? 'bg-[var(--cl-bg-surface)] text-[var(--cl-accent)] shadow-sm'
-                    : 'text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-faint)]'
-                }`}
+                    ? 'bg-card text-primary shadow-sm'
+                    : 'text-muted-foreground hover:text-muted-foreground'
+                )}
               >
                 Portfolio Manager
               </button>
@@ -404,25 +412,27 @@ export default function HeartbeatPanel() {
             <div className="space-y-2">
               {/* Scan mode toggle */}
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-[var(--cl-text-secondary)]">Scan mode</span>
+                <span className="text-[10px] text-muted-foreground">Scan mode</span>
                 <div className="flex gap-1">
                   <button
                     onClick={() => setAutopilotScanMode('watchlist')}
-                    className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                    className={cn(
+                      'px-2 py-0.5 rounded text-[10px] transition-colors',
                       autopilotScanMode === 'watchlist'
-                        ? 'bg-[var(--cl-accent-soft)] text-[var(--cl-accent)] border border-[var(--cl-accent-border)]'
-                        : 'text-[var(--cl-text-secondary)] border border-transparent'
-                    }`}
+                        ? 'bg-primary/8 text-primary border border-primary/20'
+                        : 'text-muted-foreground border border-transparent'
+                    )}
                   >
                     Watchlist
                   </button>
                   <button
                     onClick={() => setAutopilotScanMode('full_scan')}
-                    className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                    className={cn(
+                      'px-2 py-0.5 rounded text-[10px] transition-colors',
                       autopilotScanMode === 'full_scan'
-                        ? 'bg-[var(--cl-accent-soft)] text-[var(--cl-accent)] border border-[var(--cl-accent-border)]'
-                        : 'text-[var(--cl-text-secondary)] border border-transparent'
-                    }`}
+                        ? 'bg-primary/8 text-primary border border-primary/20'
+                        : 'text-muted-foreground border border-transparent'
+                    )}
                   >
                     Full Scan
                   </button>
@@ -434,11 +444,11 @@ export default function HeartbeatPanel() {
                 <div>
                   <div className="flex flex-wrap gap-1">
                     {watchlist.map(sym => (
-                      <span key={sym} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-[var(--cl-fill-control)] border border-[var(--cl-border-subtle)] text-[var(--cl-text-faint)]">
+                      <span key={sym} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-muted border border-border/50 text-muted-foreground">
                         {shortSym(sym)}
                         <button
                           onClick={() => removeFromWatchlist(sym)}
-                          className="text-[var(--cl-text-secondary)] hover:text-[var(--cl-error)] transition-colors ml-0.5"
+                          className="text-muted-foreground hover:text-destructive transition-colors ml-0.5"
                         >
                           x
                         </button>
@@ -446,35 +456,36 @@ export default function HeartbeatPanel() {
                     ))}
                     <button
                       onClick={() => { setShowAddSymbol(!showAddSymbol); setSymbolSearch(''); setLeverageFilter(null); }}
-                      className="px-2 py-0.5 rounded-full text-[10px] border border-dashed border-[var(--cl-border)] text-[var(--cl-text-secondary)] hover:border-[var(--cl-accent-border)] hover:text-[var(--cl-accent)] transition-colors"
+                      className="px-2 py-0.5 rounded-full text-[10px] border border-dashed border-border text-muted-foreground hover:border-primary/20 hover:text-primary transition-colors"
                     >
                       + Add
                     </button>
                   </div>
 
                   {showAddSymbol && (
-                    <div className="mt-2 rounded border border-[var(--cl-border-subtle)] bg-[var(--cl-fill-control)] overflow-hidden">
+                    <div className="mt-2 rounded border border-border/50 bg-muted overflow-hidden">
                       {/* Search + leverage quick-filters */}
-                      <div className="p-2 space-y-1.5 border-b border-[var(--cl-border-subtle)]">
+                      <div className="p-2 space-y-1.5 border-b border-border/50">
                         <input
                           type="text"
                           value={symbolSearch}
                           onChange={e => setSymbolSearch(e.target.value)}
                           placeholder="Search tokens..."
-                          className="w-full px-2 py-1 rounded text-[10px] bg-[var(--cl-bg-surface)] border border-[var(--cl-border-subtle)] text-[var(--cl-text-primary)] placeholder:text-[var(--cl-text-secondary)] outline-none focus:border-[var(--cl-accent-border)]"
+                          className="w-full px-2 py-1 rounded text-[10px] bg-card border border-border/50 text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/20"
                           autoFocus
                         />
                         <div className="flex items-center gap-1 flex-wrap">
-                          <span className="text-[9px] text-[var(--cl-text-secondary)] mr-1">Leverage:</span>
+                          <span className="text-[9px] text-muted-foreground mr-1">Leverage:</span>
                           {[null, 20, 50, 75, 100].map(lev => (
                             <button
                               key={lev ?? 'all'}
                               onClick={() => setLeverageFilter(lev)}
-                              className={`px-1.5 py-0.5 rounded text-[9px] transition-colors ${
+                              className={cn(
+                                'px-1.5 py-0.5 rounded text-[9px] transition-colors',
                                 leverageFilter === lev
-                                  ? 'bg-[var(--cl-accent-soft)] text-[var(--cl-accent)] border border-[var(--cl-accent-border)]'
-                                  : 'text-[var(--cl-text-secondary)] border border-transparent hover:text-[var(--cl-text-faint)]'
-                              }`}
+                                  ? 'bg-primary/8 text-primary border border-primary/20'
+                                  : 'text-muted-foreground border border-transparent hover:text-muted-foreground'
+                              )}
                             >
                               {lev ? `${lev}x+` : 'All'}
                             </button>
@@ -485,7 +496,7 @@ export default function HeartbeatPanel() {
                                 for (const m of filteredMarkets) addToWatchlist(m.symbol);
                                 setShowAddSymbol(false);
                               }}
-                              className="ml-auto px-1.5 py-0.5 rounded text-[9px] text-[var(--cl-accent)] border border-[var(--cl-accent-border)] hover:bg-[var(--cl-accent-soft)] transition-colors"
+                              className="ml-auto px-1.5 py-0.5 rounded text-[9px] text-primary border border-primary/20 hover:bg-primary/8 transition-colors"
                             >
                               + Add all ({filteredMarkets.length})
                             </button>
@@ -496,9 +507,9 @@ export default function HeartbeatPanel() {
                       {/* Results list */}
                       <div className="max-h-48 overflow-y-auto p-1">
                         {marketsLoading ? (
-                          <div className="p-3 text-center text-[10px] text-[var(--cl-text-secondary)]">Loading markets from Phemex...</div>
+                          <div className="p-3 text-center text-[10px] text-muted-foreground">Loading markets from Phemex...</div>
                         ) : filteredMarkets.length === 0 ? (
-                          <div className="p-3 text-center text-[10px] text-[var(--cl-text-secondary)]">
+                          <div className="p-3 text-center text-[10px] text-muted-foreground">
                             {allMarkets.length === 0 ? 'Connect to Phemex first' : 'No matching tokens'}
                           </div>
                         ) : (
@@ -507,13 +518,14 @@ export default function HeartbeatPanel() {
                               <button
                                 key={m.symbol}
                                 onClick={() => addToWatchlist(m.symbol)}
-                                className="flex items-center justify-between px-2 py-1 rounded text-[10px] hover:bg-[var(--cl-fill-hover)] transition-colors"
+                                className="flex items-center justify-between px-2 py-1 rounded text-[10px] hover:bg-muted/80 transition-colors"
                               >
-                                <span className="text-[var(--cl-text-faint)] font-medium">{m.base}</span>
+                                <span className="text-muted-foreground font-medium">{m.base}</span>
                                 {m.maxLeverage && (
-                                  <span className={`text-[8px] font-mono ${
-                                    m.maxLeverage >= 50 ? 'text-[var(--cl-warning)]' : 'text-[var(--cl-text-secondary)]'
-                                  }`}>
+                                  <span className={cn(
+                                    'text-[8px] font-mono',
+                                    m.maxLeverage >= 50 ? 'text-[#B8860B]' : 'text-muted-foreground'
+                                  )}>
                                     {m.maxLeverage}x
                                   </span>
                                 )}
@@ -528,8 +540,8 @@ export default function HeartbeatPanel() {
               )}
 
               {autopilotScanMode === 'full_scan' && (
-                <div className="p-2 rounded bg-[var(--cl-fill-accent-subtle)] border border-[var(--cl-accent-border)] text-[10px] text-[var(--cl-accent)]">
-                  Full scan mode — discovers top tokens from all Phemex futures each tick
+                <div className="p-2 rounded bg-primary/3 border border-primary/20 text-[10px] text-primary">
+                  Full scan mode -- discovers top tokens from all Phemex futures each tick
                 </div>
               )}
             </div>
@@ -539,13 +551,14 @@ export default function HeartbeatPanel() {
           <button
             onClick={isRunning ? handleStop : handleStart}
             disabled={!isConnected}
-            className={`w-full py-2.5 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2 ${
+            className={cn(
+              'w-full py-2.5 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2',
               isRunning
-                ? 'bg-[var(--cl-fill-error-hover)] border border-[var(--cl-error-border)] text-[var(--cl-error)]'
+                ? 'bg-destructive/12 border border-destructive/20 text-destructive'
                 : isConnected
-                  ? 'bg-[var(--cl-success)] text-[var(--cl-text-inverse)] hover:bg-[var(--cl-success-hover)] shadow-lg shadow-[var(--cl-success-border)]'
-                  : 'bg-[var(--cl-fill-control)] border border-[var(--cl-border-subtle)] text-[var(--cl-text-secondary)] cursor-not-allowed'
-            }`}
+                  ? 'bg-[#2D8547] text-primary-foreground hover:bg-[#248A3F] shadow-lg shadow-[#2D8547]/20'
+                  : 'bg-muted border border-border/50 text-muted-foreground cursor-not-allowed'
+            )}
           >
             {isRunning ? (
               <>
@@ -568,17 +581,18 @@ export default function HeartbeatPanel() {
           {!isRunning && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-[var(--cl-text-secondary)]">Heartbeat interval</span>
+                <span className="text-[10px] text-muted-foreground">Heartbeat interval</span>
                 <div className="flex gap-1">
                   {INTERVAL_OPTIONS.map(opt => (
                     <button
                       key={opt.value}
                       onClick={() => setIntervalMs(opt.value)}
-                      className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                      className={cn(
+                        'px-2 py-0.5 rounded text-[10px] transition-colors',
                         interval === opt.value
-                          ? 'bg-[var(--cl-accent-soft)] text-[var(--cl-accent)] border border-[var(--cl-accent-border)]'
-                          : 'text-[var(--cl-text-secondary)] border border-transparent'
-                      }`}
+                          ? 'bg-primary/8 text-primary border border-primary/20'
+                          : 'text-muted-foreground border border-transparent'
+                      )}
                     >
                       {opt.label}
                     </button>
@@ -588,20 +602,18 @@ export default function HeartbeatPanel() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-[var(--cl-text-secondary)] block">Auto-execute trades</span>
-                  <span className="text-[9px] text-[var(--cl-text-secondary)]">{autoTrade ? 'Will place real orders' : 'Advise only'}</span>
+                  <span className="text-[10px] text-muted-foreground block">Auto-execute trades</span>
+                  <span className="text-[9px] text-muted-foreground">{autoTrade ? 'Will place real orders' : 'Advise only'}</span>
                 </div>
-                <button
-                  onClick={() => setAutoTrade(!autoTrade)}
-                  className={`w-10 h-5 rounded-full transition-colors relative ${autoTrade ? 'bg-[var(--cl-accent)]' : 'bg-[var(--cl-border)]'}`}
-                >
-                  <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-[3px] transition-transform ${autoTrade ? 'translate-x-[22px]' : 'translate-x-[3px]'}`} />
-                </button>
+                <Switch
+                  checked={autoTrade}
+                  onCheckedChange={setAutoTrade}
+                />
               </div>
 
               {autoTrade && (
-                <div className="p-2 rounded bg-[var(--cl-fill-error)] border border-[var(--cl-error-border)] text-[10px] text-[var(--cl-error)]">
-                  Auto-trade is ON — Claude will execute real trades on your account
+                <div className="p-2 rounded bg-destructive/8 border border-destructive/20 text-[10px] text-destructive">
+                  Auto-trade is ON -- Claude will execute real trades on your account
                 </div>
               )}
             </div>
@@ -609,34 +621,40 @@ export default function HeartbeatPanel() {
 
           {/* Running analysis */}
           {isRunning && lastAnalysis && (
-            <div className="glass-card p-2">
-              <span className="text-[9px] text-[var(--cl-text-secondary)] block mb-1">Latest analysis</span>
-              <span className="text-[11px] text-[var(--cl-text-primary)]">{lastAnalysis}</span>
-            </div>
+            <Card className="py-0 gap-0 shadow-none">
+              <CardContent className="p-2">
+                <span className="text-[9px] text-muted-foreground block mb-1">Latest analysis</span>
+                <span className="text-[11px] text-foreground">{lastAnalysis}</span>
+              </CardContent>
+            </Card>
           )}
         </div>
 
         {/* Autopilot PnL Summary */}
         {isRunning && autopilotMode === 'portfolio' && (sessionPnl || autopilotClosedTrades.length > 0) && (
-          <div className="px-3 py-2 border-b border-[var(--cl-border-subtle)] bg-[var(--cl-bg-surface)]">
+          <div className="px-3 py-2 border-b border-border/50 bg-card">
             <div className="flex items-center justify-between text-[10px]">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1">
-                  <span className="text-[var(--cl-text-secondary)]">Realized PnL:</span>
-                  <span className={`font-mono font-semibold ${
-                    (sessionPnl?.cumulative ?? autopilotCumulativePnl) >= 0 ? 'text-[var(--cl-success)]' : 'text-[var(--cl-error)]'
-                  }`}>
+                  <span className="text-muted-foreground">Realized PnL:</span>
+                  <span className={cn(
+                    'font-mono font-semibold',
+                    (sessionPnl?.cumulative ?? autopilotCumulativePnl) >= 0 ? 'text-[#2D8547]' : 'text-destructive'
+                  )}>
                     {(sessionPnl?.cumulative ?? autopilotCumulativePnl) >= 0 ? '+' : ''}${formatUsd(sessionPnl?.cumulative ?? autopilotCumulativePnl)}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-[var(--cl-text-secondary)]">Trades:</span>
-                  <span className="font-mono text-[var(--cl-text-faint)]">{sessionPnl?.tradeCount ?? autopilotClosedTrades.length}</span>
+                  <span className="text-muted-foreground">Trades:</span>
+                  <span className="font-mono text-muted-foreground">{sessionPnl?.tradeCount ?? autopilotClosedTrades.length}</span>
                 </div>
                 {(sessionPnl?.winRate ?? 0) > 0 && (
                   <div className="flex items-center gap-1">
-                    <span className="text-[var(--cl-text-secondary)]">WR:</span>
-                    <span className={`font-mono ${(sessionPnl?.winRate ?? 0) >= 50 ? 'text-[var(--cl-success)]' : 'text-[var(--cl-error)]'}`}>
+                    <span className="text-muted-foreground">WR:</span>
+                    <span className={cn(
+                      'font-mono',
+                      (sessionPnl?.winRate ?? 0) >= 50 ? 'text-[#2D8547]' : 'text-destructive'
+                    )}>
                       {(sessionPnl?.winRate ?? 0).toFixed(0)}%
                     </span>
                   </div>
@@ -644,10 +662,11 @@ export default function HeartbeatPanel() {
               </div>
               {sessionPnl && sessionPnl.sessionStart > 0 && (
                 <div className="flex items-center gap-1">
-                  <span className="text-[var(--cl-text-secondary)]">Return:</span>
-                  <span className={`font-mono font-semibold ${
-                    sessionPnl.currentEquity >= sessionPnl.sessionStart ? 'text-[var(--cl-success)]' : 'text-[var(--cl-error)]'
-                  }`}>
+                  <span className="text-muted-foreground">Return:</span>
+                  <span className={cn(
+                    'font-mono font-semibold',
+                    sessionPnl.currentEquity >= sessionPnl.sessionStart ? 'text-[#2D8547]' : 'text-destructive'
+                  )}>
                     {((sessionPnl.currentEquity - sessionPnl.sessionStart) / sessionPnl.sessionStart * 100) >= 0 ? '+' : ''}
                     {((sessionPnl.currentEquity - sessionPnl.sessionStart) / sessionPnl.sessionStart * 100).toFixed(2)}%
                   </span>
@@ -661,13 +680,13 @@ export default function HeartbeatPanel() {
         <div className="p-2 space-y-1.5">
           {events.length === 0 && !isRunning && (
             <div className="flex flex-col items-center justify-center py-8 text-center opacity-40">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--cl-text-secondary)" strokeWidth="1">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-muted-foreground">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
-              <p className="text-xs text-[var(--cl-text-secondary)] mt-3">
+              <p className="text-xs text-muted-foreground mt-3">
                 {autopilotMode === 'portfolio' ? 'Portfolio autopilot inactive' : 'Autopilot inactive'}
               </p>
-              <p className="text-[10px] text-[var(--cl-text-secondary)]">
+              <p className="text-[10px] text-muted-foreground">
                 {autopilotMode === 'portfolio'
                   ? 'Claude will scan your watchlist and manage your entire portfolio'
                   : 'Claude will monitor and trade your selected symbol'}
@@ -701,7 +720,7 @@ export default function HeartbeatPanel() {
 }
 
 // ===========================================================================
-// Portfolio Pipeline — Per-Tick View
+// Portfolio Pipeline -- Per-Tick View
 // ===========================================================================
 
 function TickPipeline({
@@ -734,23 +753,24 @@ function TickPipeline({
     return (
       <button
         onClick={onToggle}
-        className={`w-full text-left rounded-lg p-2 border transition-colors ${
-          killEvent ? 'border-[var(--cl-error-border)] bg-[var(--cl-fill-error-subtle)]' :
-          hasAction ? 'border-[var(--cl-success-border)] bg-[var(--cl-fill-success-subtle)]' :
-          'border-[var(--cl-border-subtle)] bg-transparent'
-        } hover:brightness-110`}
+        className={cn(
+          'w-full text-left rounded-lg p-2 border transition-colors hover:brightness-110',
+          killEvent ? 'border-destructive/20 bg-destructive/4' :
+          hasAction ? 'border-[#2D8547]/20 bg-[#2D8547]/4' :
+          'border-border/50 bg-transparent'
+        )}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-[var(--cl-text-secondary)] font-mono">#{tick}</span>
-            <span className="text-[10px] text-[var(--cl-text-faint)] truncate">
+            <span className="text-[10px] text-muted-foreground font-mono">#{tick}</span>
+            <span className="text-[10px] text-muted-foreground truncate">
               {killEvent ? 'KILL TRIGGERED' :
                hasAction ? (analysisEvent?.data.analysis as string || 'Trade executed') :
-               isHold ? 'Hold — no action' :
+               isHold ? 'Hold -- no action' :
                analysisEvent?.data.analysis as string || 'Processing...'}
             </span>
           </div>
-          <span className="text-[9px] text-[var(--cl-text-secondary)] flex-shrink-0">{time}</span>
+          <span className="text-[9px] text-muted-foreground flex-shrink-0">{time}</span>
         </div>
       </button>
     );
@@ -758,15 +778,15 @@ function TickPipeline({
 
   // Expanded pipeline view
   return (
-    <div className="rounded-lg border border-[var(--cl-border)] bg-[var(--cl-fill-control)] overflow-hidden">
+    <div className="rounded-lg border border-border bg-muted overflow-hidden">
       {/* Tick header */}
-      <button onClick={onToggle} className="w-full flex items-center justify-between px-3 py-2 hover:bg-[var(--cl-fill-hover)] transition-colors">
+      <button onClick={onToggle} className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/80 transition-colors">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-[var(--cl-text-primary)] font-mono">TICK #{tick}</span>
-          {hasAction && <span className="text-[8px] px-1.5 py-0.5 rounded bg-[var(--cl-fill-success)] text-[var(--cl-success)] font-bold">TRADED</span>}
-          {isHold && <span className="text-[8px] px-1.5 py-0.5 rounded bg-[var(--cl-fill-control)] text-[var(--cl-text-secondary)] border border-[var(--cl-border-subtle)]">HOLD</span>}
+          <span className="text-xs font-semibold text-foreground font-mono">TICK #{tick}</span>
+          {hasAction && <Badge variant="outline" className="text-[8px] px-1.5 py-0.5 bg-[#2D8547]/8 text-[#2D8547] border-[#2D8547]/20 font-bold">TRADED</Badge>}
+          {isHold && <Badge variant="outline" className="text-[8px] px-1.5 py-0.5 bg-muted text-muted-foreground border-border/50">HOLD</Badge>}
         </div>
-        <span className="text-[9px] text-[var(--cl-text-secondary)]">{time}</span>
+        <span className="text-[9px] text-muted-foreground">{time}</span>
       </button>
 
       {/* Pipeline phases */}
@@ -776,16 +796,17 @@ function TickPipeline({
           <PipelineNode
             icon="radar"
             label="SCAN"
-            color="text-[var(--cl-info)]"
+            color="text-[#1C6BBB]"
             summary={`${scanEvent.data.scannedCount ?? '?'} tokens scanned`}
             isExpanded={expandedPhase === 'scan'}
             onToggle={() => onPhaseToggle('scan')}
           >
             <div className="flex flex-wrap gap-1">
               {(scanEvent.data.tickers as Array<{ symbol: string; change: number; price: number }>)?.map(t => (
-                <span key={t.symbol} className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
-                  t.change >= 0 ? 'text-[var(--cl-success)] bg-[var(--cl-fill-success-subtle)]' : 'text-[var(--cl-error)] bg-[var(--cl-fill-error-subtle)]'
-                }`}>
+                <span key={t.symbol} className={cn(
+                  'text-[9px] font-mono px-1.5 py-0.5 rounded',
+                  t.change >= 0 ? 'text-[#2D8547] bg-[#2D8547]/4' : 'text-destructive bg-destructive/4'
+                )}>
                   {t.symbol} {t.change >= 0 ? '+' : ''}{t.change.toFixed(1)}%
                 </span>
               ))}
@@ -798,23 +819,23 @@ function TickPipeline({
           <PipelineNode
             icon="trophy"
             label="RANKING"
-            color="text-[var(--cl-warning)]"
-            summary={`Top: ${(rankEvent.data.topPicks as string[])?.join(', ') ?? '—'}`}
+            color="text-[#B8860B]"
+            summary={`Top: ${(rankEvent.data.topPicks as string[])?.join(', ') ?? '--'}`}
             isExpanded={expandedPhase === 'rank'}
             onToggle={() => onPhaseToggle('rank')}
           >
             <div className="space-y-1">
               {(rankEvent.data.rankings as Array<{ symbol: string; score: number; changePercent: number }>)?.slice(0, 8).map((r, i) => (
                 <div key={r.symbol} className="flex items-center justify-between text-[9px]">
-                  <span className="font-mono text-[var(--cl-text-faint)]">
-                    <span className="text-[var(--cl-text-secondary)] mr-1">#{i + 1}</span>
+                  <span className="font-mono text-muted-foreground">
+                    <span className="text-muted-foreground mr-1">#{i + 1}</span>
                     {shortSym(r.symbol)}
                   </span>
                   <div className="flex gap-2">
-                    <span className={r.changePercent >= 0 ? 'text-[var(--cl-success)]' : 'text-[var(--cl-error)]'}>
+                    <span className={r.changePercent >= 0 ? 'text-[#2D8547]' : 'text-destructive'}>
                       {r.changePercent >= 0 ? '+' : ''}{r.changePercent.toFixed(2)}%
                     </span>
-                    <span className="text-[var(--cl-text-secondary)]">Score: {r.score}</span>
+                    <span className="text-muted-foreground">Score: {r.score}</span>
                   </div>
                 </div>
               ))}
@@ -827,7 +848,7 @@ function TickPipeline({
           <PipelineNode
             icon="wallet"
             label="PORTFOLIO"
-            color="text-[var(--cl-accent)]"
+            color="text-primary"
             summary={(() => {
               const pe = portfolioEvents[0];
               return `$${formatUsd(pe.data.totalEquity as number)} | ${(pe.data.cashPercent as number)?.toFixed(0)}% cash | ${(pe.data.dailyPnlPercent as number) >= 0 ? '+' : ''}${(pe.data.dailyPnlPercent as number)?.toFixed(2)}% today`;
@@ -845,12 +866,12 @@ function TickPipeline({
           <PipelineNode
             icon="brain"
             label="THINKING"
-            color="text-[var(--cl-info)]"
+            color="text-[#1C6BBB]"
             summary="Extended reasoning..."
             isExpanded={expandedPhase === 'thinking'}
             onToggle={() => onPhaseToggle('thinking')}
           >
-            <pre className="text-[10px] text-[var(--cl-text-faint)] whitespace-pre-wrap font-mono max-h-60 overflow-y-auto">
+            <pre className="text-[10px] text-muted-foreground whitespace-pre-wrap font-mono max-h-60 overflow-y-auto">
               {String(thinkingEvent.data.thinking)}
             </pre>
           </PipelineNode>
@@ -861,7 +882,7 @@ function TickPipeline({
           <PipelineNode
             icon="chart"
             label="ANALYSIS"
-            color="text-[var(--cl-accent)]"
+            color="text-primary"
             summary={String(analysisEvent.data.analysis || '').slice(0, 80)}
             isExpanded={expandedPhase === 'analysis'}
             onToggle={() => onPhaseToggle('analysis')}
@@ -869,26 +890,26 @@ function TickPipeline({
             <div className="space-y-2">
               {!!analysisEvent.data.portfolioAssessment && (
                 <div>
-                  <span className="text-[9px] text-[var(--cl-text-secondary)] uppercase block mb-0.5">Portfolio Assessment</span>
-                  <p className="text-[10px] text-[var(--cl-text-faint)]">{String(analysisEvent.data.portfolioAssessment)}</p>
+                  <span className="text-[9px] text-muted-foreground uppercase block mb-0.5">Portfolio Assessment</span>
+                  <p className="text-[10px] text-muted-foreground">{String(analysisEvent.data.portfolioAssessment)}</p>
                 </div>
               )}
               {!!analysisEvent.data.reasoning && (
                 <div>
-                  <span className="text-[9px] text-[var(--cl-text-secondary)] uppercase block mb-0.5">Reasoning</span>
-                  <p className="text-[10px] text-[var(--cl-text-faint)]">{String(analysisEvent.data.reasoning)}</p>
+                  <span className="text-[9px] text-muted-foreground uppercase block mb-0.5">Reasoning</span>
+                  <p className="text-[10px] text-muted-foreground">{String(analysisEvent.data.reasoning)}</p>
                 </div>
               )}
               {analysisEvent.data.confidence !== undefined && (
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] text-[var(--cl-text-secondary)]">Confidence:</span>
-                  <div className="flex-1 h-1.5 rounded-full bg-[var(--cl-border)]">
+                  <span className="text-[9px] text-muted-foreground">Confidence:</span>
+                  <div className="flex-1 h-1.5 rounded-full bg-border">
                     <div
-                      className="h-full rounded-full bg-[var(--cl-accent)] transition-all"
+                      className="h-full rounded-full bg-primary transition-all"
                       style={{ width: `${analysisEvent.data.confidence}%` }}
                     />
                   </div>
-                  <span className="text-[9px] font-mono text-[var(--cl-accent)]">{String(analysisEvent.data.confidence)}%</span>
+                  <span className="text-[9px] font-mono text-primary">{String(analysisEvent.data.confidence)}%</span>
                 </div>
               )}
             </div>
@@ -900,19 +921,19 @@ function TickPipeline({
           <PipelineNode
             icon="scale"
             label="SIZING"
-            color="text-[var(--cl-warning)]"
+            color="text-[#B8860B]"
             summary={sizingEvents.map(s => `${shortSym(String(s.data.symbol))} ${s.data.allocationPercent}%`).join(', ')}
             isExpanded={expandedPhase === 'sizing'}
             onToggle={() => onPhaseToggle('sizing')}
           >
             {sizingEvents.map((s, i) => (
               <div key={i} className="flex items-center justify-between text-[9px] font-mono">
-                <span className="text-[var(--cl-text-faint)]">{shortSym(String(s.data.symbol))}</span>
+                <span className="text-muted-foreground">{shortSym(String(s.data.symbol))}</span>
                 <div className="flex gap-3">
-                  <span className="text-[var(--cl-accent)]">{String(s.data.allocationPercent)}% alloc</span>
-                  {!!s.data.estimatedUsd && <span className="text-[var(--cl-text-secondary)]">~${formatUsd(s.data.estimatedUsd as number)}</span>}
-                  {!!s.data.leverage && <span className="text-[var(--cl-warning)]">{String(s.data.leverage)}x</span>}
-                  {!!s.data.adviseOnly && <span className="text-[var(--cl-text-secondary)] italic">advise only</span>}
+                  <span className="text-primary">{String(s.data.allocationPercent)}% alloc</span>
+                  {!!s.data.estimatedUsd && <span className="text-muted-foreground">~${formatUsd(s.data.estimatedUsd as number)}</span>}
+                  {!!s.data.leverage && <span className="text-[#B8860B]">{String(s.data.leverage)}x</span>}
+                  {!!s.data.adviseOnly && <span className="text-muted-foreground italic">advise only</span>}
                 </div>
               </div>
             ))}
@@ -926,10 +947,10 @@ function TickPipeline({
             icon={event.type === 'trade_executed' ? 'zap' : event.data.action === 'hold' ? 'pause' : 'skip'}
             label={event.type === 'trade_executed' ? 'EXECUTED' : event.data.action === 'hold' ? 'HOLD' : 'SKIPPED'}
             color={
-              event.type === 'trade_executed' ? 'text-[var(--cl-success)]' :
-              event.type === 'trade_skipped' ? 'text-[var(--cl-warning)]' :
-              event.data.action === 'hold' ? 'text-[var(--cl-text-secondary)]' :
-              'text-[var(--cl-accent)]'
+              event.type === 'trade_executed' ? 'text-[#2D8547]' :
+              event.type === 'trade_skipped' ? 'text-[#B8860B]' :
+              event.data.action === 'hold' ? 'text-muted-foreground' :
+              'text-primary'
             }
             summary={(() => {
               const d = event.data;
@@ -955,7 +976,7 @@ function TickPipeline({
           <PipelineNode
             icon="refresh"
             label="UPDATED"
-            color="text-[var(--cl-success)]"
+            color="text-[#2D8547]"
             summary={(() => {
               const pe = portfolioEvents[portfolioEvents.length - 1];
               const cPnl = pe.data.cumulativeRealizedPnl as number | undefined;
@@ -978,12 +999,12 @@ function TickPipeline({
 
         {/* ERRORS */}
         {errorEvents.map((e, i) => (
-          <PipelineNode key={`err-${i}`} icon="alert" label="ERROR" color="text-[var(--cl-error)]" summary={String(e.data.error).slice(0, 80)} isExpanded={false} onToggle={() => {}} />
+          <PipelineNode key={`err-${i}`} icon="alert" label="ERROR" color="text-destructive" summary={String(e.data.error).slice(0, 80)} isExpanded={false} onToggle={() => {}} />
         ))}
 
         {/* KILL */}
         {killEvent && (
-          <PipelineNode icon="skull" label="KILL TRIGGERED" color="text-[var(--cl-error)]" summary={`Daily loss: ${killEvent.data.dailyLossPercent}%`} isExpanded={false} onToggle={() => {}} />
+          <PipelineNode icon="skull" label="KILL TRIGGERED" color="text-destructive" summary={`Daily loss: ${killEvent.data.dailyLossPercent}%`} isExpanded={false} onToggle={() => {}} />
         )}
       </div>
     </div>
@@ -991,7 +1012,7 @@ function TickPipeline({
 }
 
 // ===========================================================================
-// Pipeline Node — Single phase within a tick
+// Pipeline Node -- Single phase within a tick
 // ===========================================================================
 
 function PipelineNode({
@@ -1006,30 +1027,31 @@ function PipelineNode({
   children?: React.ReactNode;
 }) {
   const iconMap: Record<string, string> = {
-    radar: '📡', trophy: '🏆', wallet: '💰', brain: '💭', chart: '🧠',
-    scale: '📊', zap: '⚡', pause: '⏸', skip: '⏭', refresh: '🔄',
-    alert: '❌', skull: '🛑',
+    radar: '\u{1F4E1}', trophy: '\u{1F3C6}', wallet: '\u{1F4B0}', brain: '\u{1F4AD}', chart: '\u{1F9E0}',
+    scale: '\u{1F4CA}', zap: '\u{26A1}', pause: '\u{23F8}', skip: '\u{23ED}', refresh: '\u{1F504}',
+    alert: '\u{274C}', skull: '\u{1F6D1}',
   };
 
   return (
     <div className="relative pl-4">
       {/* Connector line */}
-      <div className="absolute left-[7px] top-0 bottom-0 w-px bg-[var(--cl-border-subtle)]" />
+      <div className="absolute left-[7px] top-0 bottom-0 w-px bg-border/50" />
       {/* Dot */}
-      <div className={`absolute left-[3px] top-[7px] w-[9px] h-[9px] rounded-full border-2 border-[var(--cl-bg-surface)] ${
-        isExpanded ? 'bg-[var(--cl-accent)]' : 'bg-[var(--cl-border)]'
-      }`} />
+      <div className={cn(
+        'absolute left-[3px] top-[7px] w-[9px] h-[9px] rounded-full border-2 border-card',
+        isExpanded ? 'bg-primary' : 'bg-border'
+      )} />
 
-      <button onClick={onToggle} className="w-full text-left py-1 hover:bg-[var(--cl-fill-hover)] rounded-r transition-colors">
+      <button onClick={onToggle} className="w-full text-left py-1 hover:bg-muted/80 rounded-r transition-colors">
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px]">{iconMap[icon] || '•'}</span>
-          <span className={`text-[9px] font-bold uppercase tracking-wider ${color}`}>{label}</span>
-          <span className="text-[10px] text-[var(--cl-text-faint)] truncate flex-1">{summary}</span>
+          <span className="text-[10px]">{iconMap[icon] || '\u{2022}'}</span>
+          <span className={cn('text-[9px] font-bold uppercase tracking-wider', color)}>{label}</span>
+          <span className="text-[10px] text-muted-foreground truncate flex-1">{summary}</span>
         </div>
       </button>
 
       {isExpanded && children && (
-        <div className="ml-4 mt-1 mb-2 p-2 rounded border border-[var(--cl-border-subtle)] bg-[var(--cl-bg-surface)]">
+        <div className="ml-4 mt-1 mb-2 p-2 rounded border border-border/50 bg-card">
           {children}
         </div>
       )}
@@ -1038,7 +1060,7 @@ function PipelineNode({
 }
 
 // ===========================================================================
-// Allocation Bar — Horizontal stacked bar
+// Allocation Bar -- Horizontal stacked bar
 // ===========================================================================
 
 function AllocationBar({
@@ -1054,13 +1076,14 @@ function AllocationBar({
 
   return (
     <div>
-      <div className="flex h-4 rounded-full overflow-hidden border border-[var(--cl-border-subtle)]">
+      <div className="flex h-4 rounded-full overflow-hidden border border-border/50">
         {posItems.map(p => (
           <div
             key={p.symbol}
-            className={`flex items-center justify-center text-[7px] font-bold text-white truncate ${
-              p.side === 'long' ? 'bg-[var(--cl-success)]' : 'bg-[var(--cl-error)]'
-            }`}
+            className={cn(
+              'flex items-center justify-center text-[7px] font-bold text-white truncate',
+              p.side === 'long' ? 'bg-[#2D8547]' : 'bg-destructive'
+            )}
             style={{ width: `${Math.max(p.allocationPercent, 3)}%` }}
             title={`${shortSym(p.symbol)} ${p.side} ${p.allocationPercent.toFixed(1)}%`}
           >
@@ -1069,7 +1092,7 @@ function AllocationBar({
         ))}
         {cash > 0 && (
           <div
-            className="flex items-center justify-center text-[7px] font-bold text-[var(--cl-text-secondary)] bg-[var(--cl-fill-control)]"
+            className="flex items-center justify-center text-[7px] font-bold text-muted-foreground bg-muted"
             style={{ width: `${Math.max(cash, 3)}%` }}
             title={`USDT ${cash.toFixed(1)}%`}
           >
@@ -1079,18 +1102,21 @@ function AllocationBar({
       </div>
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
         {posItems.map(p => (
-          <span key={p.symbol} className={`text-[8px] font-mono ${p.side === 'long' ? 'text-[var(--cl-success)]' : 'text-[var(--cl-error)]'}`}>
+          <span key={p.symbol} className={cn(
+            'text-[8px] font-mono',
+            p.side === 'long' ? 'text-[#2D8547]' : 'text-destructive'
+          )}>
             {shortSym(p.symbol)} {p.allocationPercent.toFixed(1)}%
           </span>
         ))}
-        <span className="text-[8px] font-mono text-[var(--cl-text-secondary)]">USDT {cash.toFixed(1)}%</span>
+        <span className="text-[8px] font-mono text-muted-foreground">USDT {cash.toFixed(1)}%</span>
       </div>
     </div>
   );
 }
 
 // ===========================================================================
-// Single Mode — Flat event card (legacy)
+// Single Mode -- Flat event card (legacy)
 // ===========================================================================
 
 function SingleEventCard({ event }: { event: HeartbeatEvent }) {
@@ -1098,28 +1124,28 @@ function SingleEventCard({ event }: { event: HeartbeatEvent }) {
 
   const icon = (() => {
     switch (event.type) {
-      case 'tick_start': return '⏱';
-      case 'analysis': return '🧠';
-      case 'thinking': return '💭';
-      case 'action': return '📋';
-      case 'trade_executed': return '⚡';
-      case 'trade_skipped': return '⏸';
-      case 'error': return '❌';
-      case 'kill_triggered': return '🛑';
-      case 'status': return '📡';
-      default: return '•';
+      case 'tick_start': return '\u{23F1}';
+      case 'analysis': return '\u{1F9E0}';
+      case 'thinking': return '\u{1F4AD}';
+      case 'action': return '\u{1F4CB}';
+      case 'trade_executed': return '\u{26A1}';
+      case 'trade_skipped': return '\u{23F8}';
+      case 'error': return '\u{274C}';
+      case 'kill_triggered': return '\u{1F6D1}';
+      case 'status': return '\u{1F4E1}';
+      default: return '\u{2022}';
     }
   })();
 
-  const color = (() => {
+  const colorClass = (() => {
     switch (event.type) {
-      case 'trade_executed': return 'border-[var(--cl-success-border)] bg-[var(--cl-fill-success-subtle)]';
-      case 'error': return 'border-[var(--cl-error-border)] bg-[var(--cl-fill-error-subtle)]';
-      case 'kill_triggered': return 'border-[var(--cl-error-border)] bg-[var(--cl-fill-error)]';
-      case 'trade_skipped': return 'border-[var(--cl-warning-border)] bg-[var(--cl-fill-warning-subtle)]';
-      case 'analysis': return 'border-[var(--cl-accent-border)] bg-[var(--cl-fill-accent-subtle)]';
-      case 'thinking': return 'border-[var(--cl-info-border)] bg-[var(--cl-fill-info-subtle)]';
-      default: return 'border-[var(--cl-border-subtle)] bg-transparent';
+      case 'trade_executed': return 'border-[#2D8547]/20 bg-[#2D8547]/4';
+      case 'error': return 'border-destructive/20 bg-destructive/4';
+      case 'kill_triggered': return 'border-destructive/20 bg-destructive/8';
+      case 'trade_skipped': return 'border-[#B8860B]/20 bg-[#B8860B]/4';
+      case 'analysis': return 'border-primary/20 bg-primary/3';
+      case 'thinking': return 'border-[#1C6BBB]/20 bg-[#1C6BBB]/4';
+      default: return 'border-border/50 bg-transparent';
     }
   })();
 
@@ -1140,22 +1166,22 @@ function SingleEventCard({ event }: { event: HeartbeatEvent }) {
   })();
 
   return (
-    <button onClick={() => setExpanded(!expanded)} className={`w-full text-left rounded p-2 border transition-colors ${color} hover:brightness-110`}>
+    <button onClick={() => setExpanded(!expanded)} className={cn('w-full text-left rounded p-2 border transition-colors hover:brightness-110', colorClass)}>
       <div className="flex items-start gap-2">
         <span className="text-[10px] leading-none mt-0.5">{icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-[var(--cl-text-faint)] truncate">{summary}</span>
-            <span className="text-[9px] text-[var(--cl-text-secondary)] flex-shrink-0">
+            <span className="text-[10px] text-muted-foreground truncate">{summary}</span>
+            <span className="text-[9px] text-muted-foreground flex-shrink-0">
               {new Date(event.timestamp).toLocaleTimeString()}
             </span>
           </div>
           {expanded && (
-            <div className="mt-2 pt-2 border-t border-[var(--cl-border-subtle)]">
+            <div className="mt-2 pt-2 border-t border-border/50">
               {event.type === 'thinking' && !!event.data.thinking ? (
-                <pre className="text-[10px] text-[var(--cl-text-faint)] whitespace-pre-wrap font-mono max-h-60 overflow-y-auto">{String(event.data.thinking)}</pre>
+                <pre className="text-[10px] text-muted-foreground whitespace-pre-wrap font-mono max-h-60 overflow-y-auto">{String(event.data.thinking)}</pre>
               ) : (
-                <pre className="text-[9px] text-[var(--cl-text-secondary)] whitespace-pre-wrap font-mono max-h-40 overflow-y-auto">{JSON.stringify(event.data, null, 2)}</pre>
+                <pre className="text-[9px] text-muted-foreground whitespace-pre-wrap font-mono max-h-40 overflow-y-auto">{JSON.stringify(event.data, null, 2)}</pre>
               )}
             </div>
           )}

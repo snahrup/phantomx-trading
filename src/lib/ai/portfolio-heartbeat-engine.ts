@@ -4,8 +4,8 @@
 // Scans watchlist, ranks opportunities, manages full portfolio allocation
 // ============================================================================
 
-import { query } from '@anthropic-ai/claude-agent-sdk';
-import { ensureOAuthEnv, getClaudeCodePath } from './credentials';
+import { queuedQueryStream } from './query-queue';
+import { getClaudeCodePath } from './credentials';
 import { getPhemexClient, isPhemexConfigured } from '@/lib/phemex/client';
 import { triggerKillSwitch } from '@/lib/kill-switch';
 import { renderChartFromOHLCV, type OHLCVRow } from '@/lib/chart/server-renderer';
@@ -180,7 +180,6 @@ export class PortfolioHeartbeatEngine {
       throw new Error('PhemexClient not initialized. Connect to Phemex first.');
     }
 
-    ensureOAuthEnv();
     this.isRunning = true;
     this.isKilled = false;
     this.tickCount = 0;
@@ -757,9 +756,11 @@ export class PortfolioHeartbeatEngine {
 
     const queryOptions: Record<string, unknown> = {
       pathToClaudeCodeExecutable: claudeCodePath,
-      model: 'claude-sonnet-4-5-20250929',
+      model: 'claude-opus-4-6',
+      fallbackModel: 'claude-sonnet-4-5-20250929',
       maxTurns: 1,
-      maxThinkingTokens: 16000,
+      thinking: { type: 'adaptive' },
+      effort: 'max',
       systemPrompt: {
         type: 'preset',
         preset: 'claude_code',
@@ -832,7 +833,7 @@ export class PortfolioHeartbeatEngine {
     let thinkingText = '';
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for await (const message of query(queryInput as any)) {
+    for await (const message of queuedQueryStream(queryInput, { priority: 'critical', label: 'portfolio-tick' })) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const msg = message as any;
 

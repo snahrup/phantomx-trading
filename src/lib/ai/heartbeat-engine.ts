@@ -4,13 +4,19 @@
 // and autonomously executes trades without waiting for user prompts
 // ============================================================================
 
-import { query } from '@anthropic-ai/claude-agent-sdk';
-import { ensureOAuthEnv, getClaudeCodePath } from './credentials';
+import { queuedQueryStream } from './query-queue';
+import { getClaudeCodePath } from './credentials';
 import { getPhemexClient, isPhemexConfigured } from '@/lib/phemex/client';
 import { triggerKillSwitch } from '@/lib/kill-switch';
 import { renderChartFromOHLCV } from '@/lib/chart/server-renderer';
 import { getKnowledgeBase } from '@/lib/agents/knowledge-base';
 import { logIntervention, getInterventionSummary } from './intervention-logger';
+import {
+  computeSMA, computeEMA, computeRSI, computeMACD, computeATR,
+  computeSuperTrend, computeADX, computeVolumeProfile,
+  generateEMACrossSignals,
+} from '@/lib/chart/indicators';
+import type { OHLCV } from '@/types/trading';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -67,12 +73,18 @@ For each heartbeat, you receive:
 - Recent trade history
 - Kill switch status
 
-## Chart Vision
-You receive a real candlestick chart image with SMA overlays. ALWAYS reference what you see:
+## Chart Vision & Indicators
+You receive a real candlestick chart image with overlays PLUS a comprehensive indicator suite. ALWAYS reference what you see:
 - Identify chart patterns (flags, wedges, double tops/bottoms, H&S)
-- Spot support/resistance from visual price action
-- Read SMA crossovers and trend direction
+- Spot support/resistance from visual price action and Volume Profile (POC/VAH/VAL)
+- Read SMA/EMA crossovers and trend direction
 - Note candlestick patterns (engulfing, doji, hammer, etc.)
+- Use MACD histogram for momentum confirmation (rising = strengthening, falling = weakening)
+- Use SuperTrend direction for trend bias (bullish = green below price, bearish = red above)
+- Use ADX for trend strength (>40 strong, 25-40 moderate, <25 choppy/ranging)
+- Use RSI zones + divergence for reversal signals
+- Use ATR for volatility context and stop-loss sizing
+- Cross-reference multiple indicators for confluence before acting
 
 ## Response Format — CRITICAL
 You MUST respond with a JSON block wrapped in \`\`\`json ... \`\`\` containing an array of actions:
@@ -103,8 +115,8 @@ You MUST respond with a JSON block wrapped in \`\`\`json ... \`\`\` containing a
 3. **Confidence threshold** — only execute if confidence >= 70 for aggressive, >= 80 for moderate, >= 90 for conservative.
 4. **One trade at a time** — if there's an open position, manage it (close/adjust) before opening a new one.
 5. **Respect the kill switch** — if daily loss is approaching the limit, be more conservative or hold.
-6. **SMA Crossover Pattern** — The user's core strategy. Watch for 7/20 SMA crossovers as primary signals.
-7. **Volume confirmation** — Don't enter on price moves without volume backing.
+6. **Multi-Indicator Confluence** — The user's core strategy uses SMA 7/20 crossovers as primary signals, confirmed by MACD histogram, SuperTrend direction, and ADX strength. Require at least 2-3 indicators agreeing before acting.
+7. **Volume confirmation** — Don't enter on price moves without volume backing. Use Volume Profile (POC/VAH/VAL) as key support/resistance levels.
 8. **Position sizing** — Never exceed maxPositionPercent of account. Scale down when uncertain.
 9. **Be honest about uncertainty** — If the setup is unclear, output "hold" and explain why.
 
@@ -148,7 +160,6 @@ export class HeartbeatEngine {
       throw new Error('PhemexClient not initialized. Connect to Phemex first.');
     }
 
-    ensureOAuthEnv();
     this.isRunning = true;
     this.isKilled = false;
     this.tickCount = 0;
@@ -352,22 +363,34 @@ export class HeartbeatEngine {
       client.getMyTrades(this.config.symbol, 10).catch(() => []),
     ]);
 
-    // Calculate SMAs from OHLCV
-    const closes = ohlcv.map(c => c.close);
-    const sma7 = closes.length >= 7
-      ? closes.slice(-7).reduce((s, p) => s + p, 0) / 7 : null;
-    const sma20 = closes.length >= 20
-      ? closes.slice(-20).reduce((s, p) => s + p, 0) / 20 : null;
-    const sma50 = closes.length >= 50
-      ? closes.slice(-50).reduce((s, p) => s + p, 0) / 50 : null;
+    // Use centralized indicator computations
+    const typedOhlcv = ohlcv as OHLCV[];
 
-    // Volume trend
-    const recentVol = ohlcv.slice(-3).reduce((s, c) => s + c.volume, 0);
-    const priorVol = ohlcv.slice(-6, -3).reduce((s, c) => s + c.volume, 0);
+    // -- Trend --
+    const sma7Data = computeSMA(typedOhlcv, 7);
+    const sma20Data = computeSMA(typedOhlcv, 20);
+    const sma50Data = computeSMA(typedOhlcv, 50);
+    const ema21Data = computeEMA(typedOhlcv, 21);
+    const macdData = computeMACD(typedOhlcv);
+    const superTrend = computeSuperTrend(typedOhlcv);
+    const adxData = computeADX(typedOhlcv);
+
+    // -- Momentum --
+    const rsiData = computeRSI(typedOhlcv);
+    const atrData = computeATR(typedOhlcv);
+
+    // -- Volume --
+    const volumeProfile = computeVolumeProfile(typedOhlcv);
+    const recentVol = ohlcv.slice(-3).reduce((s: number, c: { volume: number }) => s + c.volume, 0);
+    const priorVol = ohlcv.slice(-6, -3).reduce((s: number, c: { volume: number }) => s + c.volume, 0);
     const volumeTrend = priorVol > 0 ? ((recentVol - priorVol) / priorVol) * 100 : 0;
 
-    // RSI (14-period)
-    const rsi = this.calculateRSI(closes, 14);
+    // -- Signals --
+    const emaCrossSignals = generateEMACrossSignals(typedOhlcv, 9, 21);
+
+    // Extract last values for prompt
+    const last = <T extends { value: number }>(arr: T[]): number | null =>
+      arr.length > 0 ? arr[arr.length - 1].value : null;
 
     return {
       ticker,
@@ -375,26 +398,29 @@ export class HeartbeatEngine {
       account,
       ohlcv,
       recentTrades,
-      indicators: { sma7, sma20, sma50, volumeTrend, rsi },
+      indicators: {
+        sma7: last(sma7Data),
+        sma20: last(sma20Data),
+        sma50: last(sma50Data),
+        ema21: last(ema21Data),
+        rsi: last(rsiData),
+        atr: last(atrData),
+        macdLine: last(macdData.macdLine),
+        macdSignal: last(macdData.signalLine),
+        macdHistogram: macdData.histogram.length > 0 ? macdData.histogram[macdData.histogram.length - 1].value : null,
+        superTrendDir: superTrend.direction.length > 0 ? superTrend.direction[superTrend.direction.length - 1] : null,
+        superTrendVal: last(superTrend.line),
+        adx: last(adxData.adx),
+        diPlus: last(adxData.diPlus),
+        diMinus: last(adxData.diMinus),
+        volumeTrend,
+        volumeProfile,
+        recentSignals: emaCrossSignals.slice(-3).map(s => ({
+          direction: s.direction,
+          price: s.price,
+        })),
+      },
     };
-  }
-
-  private calculateRSI(prices: number[], period: number): number | null {
-    if (prices.length < period + 1) return null;
-
-    const changes = prices.slice(-(period + 1)).map((p, i, arr) =>
-      i > 0 ? p - arr[i - 1] : 0
-    ).slice(1);
-
-    const gains = changes.filter(c => c > 0);
-    const losses = changes.filter(c => c < 0).map(c => Math.abs(c));
-
-    const avgGain = gains.length > 0 ? gains.reduce((s, g) => s + g, 0) / period : 0;
-    const avgLoss = losses.length > 0 ? losses.reduce((s, l) => s + l, 0) / period : 0;
-
-    if (avgLoss === 0) return 100;
-    const rs = avgGain / avgLoss;
-    return 100 - (100 / (1 + rs));
   }
 
   // --- Prompt Builder ---
@@ -433,10 +459,22 @@ Price: $${ticker.last} | Bid: $${ticker.bid} | Ask: $${ticker.ask}
 24h: High $${ticker.high} | Low $${ticker.low} | Change: ${ticker.changePercent24h.toFixed(2)}% | Vol: ${ticker.volume.toFixed(0)}
 
 == INDICATORS ==
-SMA7: ${indicators.sma7?.toFixed(4) ?? 'N/A'} | SMA20: ${indicators.sma20?.toFixed(4) ?? 'N/A'} | SMA50: ${indicators.sma50?.toFixed(4) ?? 'N/A'}
+--- Moving Averages ---
+SMA7: ${indicators.sma7?.toFixed(4) ?? 'N/A'} | SMA20: ${indicators.sma20?.toFixed(4) ?? 'N/A'} | SMA50: ${indicators.sma50?.toFixed(4) ?? 'N/A'} | EMA21: ${indicators.ema21?.toFixed(4) ?? 'N/A'}
 SMA Signal: ${indicators.sma7 && indicators.sma20 ? (indicators.sma7 > indicators.sma20 ? 'BULLISH (7 > 20)' : 'BEARISH (7 < 20)') : 'N/A'}
-RSI(14): ${indicators.rsi?.toFixed(1) ?? 'N/A'} ${indicators.rsi ? (indicators.rsi > 70 ? '⚠ OVERBOUGHT' : indicators.rsi < 30 ? '⚠ OVERSOLD' : '') : ''}
+${indicators.sma20 && indicators.sma50 ? `SMA Trend: ${indicators.sma20 > indicators.sma50 ? 'BULLISH (20 > 50)' : 'BEARISH (20 < 50)'}` : ''}
+--- Momentum ---
+RSI(14): ${indicators.rsi?.toFixed(1) ?? 'N/A'} ${indicators.rsi ? (indicators.rsi > 70 ? '⚠ OVERBOUGHT' : indicators.rsi < 30 ? '⚠ OVERSOLD' : indicators.rsi > 60 ? '(bullish zone)' : indicators.rsi < 40 ? '(bearish zone)' : '(neutral)') : ''}
+MACD: Line=${indicators.macdLine?.toFixed(4) ?? 'N/A'} | Signal=${indicators.macdSignal?.toFixed(4) ?? 'N/A'} | Hist=${indicators.macdHistogram?.toFixed(4) ?? 'N/A'} ${indicators.macdHistogram != null ? (indicators.macdHistogram > 0 ? '(bullish momentum)' : '(bearish momentum)') : ''}
+--- Trend Strength ---
+SuperTrend: ${indicators.superTrendDir?.toUpperCase() ?? 'N/A'} @ ${indicators.superTrendVal?.toFixed(4) ?? 'N/A'}
+ADX: ${indicators.adx?.toFixed(1) ?? 'N/A'} ${indicators.adx ? (indicators.adx > 40 ? '(STRONG TREND)' : indicators.adx > 25 ? '(trending)' : '(weak/ranging)') : ''} | DI+: ${indicators.diPlus?.toFixed(1) ?? 'N/A'} | DI-: ${indicators.diMinus?.toFixed(1) ?? 'N/A'} ${indicators.diPlus != null && indicators.diMinus != null ? (indicators.diPlus > indicators.diMinus ? '(bulls lead)' : '(bears lead)') : ''}
+--- Volatility ---
+ATR(14): ${indicators.atr?.toFixed(4) ?? 'N/A'}
 Volume Trend (3h vs prior 3h): ${indicators.volumeTrend > 0 ? '+' : ''}${indicators.volumeTrend.toFixed(1)}%
+${indicators.volumeProfile ? `Volume Profile: POC=$${indicators.volumeProfile.poc.toFixed(2)} | VAH=$${indicators.volumeProfile.vah.toFixed(2)} | VAL=$${indicators.volumeProfile.val.toFixed(2)}` : ''}
+--- Recent Signals ---
+${indicators.recentSignals && indicators.recentSignals.length > 0 ? indicators.recentSignals.map((s: { direction: string; price: number }) => `  EMA Cross: ${s.direction.toUpperCase()} @ $${s.price.toFixed(2)}`).join('\n') : '  No recent EMA cross signals'}
 
 == RECENT CANDLES (1h) ==
 ${recentCandles}
@@ -473,9 +511,11 @@ If your proposed action matches a documented behavioral pattern above, you MUST 
     const queryOptions: Record<string, unknown> = {
       pathToClaudeCodeExecutable: claudeCodePath,
       model: 'claude-opus-4-6',
+      fallbackModel: 'claude-sonnet-4-5-20250929',
       maxTurns: 1,
       includePartialMessages: false,
-      maxThinkingTokens: 16000,
+      thinking: { type: 'adaptive' },
+      effort: 'max',
       systemPrompt: {
         type: 'preset',
         preset: 'claude_code',
@@ -520,7 +560,7 @@ If your proposed action matches a documented behavioral pattern above, you MUST 
     let thinkingText = '';
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for await (const message of query(queryInput as any)) {
+    for await (const message of queuedQueryStream(queryInput, { priority: 'critical', label: 'heartbeat-tick' })) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const msg = message as any;
 

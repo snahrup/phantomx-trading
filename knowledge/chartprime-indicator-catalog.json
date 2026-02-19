@@ -1,0 +1,993 @@
+{
+  "provider": "ChartPrime",
+  "website": "https://chartprime.com",
+  "tradingviewProfile": "https://www.tradingview.com/u/ChartPrime/",
+  "documentationSite": "https://docs.chartprime.com",
+  "totalScripts": 126,
+  "lastUpdated": "2026-02-15",
+  "subscriptionTiers": {
+    "pro": {
+      "name": "ChartPrime Pro",
+      "priceMonthly": 67,
+      "priceYearly": 40,
+      "indicators": ["Market Oracle Pro", "Market Dynamics Pro", "Prime Oscillators Pro", "Plus Screener"]
+    },
+    "plus": {
+      "name": "ChartPrime Plus",
+      "priceMonthly": 117,
+      "priceYearly": 59,
+      "indicators": ["Market Oracle Plus", "Market Dynamics Pro", "Prime Oscillators Pro+", "Plus Screener", "Strategy Builder Pro"]
+    }
+  },
+  "premiumToolkits": [
+    {
+      "id": "market-oracle-pro",
+      "name": "Market Oracle Pro",
+      "tier": "pro",
+      "type": "overlay",
+      "category": "trend",
+      "tradingviewUrl": "https://www.tradingview.com/script/sIv1KNBS-Market-Oracle-Pro-ChartPrime/",
+      "description": "Comprehensive toolkit combining trend-following and contrarian logic for market entries/exits. Includes signal modes with auto-optimization, candle highlighting, dashboard, and multiple overlay tools.",
+      "subFeatures": [
+        {
+          "name": "Trend Signals",
+          "description": "Trend-following signals with self-optimization via backtesting",
+          "type": "overlay"
+        },
+        {
+          "name": "Reversal Signals",
+          "description": "Contrarian signals targeting market tops and bottoms",
+          "type": "overlay"
+        },
+        {
+          "name": "Auto Maximizer",
+          "description": "Automatically applies backtested optimal parameters",
+          "type": "settings"
+        },
+        {
+          "name": "Dynamic Reactor",
+          "description": "Adaptive band showing support/resistance with trend coloring (green/red)",
+          "type": "overlay"
+        },
+        {
+          "name": "Prime Ranges",
+          "description": "VWAP-inspired real-time support/resistance levels",
+          "type": "overlay"
+        },
+        {
+          "name": "Momentum Wave Bands",
+          "description": "High-deviation zones identifying potential price reversals with volatility insight",
+          "type": "overlay"
+        },
+        {
+          "name": "Candlestick Pattern Analysis",
+          "description": "Filtered classical formations with market validation",
+          "type": "overlay"
+        },
+        {
+          "name": "Prime Trend Assistant",
+          "description": "Adaptive trend-following support/resistance using filter kernels",
+          "type": "overlay"
+        },
+        {
+          "name": "Candle Highlighting",
+          "description": "Gradient or classical red/green candle coloring for trend identification",
+          "type": "overlay"
+        },
+        {
+          "name": "Dashboard",
+          "description": "Displays Prime Score (0-10 trend), Consolidation Score, and optimal tuning suggestions",
+          "type": "panel"
+        }
+      ],
+      "parameters": {
+        "signalMode": { "type": "dropdown", "options": ["Trend Following", "Reversal"], "description": "Primary signal methodology" },
+        "tuning": { "type": "integer", "description": "Lower = more frequent signals" },
+        "autoMaximizer": { "type": "boolean", "description": "Apply backtested parameters automatically" },
+        "dashboardSize": { "type": "dropdown", "description": "Dashboard display size" },
+        "dashboardPosition": { "type": "dropdown", "description": "Dashboard position on chart" }
+      }
+    },
+    {
+      "id": "market-oracle-plus",
+      "name": "Market Oracle Plus",
+      "tier": "plus",
+      "type": "overlay",
+      "category": "trend",
+      "tradingviewUrl": "https://www.tradingview.com/script/o5Q7FMYQ-Market-Oracle-Plus-ChartPrime/",
+      "description": "Enhanced version of Oracle Pro with custom signal builder, Quantum Bands, Quantum Reactor, Prophecy forecasts, Prime Cloud overlay, and additional TP levels.",
+      "subFeatures": [
+        {
+          "name": "Custom Signals Builder",
+          "description": "Combine toolkit components into personalized signals without algorithm constraints",
+          "type": "settings"
+        },
+        {
+          "name": "Quantum Bands",
+          "description": "Adaptive volatility-based bands identifying reversal zones with MTF functionality",
+          "type": "overlay"
+        },
+        {
+          "name": "Quantum Reactor",
+          "description": "Custom-weighted moving average that turns gray in ranging markets to filter chop",
+          "type": "overlay"
+        },
+        {
+          "name": "Market Prophecy",
+          "description": "Simple text-based forecasts giving outlooks on potential market activity",
+          "type": "panel"
+        },
+        {
+          "name": "Prime Cloud",
+          "description": "Cloud overlay for trend visualization",
+          "type": "overlay"
+        },
+        {
+          "name": "VWAP Channel",
+          "description": "VWAP-based channel overlay feature",
+          "type": "overlay"
+        },
+        {
+          "name": "Retest Signals & Reversals",
+          "description": "Advanced retest detection and reversal signal generation",
+          "type": "overlay"
+        }
+      ],
+      "parameters": {
+        "signalMode": { "type": "dropdown", "options": ["Trend Following", "Reversal"], "description": "Primary signal methodology" },
+        "tuning": { "type": "integer", "description": "Lower = more frequent signals" },
+        "autoMaximizer": { "type": "boolean", "description": "Apply backtested parameters automatically" }
+      }
+    },
+    {
+      "id": "market-dynamics-pro",
+      "name": "Market Dynamics Pro",
+      "tier": "pro",
+      "type": "overlay",
+      "category": "smart-money",
+      "tradingviewUrl": "https://www.tradingview.com/spaces/ChartPrime/",
+      "description": "Smart Money Concepts toolkit for market structure, order blocks, patterns, and multi-timeframe analysis. Focused on price action and volume-based institutional analysis.",
+      "subFeatures": [
+        {
+          "name": "Order Blocks",
+          "description": "Volume-based institutional positioning zones with Soft/High/Loud intensity levels. Shows Relative % Volume, Data + Volume, and Volume Delta metrics.",
+          "type": "overlay",
+          "parameters": {
+            "showLast": { "type": "integer", "default": 4, "description": "Number of order blocks to display" },
+            "dynamics": { "type": "dropdown", "options": ["Original", "Attuned"], "description": "Filtering mode" },
+            "sensitivityFilter": { "type": "string", "description": "Filter by strength and direction" },
+            "mtf": { "type": "boolean", "description": "Multi-timeframe mode (recommended 4x+ ratio)" }
+          }
+        },
+        {
+          "name": "Fair Value Gaps",
+          "description": "Identifies price imbalances where trading hasn't occurred, signaling potential corrections",
+          "type": "overlay"
+        },
+        {
+          "name": "Market Structure (BOS/CHoCH)",
+          "description": "Break of Structure and Change of Character detection for market framework analysis",
+          "type": "overlay"
+        },
+        {
+          "name": "Pattern Detection",
+          "description": "Real-time detection of triangles, channels, wedges, and other chart patterns",
+          "type": "overlay"
+        },
+        {
+          "name": "Smart Support & Resistance",
+          "description": "Auto-traced S/R zones across multiple timeframes",
+          "type": "overlay"
+        },
+        {
+          "name": "Trendlines",
+          "description": "Automatic trendline drawing and management",
+          "type": "overlay"
+        },
+        {
+          "name": "Profiles & Liquidity",
+          "description": "Volume profiles and liquidity zone identification with buyer/seller ratios",
+          "type": "overlay"
+        },
+        {
+          "name": "Dynamic Reactor (Heat Zones)",
+          "description": "High-activity trading zones with substantial volume acting as pivotal S/R",
+          "type": "overlay"
+        },
+        {
+          "name": "Money Flow POC",
+          "description": "Point of Control tracking smart money positioning",
+          "type": "overlay"
+        }
+      ]
+    },
+    {
+      "id": "prime-oscillators-pro",
+      "name": "Prime Oscillators Pro+",
+      "tier": "pro",
+      "type": "panel",
+      "category": "momentum",
+      "tradingviewUrl": "https://www.tradingview.com/script/Fskx57Jg-Prime-Oscillators-Pro-ChartPrime/",
+      "description": "Three-mode oscillator suite for divergences, overbought/oversold detection, momentum reversals, and confluence alerts. Combines volume, momentum, and trend analysis.",
+      "subFeatures": [
+        {
+          "name": "Prime Oscillator (Mode 1)",
+          "description": "Main oscillator with Money Flow Tracker, Volume Matrix, Top/Bottom Power Bars, Volume-Inspired Signals, The True 7 ranking system, and Peak Seekers divergence dots",
+          "type": "panel",
+          "components": [
+            "Money Flow Tracker - combines price and volume for capital movement measurement",
+            "Volume Matrix - lower oscillator showing buyer/seller dominance",
+            "Top & Bottom Power Bars - 7-condition convergence with brightness indicating strength",
+            "Volume-Inspired Signals - OB/OS via volume-adjusted price positioning",
+            "The True 7 - ranking system evaluating move strength and trend reversal potential",
+            "Peak Seekers - blue dots identifying divergence confluence"
+          ]
+        },
+        {
+          "name": "Trend Fusion Oscillator (Mode 2)",
+          "description": "Price-volume oscillator with adaptive trend calculation. Red = downtrend, Green = uptrend, with normalized OB/OS zones.",
+          "type": "panel"
+        },
+        {
+          "name": "MVP Oscillator (Mode 3)",
+          "description": "Ribbon oscillator ranging -100 to +100. Blue = upward, Purple = downward. Green bars signal imminent reversal. Arrow signals for overextension.",
+          "type": "panel"
+        }
+      ],
+      "parameters": {
+        "mode": { "type": "dropdown", "options": ["Prime Oscillator", "Trend Fusion", "MVP"], "description": "Oscillator mode selection" },
+        "divergences": { "type": "boolean", "description": "Show regular and hidden divergences" },
+        "mtfMoneyFlow": { "type": "boolean", "description": "Multi-timeframe money flow tracker" }
+      }
+    },
+    {
+      "id": "plus-screener",
+      "name": "Plus Screener",
+      "tier": "pro",
+      "type": "panel",
+      "category": "screener",
+      "tradingviewUrl": "https://www.tradingview.com/script/Q9WoqKJw-Plus-Screener-ChartPrime/",
+      "description": "Multi-asset, multi-system market condition analyzer. Combines trend engine, Dynamic Reactor, Quantum Reactor, candlestick classifier, and volatility computation for environment identification.",
+      "subFeatures": [
+        {
+          "name": "Low-Lag Trend Engine",
+          "description": "Evaluates direction via filtered slope, rate-of-change, smoothing derivative, and trend persistence score",
+          "type": "panel"
+        },
+        {
+          "name": "Dynamic Reactor Model",
+          "description": "Band-based MA with low-lag adaptivity for S/R identification",
+          "type": "panel"
+        },
+        {
+          "name": "Quantum Reactor System",
+          "description": "Custom weighted MA turning gray in ranging markets",
+          "type": "panel"
+        },
+        {
+          "name": "Candlestick Structure Classifier",
+          "description": "Statistical reversal pattern identification",
+          "type": "panel"
+        },
+        {
+          "name": "Volatility Computation",
+          "description": "Filtered Z-scores rating volatility %, >70% flagged as highly volatile",
+          "type": "panel"
+        }
+      ]
+    },
+    {
+      "id": "strategy-builder-pro",
+      "name": "Strategy Builder Pro",
+      "tier": "plus",
+      "type": "overlay",
+      "category": "strategy",
+      "tradingviewUrl": "https://www.tradingview.com/script/PYX2notY-Strategy-Builder-Pro-ChartPrime/",
+      "description": "Structured strategy building and backtesting tool. Combine conditions, layer entries, manage exits with flexible TP/SL, and reinvest profits. Supports both long and short positions.",
+      "subFeatures": [
+        {
+          "name": "Entry Conditions",
+          "description": "Customizable buy/sell with Signal Mode, Dynamic Reactor, Candlestick Structures, Prime Trend Assistant, Money Flow, Oscillator Reversals, Volume Matrix, The True 7",
+          "type": "settings"
+        },
+        {
+          "name": "Layered Entries",
+          "description": "DCA/averaging into positions with adjustable speed and dynamic profit target scaling",
+          "type": "settings"
+        },
+        {
+          "name": "Exit Management",
+          "description": "ATR-based, R:R ratio, trailing stops, percentage-based targets, external indicator integration",
+          "type": "settings"
+        },
+        {
+          "name": "Reinvestment",
+          "description": "Compound gains by reinvesting a percentage of profits into subsequent trades",
+          "type": "settings"
+        }
+      ]
+    }
+  ],
+  "freeIndicators": [
+    {
+      "id": "swing-flow",
+      "name": "Swing Flow Indicator",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/BtGC9TGm-Swing-Flow-Indicator-ChartPrime/",
+      "description": "Trend-following tool using pivot points to identify price direction and momentum. Plots midline with dynamic upper/lower bands and detects sideways markets.",
+      "parameters": {
+        "length": { "type": "integer", "description": "Bars for pivot point calculation" },
+        "bandsMultiplier": { "type": "float", "description": "Distance between midline and bands" },
+        "showPivots": { "type": "boolean", "description": "Show high/low pivot points" }
+      }
+    },
+    {
+      "id": "trend-duration-forecast",
+      "name": "Trend Duration Forecast",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/L3SJFfAQ-Trend-Duration-Forecast-ChartPrime/",
+      "description": "Estimates how long bullish/bearish trends will persist using Hull Moving Average. Tracks historical durations and projects continuation forecast with real-time updates.",
+      "parameters": {
+        "sensitivity": { "type": "integer", "description": "Trend detection sensitivity (lower = more responsive)" },
+        "sampleSize": { "type": "integer", "description": "Historical trend sample count" }
+      }
+    },
+    {
+      "id": "zone-shift",
+      "name": "Zone Shift",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/8lfE3qMN-Zone-Shift-ChartPrime/",
+      "description": "Dynamic trend detection using EMA/HMA-based bands. Identifies trend shifts, recolors candles (lime/blue), plots trend initiation levels, and marks retest diamonds with noise filtering.",
+      "parameters": {
+        "length": { "type": "integer", "description": "Band calculation period" }
+      }
+    },
+    {
+      "id": "trend-levels",
+      "name": "Trend Levels",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/bacXsRFN-Trend-Levels-ChartPrime/",
+      "description": "Identifies key trend levels (High/Mid/Low) during market trends. Measures trend strength via candle positioning relative to midline with percentage-based readings.",
+      "parameters": {
+        "length": { "type": "integer", "description": "Lookback period for highest/lowest calculations" }
+      }
+    },
+    {
+      "id": "trend-classifier",
+      "name": "Trend Classifier",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/AtJtdaDe-Trend-Classifier-ChartPrime/",
+      "description": "Multi-level trend classification with 3 bullish and 3 bearish strength levels. Color-coded candles (aqua/red/orange), diamond markers for changes, and real-time strength dashboard.",
+      "parameters": {
+        "smoothing": { "type": "integer", "description": "Adaptive smoothing period" }
+      }
+    },
+    {
+      "id": "market-shift-levels",
+      "name": "Market Shift Levels",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/urTBALXa-Market-Shift-Levels-ChartPrime/",
+      "description": "Identifies trend reversals using Hull Moving Average crossovers. Plots horizontal levels at swing points where momentum shifts occur, with volume labels on retests.",
+      "parameters": {
+        "length": { "type": "integer", "description": "HMA calculation period" }
+      }
+    },
+    {
+      "id": "market-structure-trend-targets",
+      "name": "Market Structure Trend Targets",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/F3b5dGLx-Market-Structure-Trend-Targets-ChartPrime/",
+      "description": "Tracks trend direction by marking significant price breaks. Sequential numbering shows continuation, dynamic stop loss levels, and mean reversion diamonds.",
+      "parameters": {
+        "length": { "type": "integer", "description": "Bars for pivot identification" },
+        "displayPercentage": { "type": "boolean", "description": "Show percentage vs. sequential numbers" }
+      }
+    },
+    {
+      "id": "specter-trend-cloud",
+      "name": "Specter Trend Cloud",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/x6Ll0NOu-Specter-Trend-Cloud-ChartPrime/",
+      "description": "Visualizes trend via colored cloud overlay (aqua=bullish, orange=bearish). Uses dual MA comparison with ATR adjustment. Diamond markers and dotted retest levels.",
+      "parameters": {
+        "maType": { "type": "dropdown", "options": ["SMA", "EMA", "SMMA", "WMA", "VWMA"], "description": "Moving average type" },
+        "length": { "type": "integer", "description": "Short MA period" },
+        "atrPeriod": { "type": "integer", "default": 200, "description": "Volatility adjustment period" }
+      }
+    },
+    {
+      "id": "pivot-trend",
+      "name": "Pivot Trend",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/AOTPWbpq-Pivot-Trend-ChartPrime/",
+      "description": "Trend reversal identification using pivot point analysis. Blue lines for uptrends, red for downtrends, with B/S buy/sell signals.",
+      "parameters": {
+        "leftBars": { "type": "integer", "description": "Left bars for pivot calculation" },
+        "rightBars": { "type": "integer", "description": "Right bars for pivot calculation" },
+        "offset": { "type": "integer", "description": "Sensitivity adjustment" }
+      }
+    },
+    {
+      "id": "future-trend-channel",
+      "name": "Future Trend Channel",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/facvguC8-Future-Trend-Channel-ChartPrime/",
+      "description": "Dynamic indicator identifying trends and projecting future price levels using SMA and ATR-based channel formations. Green=uptrend, orange=downtrend, with forward projection.",
+      "parameters": {
+        "trendLength": { "type": "integer", "description": "Bars analyzed for trend" },
+        "channelWidth": { "type": "float", "description": "ATR multiplier for channel boundaries" },
+        "futureBars": { "type": "integer", "default": 50, "description": "Forward projection period" }
+      }
+    },
+    {
+      "id": "high-low-cloud-trend",
+      "name": "High-Low Cloud Trend",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/1yp5FQR8-High-Low-Cloud-Trend-ChartPrime/",
+      "description": "Combines trend following and mean reversion in a dynamic cloud representation. Primary bands for main trend, secondary for mean reversion detection.",
+      "parameters": {
+        "lookbackPeriod": { "type": "integer", "description": "Primary high/low calculation period" },
+        "meanReversionToggle": { "type": "boolean", "description": "Enable mean reversion detection" },
+        "displayMode": { "type": "dropdown", "options": ["Volume", "Price"], "description": "Label display type" }
+      }
+    },
+    {
+      "id": "fibonacci-trend",
+      "name": "Fibonacci Trend",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/Lrpet5VK-Fibonacci-Trend-ChartPrime/",
+      "description": "Combines supertrend trend detection with dynamic Fibonacci retracement levels (0.236, 0.382, 0.618, 0.786). Highlights optimal entry zone at 0.618-0.786.",
+      "parameters": {
+        "atrLength": { "type": "integer", "description": "ATR period for supertrend" },
+        "atrMultiplier": { "type": "float", "description": "Supertrend multiplier" }
+      }
+    },
+    {
+      "id": "swing-structure-bands",
+      "name": "Swing Structure Bands",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/Lw0d0Ny4-Swing-Structure-Bands-ChartPrime/",
+      "description": "Structure-based adaptive price bands from swing highs/lows. Bands dynamically adjust length based on higher-high/lower-low duration. ATR envelopes with volatility filtering.",
+      "parameters": {
+        "lookback": { "type": "integer", "description": "Swing detection window" },
+        "maType": { "type": "dropdown", "options": ["SMA", "EMA", "SMMA", "WMA", "VWMA"], "description": "Moving average type" },
+        "atrMultiplier": { "type": "float", "description": "Envelope width" }
+      }
+    },
+    {
+      "id": "volumatic-trend",
+      "name": "Volumatic Trend",
+      "category": "volume",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/4lVTa6J4-Volumatic-Trend-ChartPrime/",
+      "description": "Trend-following with integrated volume visualization. Uses weighted EMA for trend detection with volume histogram zones, gradient candle coloring, and end-of-trend volume summary labels.",
+      "parameters": {
+        "length": { "type": "integer", "description": "EMA calculation period" }
+      }
+    },
+    {
+      "id": "support-resistance-power-channel",
+      "name": "Support and Resistance Power Channel",
+      "category": "support-resistance",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/6WDeQiyp-Support-and-Resistance-Power-Channel-ChartPrime/",
+      "description": "Dynamic S/R zones with buy/sell power calculation within zones. 2-bar delay confirmation prevents false breakouts. Marks highs/lows with X and midline retests.",
+      "parameters": {
+        "length": { "type": "integer", "description": "Bars for zone calculation" },
+        "extend": { "type": "integer", "description": "Forward projection distance" }
+      }
+    },
+    {
+      "id": "prime-bands",
+      "name": "Prime Bands",
+      "category": "volatility",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/99KbMjoz-Prime-Bands-ChartPrime/",
+      "description": "Custom standard deviation bands from highest/lowest values. 1/2/3 SD levels, dynamic trend-colored midline (green/orange), mean reversion diamond signals, and SD scale display.",
+      "parameters": {
+        "length": { "type": "integer", "description": "Band calculation period" },
+        "sdLevel": { "type": "dropdown", "options": ["1", "2", "3"], "description": "Standard deviation level" }
+      }
+    },
+    {
+      "id": "polynomial-regression-keltner",
+      "name": "Polynomial Regression Keltner Channel",
+      "category": "volatility",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/NZAHz4G1-Polynomial-Regression-Keltner-Channel-ChartPrime/",
+      "description": "Polynomial regression centerline with dynamic ATR-based Keltner bands at four levels. OB/OS detection and color-coded trend direction signals.",
+      "parameters": {
+        "length": { "type": "integer", "default": 100, "description": "Lookback period" },
+        "source": { "type": "dropdown", "default": "HLC3", "description": "Price source" },
+        "baseATRMultiplier": { "type": "float", "default": 0.1, "description": "Channel width" }
+      }
+    },
+    {
+      "id": "channels-with-patterns",
+      "name": "Channels With Patterns",
+      "category": "pattern",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/Sxg2rJ7L-Channels-With-Patterns-ChartPrime/",
+      "description": "Fast trend channel formation from single pivot point with candlestick pattern recognition at channel extremes. Presets for Stocks/Forex/Crypto/Custom.",
+      "parameters": {
+        "preset": { "type": "dropdown", "options": ["Stocks", "Forex", "Crypto", "User"], "description": "Market preset" },
+        "style": { "type": "dropdown", "options": ["Wick", "Body"], "description": "Pivot calculation method" },
+        "breakStyle": { "type": "dropdown", "options": ["Close", "High/Low"], "description": "Break detection type" },
+        "instantMode": { "type": "boolean", "description": "Faster channel formation" },
+        "atrLength": { "type": "integer", "description": "Volatility period" },
+        "size": { "type": "float", "description": "ATR multiplier for width" },
+        "pivotLength": { "type": "integer", "description": "Bars for pivot calculation" }
+      }
+    },
+    {
+      "id": "ranges-with-targets",
+      "name": "Ranges With Targets",
+      "category": "pattern",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/3swrxpw6-Ranges-With-Targets-ChartPrime/",
+      "description": "Identifies breakout opportunities with dynamic range boxes. Green=long breakout, red=short, gray=no trade. Customizable TP/SL with performance dashboard.",
+      "parameters": {
+        "targetMultiplier": { "type": "float", "description": "TP/SL distance multiplier" },
+        "autoStopLoss": { "type": "boolean", "description": "Automatic stop loss exits" }
+      }
+    },
+    {
+      "id": "rsi-shift-zone",
+      "name": "RSI Shift Zone",
+      "category": "momentum",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/5azMGL1V-RSI-Shift-Zone-ChartPrime/",
+      "description": "Visualizes RSI threshold crossings as dynamic channel zones on price chart. Creates zones at OB/OS events with midline equilibrium reference.",
+      "parameters": {
+        "rsiLength": { "type": "integer", "default": 14, "description": "RSI calculation period" },
+        "upperLevel": { "type": "integer", "default": 70, "description": "Overbought threshold" },
+        "lowerLevel": { "type": "integer", "default": 30, "description": "Oversold threshold" },
+        "minBarLength": { "type": "integer", "default": 15, "description": "Minimum zone duration in bars" }
+      }
+    },
+    {
+      "id": "supertrend-oscillator",
+      "name": "SuperTrend Oscillator",
+      "category": "momentum",
+      "type": "panel",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/JqEFTgOE-SuperTrend-Oscillator-ChartPrime/",
+      "description": "Hybrid momentum-trend oscillator transforming SuperTrend into normalized oscillator. (close-SuperTrend)/ATR with gradient coloring. Extreme zones at +/-1.7 with reversal diamonds.",
+      "parameters": {
+        "atrLength": { "type": "integer", "description": "ATR period" },
+        "atrMultiplier": { "type": "float", "description": "SuperTrend multiplier" },
+        "smoothing": { "type": "dropdown", "options": ["HMA", "EMA", "SMA"], "description": "Smoothing type" }
+      }
+    },
+    {
+      "id": "linear-regression-oscillator",
+      "name": "Linear Regression Oscillator",
+      "category": "momentum",
+      "type": "panel",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/MyKmv8br-Linear-Regression-Oscillator-ChartPrime/",
+      "description": "Identifies mean reversion and trend conditions via linear regression of closing prices. OB/OS thresholds with invalidation level tracking for stop placement.",
+      "parameters": {
+        "length": { "type": "integer", "default": 20, "description": "Look-back period" },
+        "upperThreshold": { "type": "float", "default": 1.5, "description": "Overbought level" },
+        "lowerThreshold": { "type": "float", "default": -1.5, "description": "Oversold level" },
+        "plotBarColor": { "type": "boolean", "default": false, "description": "Color price bars" }
+      }
+    },
+    {
+      "id": "ichimoku-oscillator-divergences",
+      "name": "Ichimoku Oscillator With Divergences",
+      "category": "momentum",
+      "type": "panel",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/y3NTW7he-Ichimoku-Oscillator-With-Divergences-ChartPrime/",
+      "description": "Streamlines Ichimoku cloud into bounded oscillator (-100 to +100). Synthesizes all 5 Ichimoku components with divergence detection and 26+ alert types.",
+      "parameters": {
+        "signalSource": { "type": "dropdown", "description": "Price data input" },
+        "normalization": { "type": "dropdown", "options": ["All", "Window", "Disabled"], "description": "Normalization mode" },
+        "smoothing": { "type": "integer", "description": "Signal sensitivity" },
+        "showKumo": { "type": "boolean", "description": "Show cloud component" },
+        "showChikou": { "type": "boolean", "description": "Show lagging span" }
+      }
+    },
+    {
+      "id": "ma-oscillator-map",
+      "name": "MA Oscillator Map",
+      "category": "momentum",
+      "type": "panel",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/kNmBkAml-MA-Oscillator-Map-ChartPrime/",
+      "description": "Transforms MA deviations into normalized oscillator (-100 to +100). Gradient candle coloring, extreme signal diamonds, and momentum gauge table.",
+      "parameters": {
+        "maLength": { "type": "integer", "description": "Moving average period" },
+        "maType": { "type": "dropdown", "options": ["SMA", "EMA", "SMMA", "WMA", "VWMA"], "description": "MA type" },
+        "source": { "type": "dropdown", "description": "Price source" }
+      }
+    },
+    {
+      "id": "macd-support-resistance",
+      "name": "MACD Support and Resistance",
+      "category": "momentum",
+      "type": "panel",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/aBQp4zd0-MACD-Support-and-Resistance-ChartPrime/",
+      "description": "MACD crossover signals combined with dynamic S/R level generation. Support from bullish crossovers (lowest of 5 bars), resistance from bearish. Max 20 active levels, auto-cleanup.",
+      "parameters": {
+        "fast": { "type": "integer", "description": "Fast MA period" },
+        "slow": { "type": "integer", "description": "Slow MA period" },
+        "signal": { "type": "integer", "description": "Signal line period" }
+      }
+    },
+    {
+      "id": "volume-profile-pivot-levels",
+      "name": "Volume Profile + Pivot Levels",
+      "category": "volume",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/KjzRRZIc-Volume-Profile-Pivot-Levels-ChartPrime/",
+      "description": "Rolling volume profile merged with pivot detection. Filters pivots by volume concentration, showing only levels with meaningful participation. Self-retiring levels on retest.",
+      "parameters": {
+        "period": { "type": "integer", "default": 200, "description": "Lookback bars for profile" },
+        "resolution": { "type": "integer", "default": 50, "description": "Bin count for price range" },
+        "showPoC": { "type": "boolean", "description": "Show Point of Control" },
+        "pivotLength": { "type": "integer", "default": 10, "description": "Pivot detection bars" },
+        "filterPercent": { "type": "float", "description": "Minimum volume % of PoC to show" }
+      }
+    },
+    {
+      "id": "volume-channel-flow",
+      "name": "Volume Channel Flow",
+      "category": "volume",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/U8Xy7qJ2-Volume-Channel-Flow-ChartPrime/",
+      "description": "Dynamic trend channels with embedded volume profiles. ATR-based channel shifts on breakout, mini histograms within segments, PoC dashed lines, and delta-based flow bias coloring.",
+      "parameters": {
+        "atrLength": { "type": "integer", "description": "Channel volatility period" },
+        "binCount": { "type": "integer", "description": "Volume profile resolution" }
+      }
+    },
+    {
+      "id": "liquidity-pro-map",
+      "name": "Liquidity Pro Map",
+      "category": "volume",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/o5rNAgUw-Liquidity-Pro-Map-ChartPrime/",
+      "description": "Simulates liquidity distribution by splitting price history into buy/sell profiles. Extended levels backward until price crosses. Cumulative skew polylines and PoC highlighting.",
+      "parameters": {
+        "lookback": { "type": "integer", "description": "Profile lookback period" },
+        "deviation": { "type": "float", "description": "Standard deviation multiplier" }
+      }
+    },
+    {
+      "id": "htf-candle-profile",
+      "name": "HTF Candle Profile",
+      "category": "volume",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/5d1au2Dh-HTF-Candle-Profile-ChartPrime/",
+      "description": "Higher-timeframe candle structure with volume profile on lower-timeframe charts. Auto-detects Daily/Weekly/Monthly periods. Dynamic bin sizing via ATR with PoC identification.",
+      "parameters": {
+        "timeframe": { "type": "dropdown", "options": ["Daily", "Weekly", "Monthly"], "description": "HTF period" },
+        "showOpen": { "type": "boolean", "description": "Show open level" },
+        "showClose": { "type": "boolean", "description": "Show close level" },
+        "showPoC": { "type": "boolean", "description": "Show Point of Control" }
+      }
+    },
+    {
+      "id": "fibo-levels-volume-profile",
+      "name": "Fibo Levels with Volume Profile and Targets",
+      "category": "fibonacci",
+      "type": "overlay",
+      "openSource": true,
+      "tradingviewUrl": "https://www.tradingview.com/script/3pQjf5YJ-Fibo-Levels-with-Volume-Profile-and-Targets-ChartPrime/",
+      "description": "Fibonacci retracement levels with volume analysis between levels. Target arrows based on bullish/bearish volume comparison. PoC option included.",
+      "parameters": {
+        "timeframe": { "type": "dropdown", "description": "Fibonacci calculation timeframe" },
+        "showPoC": { "type": "boolean", "description": "Show Point of Control" }
+      }
+    },
+    {
+      "id": "fibonacci-archer-box",
+      "name": "Fibonacci Archer Box",
+      "category": "fibonacci",
+      "type": "overlay",
+      "openSource": false,
+      "description": "Automatically plots Fibonacci levels based on pivot points. Full-featured Fibonacci box indicator for identifying retracement and extension zones."
+    },
+    {
+      "id": "composite-trend-oscillator",
+      "name": "Composite Trend Oscillator",
+      "category": "momentum",
+      "type": "panel",
+      "openSource": false,
+      "description": "Oscillator based on moving average ribbon concept. Shows trend strength with color signals for identifying momentum direction and reversals."
+    },
+    {
+      "id": "smart-money-oscillator",
+      "name": "Smart Money Oscillator",
+      "category": "smart-money",
+      "type": "panel",
+      "openSource": false,
+      "description": "Premium and discount zone oscillator with BOS (Break of Structure) and CHoCH (Change of Character) analysis features for institutional trading concepts."
+    },
+    {
+      "id": "dynamic-sr-zones",
+      "name": "Dynamic Support/Resistance Zones",
+      "category": "support-resistance",
+      "type": "overlay",
+      "openSource": false,
+      "description": "Visualizes key levels by analyzing pivot points with three scoring methods: Linear, Time, and Volume. Multi-method approach to S/R identification."
+    },
+    {
+      "id": "osmosis",
+      "name": "Osmosis",
+      "category": "screener",
+      "type": "panel",
+      "openSource": false,
+      "tradingviewUrl": "https://www.tradingview.com/script/BuS5xuPc-Osmosis-ChartPrime/",
+      "description": "Multi-indicator, multi-period heatmap tool for comprehensive market condition overview across multiple analytical dimensions."
+    },
+    {
+      "id": "monte-carlo-future-moves",
+      "name": "Monte Carlo Future Moves",
+      "category": "predictive",
+      "type": "overlay",
+      "openSource": false,
+      "tradingviewUrl": "https://www.tradingview.com/script/LGueefJE-Monte-Carlo-Future-Moves-ChartPrime/",
+      "description": "Simulates possible future price paths showing likelihood of different outcomes. Statistical projection tool for probabilistic price movement estimation."
+    },
+    {
+      "id": "macd-all-in-one-screener",
+      "name": "MACD All In One Screener",
+      "category": "screener",
+      "type": "panel",
+      "openSource": false,
+      "description": "Multi-instrument, multi-timeframe MACD monitoring solution. Consolidates MACD analysis across multiple assets in a single view."
+    },
+    {
+      "id": "trending-rsi",
+      "name": "Trending RSI",
+      "category": "momentum",
+      "type": "panel",
+      "openSource": false,
+      "description": "Enhanced RSI providing additional trend context beyond traditional analysis. Tracks RSI with trend-aware modifications."
+    },
+    {
+      "id": "phismoother-ma-ribbon",
+      "name": "PhiSmoother Moving Average Ribbon",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": false,
+      "description": "DSP (Digital Signal Processing) filtration applied to moving average ribbon for smoother, lower-lag trend identification."
+    },
+    {
+      "id": "deep-volume",
+      "name": "Deep Volume",
+      "category": "volume",
+      "type": "panel",
+      "openSource": false,
+      "description": "High-fidelity volume information delivery. Detailed volume analysis showing where institutional money is flowing."
+    },
+    {
+      "id": "momentum-ghost-machine",
+      "name": "Momentum Ghost Machine",
+      "category": "momentum",
+      "type": "panel",
+      "openSource": false,
+      "description": "Next-generation momentum and rate-of-change analyzer. Advanced momentum visualization and analysis tool."
+    },
+    {
+      "id": "ghost-tangent-crossings",
+      "name": "Ghost Tangent Crossings",
+      "category": "pattern",
+      "type": "overlay",
+      "openSource": false,
+      "description": "Visualizes pivot points and zig-zag patterns using ellipses. Unique geometric approach to pattern recognition."
+    },
+    {
+      "id": "relative-average-extrapolation",
+      "name": "Relative Average Extrapolation",
+      "category": "trend",
+      "type": "overlay",
+      "openSource": false,
+      "description": "Alternative session average approach for projecting price levels based on historical average behavior patterns."
+    },
+    {
+      "id": "kalman-volume-filter",
+      "name": "Kalman Volume Filter",
+      "category": "volume",
+      "type": "panel",
+      "openSource": false,
+      "description": "Applies Kalman filtering to volume data to reduce noise and identify overbought/oversold conditions with statistical precision."
+    },
+    {
+      "id": "multiple-nonlinear-regression",
+      "name": "Multiple Non-Linear Regression",
+      "category": "predictive",
+      "type": "panel",
+      "openSource": false,
+      "description": "Analyzes price relationships using close, open, high, and low via non-linear regression models for advanced statistical analysis."
+    },
+    {
+      "id": "liquidations",
+      "name": "Liquidations",
+      "category": "volume",
+      "type": "overlay",
+      "openSource": false,
+      "description": "Identifies significant liquidation levels based on volume data. Shows where forced selling/buying is likely occurring in leveraged markets."
+    },
+    {
+      "id": "price-ratio-indicator",
+      "name": "Price Ratio Indicator",
+      "category": "analysis",
+      "type": "panel",
+      "openSource": false,
+      "description": "Analyzes asset price relationships with moving averages. Useful for relative strength and pair trading analysis."
+    },
+    {
+      "id": "volume-storm-trend",
+      "name": "Volume Storm Trend",
+      "category": "volume",
+      "type": "panel",
+      "openSource": false,
+      "description": "Analyzes volume momentum and trend strength. Combines volume analysis with trend direction for conviction assessment."
+    },
+    {
+      "id": "sr-high-volume-boxes",
+      "name": "Support and Resistance (High Volume Boxes)",
+      "category": "support-resistance",
+      "type": "overlay",
+      "openSource": false,
+      "description": "Uses pivot points and volume analysis to identify key support and resistance levels displayed as high-volume zones."
+    },
+    {
+      "id": "htf-high-low",
+      "name": "Higher Timeframe High & Low",
+      "category": "support-resistance",
+      "type": "overlay",
+      "openSource": false,
+      "description": "Plots significant high/low levels from higher timeframes on the current chart for multi-timeframe S/R reference."
+    },
+    {
+      "id": "bayesian-trend",
+      "name": "Bayesian Trend Indicator",
+      "category": "predictive",
+      "type": "panel",
+      "openSource": false,
+      "description": "Applies Bayesian probability theory to trend analysis. Statistical approach to trend identification and probability estimation."
+    },
+    {
+      "id": "volume-positive-negative",
+      "name": "Volume Positive & Negative Levels",
+      "category": "volume",
+      "type": "panel",
+      "openSource": false,
+      "description": "Visualizes volume activity across price levels with positive/negative differentiation for institutional flow analysis."
+    },
+    {
+      "id": "triple-z",
+      "name": "Triple Z (Geometrical Mean)",
+      "category": "volatility",
+      "type": "panel",
+      "openSource": false,
+      "description": "Calculates three Z-scores with geometric mean visualization. Statistical deviation analysis for identifying extreme price conditions."
+    },
+    {
+      "id": "order-blocks-liquidity-void",
+      "name": "Order Blocks + Liquidity Void",
+      "category": "smart-money",
+      "type": "overlay",
+      "openSource": false,
+      "description": "Identifies institutional order blocks and liquidity voids using Smart Money Concepts. Shows where price gaps create future targets."
+    }
+  ],
+  "categories": {
+    "trend": {
+      "label": "Trend Analysis",
+      "icon": "TrendingUp",
+      "color": "#00d26a",
+      "description": "Indicators for identifying trend direction, strength, and duration"
+    },
+    "momentum": {
+      "label": "Momentum & Oscillators",
+      "icon": "Activity",
+      "color": "#e94560",
+      "description": "Oscillators for overbought/oversold, divergences, and momentum analysis"
+    },
+    "volume": {
+      "label": "Volume Analysis",
+      "icon": "BarChart3",
+      "color": "#3b82f6",
+      "description": "Volume profiles, flow analysis, and institutional volume tracking"
+    },
+    "volatility": {
+      "label": "Volatility & Bands",
+      "icon": "Waves",
+      "color": "#f59e0b",
+      "description": "Bands, channels, and statistical deviation indicators"
+    },
+    "support-resistance": {
+      "label": "Support & Resistance",
+      "icon": "AlignHorizontalDistributeCenter",
+      "color": "#8b5cf6",
+      "description": "Dynamic and static support/resistance level identification"
+    },
+    "smart-money": {
+      "label": "Smart Money Concepts",
+      "icon": "DollarSign",
+      "color": "#14b8a6",
+      "description": "Order blocks, fair value gaps, BOS/CHoCH, and institutional analysis"
+    },
+    "pattern": {
+      "label": "Pattern Recognition",
+      "icon": "Shapes",
+      "color": "#ec4899",
+      "description": "Chart patterns, candlestick formations, and breakout detection"
+    },
+    "fibonacci": {
+      "label": "Fibonacci",
+      "icon": "GitBranch",
+      "color": "#f97316",
+      "description": "Fibonacci retracement, extension, and trend-based levels"
+    },
+    "screener": {
+      "label": "Screeners & Heatmaps",
+      "icon": "LayoutGrid",
+      "color": "#06b6d4",
+      "description": "Multi-asset screeners, heatmaps, and condition scanners"
+    },
+    "predictive": {
+      "label": "Predictive & Statistical",
+      "icon": "Brain",
+      "color": "#a855f7",
+      "description": "Monte Carlo, regression, Bayesian, and probabilistic analysis tools"
+    },
+    "strategy": {
+      "label": "Strategy Builder",
+      "icon": "Settings",
+      "color": "#84cc16",
+      "description": "Backtesting and strategy construction tools"
+    },
+    "analysis": {
+      "label": "General Analysis",
+      "icon": "Search",
+      "color": "#64748b",
+      "description": "General-purpose analytical tools and ratio analysis"
+    }
+  }
+}

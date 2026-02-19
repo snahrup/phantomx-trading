@@ -12,6 +12,16 @@ import type {
   AutopilotClosedTrade, JournalEntry,
   AgentSignal, AgentStatus, AgentEvent, SignalSummary,
   EquitySnapshot,
+  // Strategy lifecycle
+  StrategyGoals, BacktestResult, ResearchBrief, ResearchPhaseStatus,
+  OptimizationIteration, MarketAnomaly, SupervisorIntervention, DecisionRecord,
+  // Research engine
+  ResearchEngineStatus, ResearchFinding, TradingThesis,
+  UpcomingMarketEvent, TopOpportunity,
+  // Paper trading + AI journal
+  PaperTradingState, ResearchPaperTrade, AIJournalEntry,
+  // Orchestrator
+  OrchestratorState, OrchestratorEvent, WorkflowId,
 } from '@/types/trading';
 
 // --- Risk Presets ---
@@ -62,6 +72,64 @@ export const RISK_PRESETS: Record<RiskLevel, RiskParameters> = {
     allowLossOfEntireAmount: true,
   },
 };
+
+// --- Pipeline State Types (shared with PipelineShowcase) ---
+
+export interface PipelineAnalystState {
+  status: 'pending' | 'running' | 'complete' | 'error';
+  report: string;
+  toolCalls: Array<{ tool: string; input: unknown }>;
+  toolResults: Array<{ tool: string; preview: string }>;
+  duration: number;
+  error?: string;
+}
+
+export interface PipelineDebateTurn {
+  speaker: string;
+  round: number;
+  content: string;
+}
+
+export interface PipelineJudgeDecision {
+  decision: string;
+  content: string;
+  confidence: number;
+}
+
+export interface PipelineStateShape {
+  stage: 'idle' | 'analysts' | 'debate' | 'risk' | 'strategy' | 'backtest' | 'done' | 'error';
+  analysts: Record<string, PipelineAnalystState>;
+  debate: { turns: PipelineDebateTurn[]; judge: PipelineJudgeDecision | null };
+  risk: { turns: PipelineDebateTurn[]; judge: PipelineJudgeDecision | null; finalSize: string };
+  strategy: { streaming: string; config: unknown | null };
+  backtest: { running: boolean; metrics: unknown | null; error: string | null };
+  memory: { stored: number };
+  finalDecision: string | null;
+  finalConfidence: number | null;
+  totalDuration: number | null;
+  error: string | null;
+}
+
+export function initialPipelineState(): PipelineStateShape {
+  return {
+    stage: 'idle',
+    analysts: {
+      market_analyst: { status: 'pending', report: '', toolCalls: [], toolResults: [], duration: 0 },
+      sentiment_analyst: { status: 'pending', report: '', toolCalls: [], toolResults: [], duration: 0 },
+      news_analyst: { status: 'pending', report: '', toolCalls: [], toolResults: [], duration: 0 },
+      fundamentals_analyst: { status: 'pending', report: '', toolCalls: [], toolResults: [], duration: 0 },
+    },
+    debate: { turns: [], judge: null },
+    risk: { turns: [], judge: null, finalSize: '' },
+    strategy: { streaming: '', config: null },
+    backtest: { running: false, metrics: null, error: null },
+    memory: { stored: 0 },
+    finalDecision: null,
+    finalConfidence: null,
+    totalDuration: null,
+    error: null,
+  };
+}
 
 // --- Store Types ---
 
@@ -114,6 +182,8 @@ interface TradingState {
 
   // Indicator overlays
   enabledIndicators: Record<string, boolean>;
+  indicatorParams: Record<string, Record<string, number>>;
+  indicatorSignals: { type: string; direction: string; strength: number; description: string }[];
   autoPatternDetection: boolean;
   lastAutoPatternTime: number;
 
@@ -143,16 +213,61 @@ interface TradingState {
   knowledgeCount: number;
 
   // Dashboard Analytics
-  viewMode: 'trading' | 'dashboard' | 'intelligence';
   equitySnapshots: EquitySnapshot[];
   lastSnapshotTime: number;
+
+  // Strategy Lifecycle
+  researchPhase: 'idle' | 'defining' | 'researching' | 'backtesting' | 'optimizing' | 'ready' | 'deployed';
+  researchBriefs: ResearchBrief[];
+  researchPhaseStatuses: ResearchPhaseStatus[];
+  currentBacktestResult: BacktestResult | null;
+  backtestHistory: BacktestResult[];
+  optimizationIterations: OptimizationIteration[];
+  strategyGoals: StrategyGoals | null;
+  deployedStrategy: StrategyConfig | null;
+
+  // AI Supervisor
+  supervisorActive: boolean;
+  supervisorInterventions: SupervisorIntervention[];
+  marketAnomalies: MarketAnomaly[];
+  strategyHealthScore: number;
+
+  // Decision Audit Trail
+  decisionLog: DecisionRecord[];
+
+  // Background Research Engine
+  researchEngineStatus: ResearchEngineStatus | null;
+  researchFindings: ResearchFinding[];
+  tradingTheses: TradingThesis[];
+  upcomingEvents: UpcomingMarketEvent[];
+  topOpportunities: TopOpportunity[];
+  selectedThesisId: string | null;
+
+  // Paper Trading + AI Journal
+  paperTradingState: PaperTradingState | null;
+  paperTrades: ResearchPaperTrade[];
+  aiJournal: AIJournalEntry[];
+  selectedJournalEntryId: string | null;
+
+  // Orchestrator
+  orchestratorState: OrchestratorState | null;
+  orchestratorEvents: OrchestratorEvent[];
+  workflowToggles: { research: boolean; paper: boolean; live: boolean };
+
+  // Agents Pipeline (NOT persisted — transient streaming state)
+  pipelineState: PipelineStateShape;
+  pipelineRunning: boolean;
+  pipelineSymbol: string | null;
 
   // UI
   theme: 'light' | 'dark';
   activePanelTab: 'chart' | 'orders' | 'positions' | 'history';
-  sidePanel: 'ai' | 'strategy' | 'risk' | 'autopilot' | 'settings' | 'journal' | 'agents';
+  viewMode: 'trading' | 'dashboard' | 'intelligence';
+  sidePanel: 'ai' | 'strategy' | 'risk' | 'settings' | 'journal' | 'agents';
   sidebarMode: 'docked' | 'floating' | 'minimized';
   sidebarWidth: number;
+  sidebarCollapsed: boolean;
+  aiPanelMode: 'hidden' | 'floating' | 'fullpage';
   showPineScriptModal: boolean;
   generatedPineScript: string;
 
@@ -211,6 +326,8 @@ interface TradingState {
 
   // Indicator overlays
   toggleIndicator: (key: string) => void;
+  setIndicatorParam: (indicatorKey: string, paramName: string, value: number) => void;
+  setIndicatorSignals: (signals: { type: string; direction: string; strength: number; description: string }[]) => void;
   setAutoPatternDetection: (enabled: boolean) => void;
   setLastAutoPatternTime: (time: number) => void;
 
@@ -239,15 +356,74 @@ interface TradingState {
   addAgentEvent: (event: AgentEvent) => void;
   setKnowledgeCount: (count: number) => void;
 
-  setViewMode: (mode: 'trading' | 'dashboard' | 'intelligence') => void;
   addEquitySnapshot: (snapshot: EquitySnapshot) => void;
+
+  // Strategy Lifecycle
+  setResearchPhase: (phase: TradingState['researchPhase']) => void;
+  addResearchBrief: (brief: ResearchBrief) => void;
+  clearResearchBriefs: () => void;
+  setResearchPhaseStatuses: (statuses: ResearchPhaseStatus[]) => void;
+  updateResearchPhaseStatus: (phase: ResearchPhaseStatus['phase'], updates: Partial<ResearchPhaseStatus>) => void;
+  setCurrentBacktestResult: (result: BacktestResult | null) => void;
+  addBacktestToHistory: (result: BacktestResult) => void;
+  clearBacktestHistory: () => void;
+  addOptimizationIteration: (iteration: OptimizationIteration) => void;
+  clearOptimizationIterations: () => void;
+  setStrategyGoals: (goals: StrategyGoals | null) => void;
+  setDeployedStrategy: (strategy: StrategyConfig | null) => void;
+
+  // AI Supervisor
+  setSupervisorActive: (active: boolean) => void;
+  addSupervisorIntervention: (intervention: SupervisorIntervention) => void;
+  addMarketAnomaly: (anomaly: MarketAnomaly) => void;
+  clearMarketAnomalies: () => void;
+  setStrategyHealthScore: (score: number) => void;
+
+  // Decision Audit Trail
+  addDecisionRecord: (record: DecisionRecord) => void;
+  clearDecisionLog: () => void;
+
+  // Background Research Engine
+  setResearchEngineStatus: (status: ResearchEngineStatus | null) => void;
+  setResearchFindings: (findings: ResearchFinding[]) => void;
+  addResearchFinding: (finding: ResearchFinding) => void;
+  setTradingTheses: (theses: TradingThesis[]) => void;
+  addTradingThesis: (thesis: TradingThesis) => void;
+  setUpcomingEvents: (events: UpcomingMarketEvent[]) => void;
+  setTopOpportunities: (opportunities: TopOpportunity[]) => void;
+  setSelectedThesisId: (id: string | null) => void;
+
+  // Paper Trading + AI Journal
+  setPaperTradingState: (state: PaperTradingState | null) => void;
+  setPaperTrades: (trades: ResearchPaperTrade[]) => void;
+  addPaperTrade: (trade: ResearchPaperTrade) => void;
+  updatePaperTrade: (id: string, updates: Partial<ResearchPaperTrade>) => void;
+  setAIJournal: (entries: AIJournalEntry[]) => void;
+  addAIJournalEntry: (entry: AIJournalEntry) => void;
+  setSelectedJournalEntryId: (id: string | null) => void;
+
+  // Orchestrator
+  setOrchestratorState: (state: OrchestratorState | null) => void;
+  addOrchestratorEvent: (event: OrchestratorEvent) => void;
+  setOrchestratorEvents: (events: OrchestratorEvent[]) => void;
+  setWorkflowToggle: (workflow: WorkflowId, enabled: boolean) => void;
+
+  // Agents Pipeline
+  setPipelineState: (state: PipelineStateShape) => void;
+  updatePipelineState: (updater: (prev: PipelineStateShape) => PipelineStateShape) => void;
+  setPipelineRunning: (running: boolean) => void;
+  setPipelineSymbol: (symbol: string | null) => void;
+  resetPipeline: () => void;
 
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
   setActivePanelTab: (tab: TradingState['activePanelTab']) => void;
+  setViewMode: (mode: TradingState['viewMode']) => void;
   setSidePanel: (panel: TradingState['sidePanel']) => void;
   setSidebarMode: (mode: TradingState['sidebarMode']) => void;
   setSidebarWidth: (width: number) => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  setAiPanelMode: (mode: TradingState['aiPanelMode']) => void;
   setShowPineScriptModal: (show: boolean) => void;
   setGeneratedPineScript: (code: string) => void;
 }
@@ -303,6 +479,8 @@ export const useTradingStore = create<TradingState>()(
 
   // Indicator overlays
   enabledIndicators: { sma20: true, sma50: true },
+  indicatorParams: {},
+  indicatorSignals: [],
   autoPatternDetection: true,
   lastAutoPatternTime: 0,
 
@@ -325,16 +503,61 @@ export const useTradingStore = create<TradingState>()(
   journalDaySummary: null,
 
   // Dashboard Analytics
-  viewMode: 'dashboard' as const,
   equitySnapshots: [],
   lastSnapshotTime: 0,
+
+  // Strategy Lifecycle
+  researchPhase: 'idle',
+  researchBriefs: [],
+  researchPhaseStatuses: [],
+  currentBacktestResult: null,
+  backtestHistory: [],
+  optimizationIterations: [],
+  strategyGoals: null,
+  deployedStrategy: null,
+
+  // AI Supervisor
+  supervisorActive: false,
+  supervisorInterventions: [],
+  marketAnomalies: [],
+  strategyHealthScore: 100,
+
+  // Decision Audit Trail
+  decisionLog: [],
+
+  // Background Research Engine
+  researchEngineStatus: null,
+  researchFindings: [],
+  tradingTheses: [],
+  upcomingEvents: [],
+  topOpportunities: [],
+  selectedThesisId: null,
+
+  // Paper Trading + AI Journal
+  paperTradingState: null,
+  paperTrades: [],
+  aiJournal: [],
+  selectedJournalEntryId: null,
+
+  // Orchestrator
+  orchestratorState: null,
+  orchestratorEvents: [],
+  workflowToggles: { research: true, paper: true, live: true },
+
+  // Agents Pipeline (transient — not persisted)
+  pipelineState: initialPipelineState(),
+  pipelineRunning: false,
+  pipelineSymbol: null,
 
   // UI
   theme: 'light',
   activePanelTab: 'chart',
-  sidePanel: 'ai',
-  sidebarMode: 'docked',
+  viewMode: 'trading' as const,
+  sidePanel: 'ai' as const,
+  sidebarMode: 'docked' as const,
   sidebarWidth: 380,
+  sidebarCollapsed: false,
+  aiPanelMode: 'hidden' as const,
   showPineScriptModal: false,
   generatedPineScript: '',
 
@@ -394,7 +617,7 @@ export const useTradingStore = create<TradingState>()(
   setPriceLinesFromAnalysis: (analysis) => set((s) => {
     // Remove old AI analysis lines, keep manual + engine lines
     const kept = s.priceLines.filter(l => l.source !== 'ai_analysis');
-    const newLines: ChartPriceLine[] = analysis.keyLevels.map((level, i) => ({
+    const newLines: ChartPriceLine[] = (analysis.keyLevels ?? []).map((level, i) => ({
       id: `ai-analysis-${Date.now()}-${i}`,
       price: Number(level.price),
       color: level.type === 'support' ? '#5FB87A' : level.type === 'resistance' ? '#E05555' : '#D4A84A',
@@ -451,6 +674,13 @@ export const useTradingStore = create<TradingState>()(
   toggleIndicator: (key) => set((s) => ({
     enabledIndicators: { ...s.enabledIndicators, [key]: !s.enabledIndicators[key] },
   })),
+  setIndicatorParam: (indicatorKey, paramName, value) => set((s) => ({
+    indicatorParams: {
+      ...s.indicatorParams,
+      [indicatorKey]: { ...s.indicatorParams[indicatorKey], [paramName]: value },
+    },
+  })),
+  setIndicatorSignals: (indicatorSignals) => set({ indicatorSignals }),
   setAutoPatternDetection: (autoPatternDetection) => set({ autoPatternDetection }),
   setLastAutoPatternTime: (lastAutoPatternTime) => set({ lastAutoPatternTime }),
 
@@ -493,7 +723,6 @@ export const useTradingStore = create<TradingState>()(
   setJournalDaySummary: (journalDaySummary) => set({ journalDaySummary }),
   clearJournalEntries: () => set({ journalEntries: [], journalDaySummary: null }),
 
-  setViewMode: (viewMode) => set({ viewMode }),
   addEquitySnapshot: (snapshot) => set((s) => {
     // Throttle: only record every 60s min
     if (snapshot.timestamp - s.lastSnapshotTime < 60000) return s;
@@ -503,18 +732,107 @@ export const useTradingStore = create<TradingState>()(
     };
   }),
 
+  // Strategy Lifecycle
+  setResearchPhase: (researchPhase) => set({ researchPhase }),
+  addResearchBrief: (brief) => set((s) => ({ researchBriefs: [...s.researchBriefs, brief] })),
+  clearResearchBriefs: () => set({ researchBriefs: [], researchPhaseStatuses: [] }),
+  setResearchPhaseStatuses: (researchPhaseStatuses) => set({ researchPhaseStatuses }),
+  updateResearchPhaseStatus: (phase, updates) => set((s) => ({
+    researchPhaseStatuses: s.researchPhaseStatuses.map(p =>
+      p.phase === phase ? { ...p, ...updates } : p
+    ),
+  })),
+  setCurrentBacktestResult: (currentBacktestResult) => set({ currentBacktestResult }),
+  addBacktestToHistory: (result) => set((s) => ({
+    backtestHistory: [...s.backtestHistory.slice(-19), result],
+    currentBacktestResult: result,
+  })),
+  clearBacktestHistory: () => set({ backtestHistory: [], currentBacktestResult: null }),
+  addOptimizationIteration: (iteration) => set((s) => ({
+    optimizationIterations: [...s.optimizationIterations, iteration],
+  })),
+  clearOptimizationIterations: () => set({ optimizationIterations: [] }),
+  setStrategyGoals: (strategyGoals) => set({ strategyGoals }),
+  setDeployedStrategy: (deployedStrategy) => set({ deployedStrategy }),
+
+  // AI Supervisor
+  setSupervisorActive: (supervisorActive) => set({ supervisorActive }),
+  addSupervisorIntervention: (intervention) => set((s) => ({
+    supervisorInterventions: [...s.supervisorInterventions.slice(-99), intervention],
+  })),
+  addMarketAnomaly: (anomaly) => set((s) => ({
+    marketAnomalies: [...s.marketAnomalies.slice(-99), anomaly],
+  })),
+  clearMarketAnomalies: () => set({ marketAnomalies: [] }),
+  setStrategyHealthScore: (strategyHealthScore) => set({ strategyHealthScore }),
+
+  // Decision Audit Trail
+  addDecisionRecord: (record) => set((s) => ({
+    decisionLog: [...s.decisionLog.slice(-499), record],
+  })),
+  clearDecisionLog: () => set({ decisionLog: [] }),
+
+  // Background Research Engine
+  setResearchEngineStatus: (researchEngineStatus) => set({ researchEngineStatus }),
+  setResearchFindings: (researchFindings) => set({ researchFindings: researchFindings.slice(-200) }),
+  addResearchFinding: (finding) => set((s) => ({
+    researchFindings: [...s.researchFindings.slice(-199), finding],
+  })),
+  setTradingTheses: (tradingTheses) => set({ tradingTheses: tradingTheses.slice(-50) }),
+  addTradingThesis: (thesis) => set((s) => ({
+    tradingTheses: [...s.tradingTheses.slice(-49), thesis],
+  })),
+  setUpcomingEvents: (upcomingEvents) => set({ upcomingEvents: upcomingEvents.slice(-100) }),
+  setTopOpportunities: (topOpportunities) => set({ topOpportunities }),
+  setSelectedThesisId: (selectedThesisId) => set({ selectedThesisId }),
+
+  // Paper Trading + AI Journal
+  setPaperTradingState: (paperTradingState) => set({ paperTradingState }),
+  setPaperTrades: (paperTrades) => set({ paperTrades: paperTrades.slice(-200) }),
+  addPaperTrade: (trade) => set((s) => ({
+    paperTrades: [...s.paperTrades.slice(-199), trade],
+  })),
+  updatePaperTrade: (id, updates) => set((s) => ({
+    paperTrades: s.paperTrades.map(t => t.id === id ? { ...t, ...updates } : t),
+  })),
+  setAIJournal: (aiJournal) => set({ aiJournal: aiJournal.slice(-300) }),
+  addAIJournalEntry: (entry) => set((s) => ({
+    aiJournal: [...s.aiJournal.slice(-299), entry],
+  })),
+  setSelectedJournalEntryId: (selectedJournalEntryId) => set({ selectedJournalEntryId }),
+
+  // Orchestrator
+  setOrchestratorState: (orchestratorState) => set({ orchestratorState }),
+  addOrchestratorEvent: (event) => set((s) => ({
+    orchestratorEvents: [...s.orchestratorEvents.slice(-99), event],
+  })),
+  setOrchestratorEvents: (orchestratorEvents) => set({ orchestratorEvents: orchestratorEvents.slice(-100) }),
+  setWorkflowToggle: (workflow, enabled) => set((s) => ({
+    workflowToggles: { ...s.workflowToggles, [workflow]: enabled },
+  })),
+
+  // Agents Pipeline
+  setPipelineState: (pipelineState) => set({ pipelineState }),
+  updatePipelineState: (updater) => set((s) => ({ pipelineState: updater(s.pipelineState) })),
+  setPipelineRunning: (pipelineRunning) => set({ pipelineRunning }),
+  setPipelineSymbol: (pipelineSymbol) => set({ pipelineSymbol }),
+  resetPipeline: () => set({ pipelineState: initialPipelineState(), pipelineRunning: false, pipelineSymbol: null }),
+
   setTheme: (theme) => set({ theme }),
   toggleTheme: () => set((s) => ({ theme: s.theme === 'light' ? 'dark' : 'light' })),
   setActivePanelTab: (activePanelTab) => set({ activePanelTab }),
+  setViewMode: (viewMode) => set({ viewMode }),
   setSidePanel: (sidePanel) => set({ sidePanel }),
   setSidebarMode: (sidebarMode) => set({ sidebarMode }),
-  setSidebarWidth: (sidebarWidth) => set({ sidebarWidth: Math.max(300, Math.min(700, sidebarWidth)) }),
+  setSidebarWidth: (width) => set({ sidebarWidth: Math.max(280, Math.min(700, width)) }),
+  setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
+  setAiPanelMode: (aiPanelMode) => set({ aiPanelMode }),
   setShowPineScriptModal: (showPineScriptModal) => set({ showPineScriptModal }),
   setGeneratedPineScript: (generatedPineScript) => set({ generatedPineScript }),
 }),
     {
       name: 'phantomx-trading-store',
-      version: 9, // v9: Dashboard analytics + equity tracking
+      version: 15, // v15: Orchestrator workflow toggles
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         // NOTE: apiKey/apiSecret intentionally NOT persisted — stored in .env.local
@@ -541,6 +859,7 @@ export const useTradingStore = create<TradingState>()(
         generatedPineScript: state.generatedPineScript,
         // Persist indicator preferences
         enabledIndicators: state.enabledIndicators,
+        indicatorParams: state.indicatorParams,
         autoPatternDetection: state.autoPatternDetection,
         // Persist portfolio autopilot preferences
         autopilotMode: state.autopilotMode,
@@ -558,9 +877,36 @@ export const useTradingStore = create<TradingState>()(
         // Persist equity history for dashboard
         equitySnapshots: state.equitySnapshots,
         lastSnapshotTime: state.lastSnapshotTime,
-        // Persist sidebar preferences
+        // Persist sidebar + AI panel preferences
+        viewMode: state.viewMode,
+        sidePanel: state.sidePanel,
         sidebarMode: state.sidebarMode,
         sidebarWidth: state.sidebarWidth,
+        sidebarCollapsed: state.sidebarCollapsed,
+        aiPanelMode: state.aiPanelMode,
+        // Persist strategy lifecycle
+        researchPhase: state.researchPhase,
+        researchBriefs: state.researchBriefs,
+        currentBacktestResult: state.currentBacktestResult,
+        backtestHistory: state.backtestHistory,
+        optimizationIterations: state.optimizationIterations,
+        strategyGoals: state.strategyGoals,
+        deployedStrategy: state.deployedStrategy,
+        // Persist supervisor state
+        supervisorInterventions: state.supervisorInterventions,
+        // Persist decision audit trail
+        decisionLog: state.decisionLog,
+        // Persist research engine data (theses survive page refresh)
+        tradingTheses: state.tradingTheses,
+        topOpportunities: state.topOpportunities,
+        upcomingEvents: state.upcomingEvents,
+        // NOTE: researchFindings NOT persisted — they're transient and expire
+        // Persist paper trading results + AI journal
+        paperTradingState: state.paperTradingState,
+        paperTrades: state.paperTrades,
+        aiJournal: state.aiJournal,
+        // Persist orchestrator workflow toggles
+        workflowToggles: state.workflowToggles,
       }),
       migrate: (persistedState, version) => {
         // v2: Clear stale apiKey/apiSecret that leaked into localStorage
@@ -594,6 +940,56 @@ export const useTradingStore = create<TradingState>()(
           const s = persistedState as Record<string, unknown>;
           if (!s.equitySnapshots) s.equitySnapshots = [];
           if (!s.lastSnapshotTime) s.lastSnapshotTime = 0;
+        }
+        // v10: Multi-page UI rebuild — remove old sidebar state, add new
+        if (version < 10) {
+          const s = persistedState as Record<string, unknown>;
+          delete s.viewMode;
+          delete s.sidePanel;
+          delete s.sidebarMode;
+          delete s.sidebarWidth;
+          if (s.sidebarCollapsed === undefined) s.sidebarCollapsed = false;
+          if (!s.aiPanelMode) s.aiPanelMode = 'hidden';
+        }
+        // v11: Restore integrated command center — bring back sidebar/view state
+        if (version < 11) {
+          const s = persistedState as Record<string, unknown>;
+          if (!s.viewMode) s.viewMode = 'trading';
+          if (!s.sidePanel) s.sidePanel = 'ai';
+          if (!s.sidebarMode) s.sidebarMode = 'docked';
+          if (!s.sidebarWidth) s.sidebarWidth = 380;
+        }
+        // v12: Strategy lifecycle engine + AI supervisor + decision audit trail
+        if (version < 12) {
+          const s = persistedState as Record<string, unknown>;
+          if (!s.researchPhase) s.researchPhase = 'idle';
+          if (!s.researchBriefs) s.researchBriefs = [];
+          if (!s.researchPhaseStatuses) s.researchPhaseStatuses = [];
+          if (!s.currentBacktestResult) s.currentBacktestResult = null;
+          if (!s.backtestHistory) s.backtestHistory = [];
+          if (!s.optimizationIterations) s.optimizationIterations = [];
+          if (!s.strategyGoals) s.strategyGoals = null;
+          if (!s.deployedStrategy) s.deployedStrategy = null;
+          if (s.supervisorActive === undefined) s.supervisorActive = false;
+          if (!s.supervisorInterventions) s.supervisorInterventions = [];
+          if (!s.marketAnomalies) s.marketAnomalies = [];
+          if (!s.strategyHealthScore) s.strategyHealthScore = 100;
+          if (!s.decisionLog) s.decisionLog = [];
+        }
+        // v14: Paper trading engine + AI journal
+        if (version < 14) {
+          const s = persistedState as Record<string, unknown>;
+          if (!s.paperTradingState) s.paperTradingState = null;
+          if (!s.paperTrades) s.paperTrades = [];
+          if (!s.aiJournal) s.aiJournal = [];
+          if (!s.selectedJournalEntryId) s.selectedJournalEntryId = null;
+        }
+        // v15: Orchestrator workflow toggles
+        if (version < 15) {
+          const s = persistedState as Record<string, unknown>;
+          if (!s.workflowToggles) s.workflowToggles = { research: true, paper: true, live: true };
+          if (!s.orchestratorState) s.orchestratorState = null;
+          if (!s.orchestratorEvents) s.orchestratorEvents = [];
         }
         return persistedState as TradingState;
       },

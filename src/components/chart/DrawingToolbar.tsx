@@ -1,5 +1,7 @@
 'use client';
 
+import { Undo2, Redo2, Trash2 } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useTradingStore } from '@/store/trading-store';
 import type { DrawingTool } from '@/types/trading';
 
@@ -29,20 +31,23 @@ export default function DrawingToolbar() {
       {/* Drawing Tools */}
       <div className="glass-card p-1 flex flex-col gap-0.5">
         {TOOLS.map(tool => (
-          <button
-            key={tool.key}
-            onClick={() => setActiveDrawingTool(tool.key)}
-            className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
-              activeDrawingTool === tool.key
-                ? 'bg-[var(--cl-fill-accent-active)] text-[var(--cl-accent)]'
-                : 'text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-faint)] hover:bg-[var(--cl-fill-hover)]'
-            }`}
-            title={tool.label}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d={tool.icon} />
-            </svg>
-          </button>
+          <Tooltip key={tool.key}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setActiveDrawingTool(tool.key)}
+                className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
+                  activeDrawingTool === tool.key
+                    ? 'bg-primary/20 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                }`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d={tool.icon} />
+                </svg>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">{tool.label}</TooltipContent>
+          </Tooltip>
         ))}
       </div>
 
@@ -70,7 +75,7 @@ export default function DrawingToolbar() {
                 key={w}
                 onClick={() => setDrawingLineWidth(w)}
                 className={`w-full h-4 flex items-center justify-center rounded ${
-                  drawingLineWidth === w ? 'bg-[var(--cl-fill-accent-hover)]' : 'hover:bg-[var(--cl-fill-hover)]'
+                  drawingLineWidth === w ? 'bg-primary/15' : 'hover:bg-accent'
                 }`}
               >
                 <div
@@ -85,38 +90,41 @@ export default function DrawingToolbar() {
 
       {/* Undo / Redo / Clear */}
       <div className="glass-card p-1 flex flex-col gap-0.5">
-        <button
-          onClick={undoDrawing}
-          disabled={drawings.length === 0}
-          className="w-8 h-8 rounded flex items-center justify-center text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-faint)] disabled:opacity-20 disabled:cursor-not-allowed"
-          title="Undo (Ctrl+Z)"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="1 4 1 10 7 10" />
-            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-          </svg>
-        </button>
-        <button
-          onClick={redoDrawing}
-          disabled={drawingUndoStack.length === 0}
-          className="w-8 h-8 rounded flex items-center justify-center text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-faint)] disabled:opacity-20 disabled:cursor-not-allowed"
-          title="Redo (Ctrl+Y)"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="23 4 23 10 17 10" />
-            <path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10" />
-          </svg>
-        </button>
-        <button
-          onClick={() => { clearDrawings(); clearPriceLines(); }}
-          className="w-8 h-8 rounded flex items-center justify-center text-[var(--cl-text-secondary)] hover:text-[var(--cl-error)]"
-          title="Clear All"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-          </svg>
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={undoDrawing}
+              disabled={drawings.length === 0}
+              className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:cursor-not-allowed"
+            >
+              <Undo2 size={14} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Undo (Ctrl+Z)</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={redoDrawing}
+              disabled={drawingUndoStack.length === 0}
+              className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:cursor-not-allowed"
+            >
+              <Redo2 size={14} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Redo (Ctrl+Y)</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => { clearDrawings(); clearPriceLines(); }}
+              className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 size={14} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Clear All</TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );

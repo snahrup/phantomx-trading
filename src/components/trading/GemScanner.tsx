@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { Loader2, Search, Zap } from 'lucide-react';
 import { useTradingStore } from '@/store/trading-store';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { FadeIn, PulseIndicator } from '@/components/motion';
 
 interface ScanResult {
   symbol: string;
@@ -27,7 +32,7 @@ interface ScanResponse {
 }
 
 export default function GemScanner() {
-  const { isConnected, setSymbol, setSidePanel } = useTradingStore();
+  const { isConnected, setSymbol } = useTradingStore();
   const [scanning, setScanning] = useState(false);
   const [scanData, setScanData] = useState<ScanResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -80,13 +85,12 @@ export default function GemScanner() {
 
   const handleSelectToken = (symbol: string) => {
     setSymbol(symbol);
-    setSidePanel('ai');
   };
 
   const smaColor = (signal: string) => {
-    if (signal === 'bullish_cross') return 'text-[var(--cl-success)]';
-    if (signal === 'bearish') return 'text-[var(--cl-error)]';
-    return 'text-[var(--cl-text-faint)]';
+    if (signal === 'bullish_cross') return 'text-claude-green';
+    if (signal === 'bearish') return 'text-destructive';
+    return 'text-foreground';
   };
 
   const smaLabel = (signal: string) => {
@@ -96,180 +100,194 @@ export default function GemScanner() {
     return '—';
   };
 
+  const smaBadgeVariant = (signal: string): 'default' | 'destructive' | 'secondary' | 'outline' => {
+    if (signal === 'bullish_cross') return 'default';
+    if (signal === 'bearish') return 'destructive';
+    return 'outline';
+  };
+
   return (
     <div className="flex flex-col gap-3">
       {/* Scan Button */}
-      <button
+      <Button
         onClick={runScan}
         disabled={!isConnected || scanning}
-        className={`w-full py-3.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+        variant={scanning ? 'outline' : isConnected ? 'default' : 'secondary'}
+        className={`w-full py-3.5 h-auto text-sm font-medium ${
           scanning
-            ? 'bg-[var(--cl-accent-soft)] border border-[var(--cl-accent-border)] text-[var(--cl-accent)] cursor-wait'
+            ? 'border-primary/30 text-primary cursor-wait bg-primary/10'
             : isConnected
-              ? 'bg-[var(--cl-accent)] text-white hover:bg-[var(--cl-accent-hover)] shadow-lg shadow-[var(--cl-accent-border)]'
-              : 'bg-[var(--cl-fill-control)] border border-[var(--cl-border-subtle)] text-[var(--cl-text-secondary)] cursor-not-allowed'
+              ? 'shadow-lg shadow-primary/20'
+              : 'cursor-not-allowed'
         }`}
       >
         {scanning ? (
           <>
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
+            <Loader2 className="h-4 w-4 animate-spin" />
             Scanning...
           </>
         ) : (
           <>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
+            <Search className="h-4 w-4" />
             Deep Scan — Find Gems
           </>
         )}
-      </button>
+      </Button>
 
       {/* Progress */}
       {scanning && progress && (
-        <div className="glass-card p-3">
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--cl-accent)] animate-pulse" />
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--cl-accent)] animate-pulse" style={{ animationDelay: '0.2s' }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--cl-accent)] animate-pulse" style={{ animationDelay: '0.4s' }} />
+        <Card className="py-0 gap-0">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                <PulseIndicator active={true} color="bg-primary" size="w-1.5 h-1.5" />
+                <PulseIndicator active={true} color="bg-primary" size="w-1.5 h-1.5" />
+                <PulseIndicator active={true} color="bg-primary" size="w-1.5 h-1.5" />
+              </div>
+              <span className="text-[11px] text-foreground">{progress}</span>
             </div>
-            <span className="text-[11px] text-[var(--cl-text-faint)]">{progress}</span>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Error */}
       {error && (
-        <div className="glass-card p-3 border border-[var(--cl-error-border)]">
-          <span className="text-xs text-[var(--cl-error)]">{error}</span>
-        </div>
+        <Card className="py-0 gap-0 border-destructive/30">
+          <CardContent className="p-3">
+            <span className="text-xs text-destructive">{error}</span>
+          </CardContent>
+        </Card>
       )}
 
       {/* Results */}
       {scanData && (
-        <div className="space-y-3">
-          {/* Stats Bar */}
-          <div className="flex items-center justify-between text-[10px] text-[var(--cl-text-secondary)] px-1">
-            <span>{scanData.scanned} markets scanned</span>
-            <span>{scanData.filtered} matched filters</span>
-            <span>{new Date(scanData.timestamp).toLocaleTimeString()}</span>
-          </div>
-
-          {/* AI Analysis */}
-          {scanData.aiAnalysis && (
-            <div className="glass-card p-3 border border-[var(--cl-accent-border)]">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded bg-[var(--cl-accent)] flex items-center justify-center">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                    </svg>
-                  </div>
-                  <span className="text-xs font-medium text-[var(--cl-accent)]">AI Top Picks</span>
-                </div>
-                {scanData.aiThinking && (
-                  <button
-                    onClick={() => setShowThinking(!showThinking)}
-                    className="text-[10px] text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-faint)]"
-                  >
-                    {showThinking ? 'Hide' : 'Show'} reasoning
-                  </button>
-                )}
-              </div>
-
-              {/* Thinking (collapsible) */}
-              {showThinking && scanData.aiThinking && (
-                <div className="mb-3 p-2 rounded bg-[var(--cl-fill-accent-subtle)] border border-[var(--cl-accent-border)] max-h-40 overflow-y-auto">
-                  <pre className="text-[10px] text-[var(--cl-text-faint)] whitespace-pre-wrap font-mono">{scanData.aiThinking}</pre>
-                </div>
-              )}
-
-              {/* AI Analysis text */}
-              <div className="text-xs text-[var(--cl-text-primary)] leading-relaxed whitespace-pre-wrap max-h-[400px] overflow-y-auto ai-analysis-text">
-                {scanData.aiAnalysis}
-              </div>
+        <FadeIn>
+          <div className="space-y-3">
+            {/* Stats Bar */}
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
+              <span>{scanData.scanned} markets scanned</span>
+              <span>{scanData.filtered} matched filters</span>
+              <span>{new Date(scanData.timestamp).toLocaleTimeString()}</span>
             </div>
-          )}
 
-          {/* Token Cards */}
-          <div className="space-y-2">
-            <span className="text-[10px] text-[var(--cl-text-secondary)] uppercase tracking-wider px-1">All Candidates</span>
-            {scanData.results.map((token) => (
-              <button
-                key={token.symbol}
-                onClick={() => handleSelectToken(token.symbol)}
-                className="w-full glass-card p-3 hover:border-[var(--cl-accent-border)] transition-colors text-left group"
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-[var(--cl-text-primary)] group-hover:text-[var(--cl-accent)] transition-colors">
-                    {token.symbol.replace('/USDT:USDT', '')}
-                  </span>
-                  <span className={`text-[10px] font-mono ${token.change24h >= 0 ? 'text-[var(--cl-success)]' : 'text-[var(--cl-error)]'}`}>
-                    {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-[10px]">
-                  <div>
-                    <span className="text-[var(--cl-text-secondary)] block">Price</span>
-                    <span className="text-[var(--cl-text-faint)] font-mono">${token.price.toFixed(6)}</span>
+            {/* AI Analysis */}
+            {scanData.aiAnalysis && (
+              <Card className="py-0 gap-0 border-primary/30">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
+                        <Zap className="w-2.5 h-2.5 text-primary-foreground" />
+                      </div>
+                      <span className="text-xs font-medium text-primary">AI Top Picks</span>
+                    </div>
+                    {scanData.aiThinking && (
+                      <button
+                        onClick={() => setShowThinking(!showThinking)}
+                        className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showThinking ? 'Hide' : 'Show'} reasoning
+                      </button>
+                    )}
                   </div>
-                  <div>
-                    <span className="text-[var(--cl-text-secondary)] block">Leverage</span>
-                    <span className="text-[var(--cl-warning)] font-mono">{token.maxLeverage ?? '—'}x</span>
+
+                  {/* Thinking (collapsible) */}
+                  {showThinking && scanData.aiThinking && (
+                    <div className="mb-3 p-2 rounded bg-primary/5 border border-primary/30 max-h-40 overflow-y-auto">
+                      <pre className="text-[10px] text-foreground whitespace-pre-wrap font-mono">{scanData.aiThinking}</pre>
+                    </div>
+                  )}
+
+                  {/* AI Analysis text */}
+                  <div className="text-xs text-foreground leading-relaxed whitespace-pre-wrap max-h-[400px] overflow-y-auto ai-analysis-text">
+                    {scanData.aiAnalysis}
                   </div>
-                  <div>
-                    <span className="text-[var(--cl-text-secondary)] block">SMA</span>
-                    <span className={`font-mono ${smaColor(token.smaSignal)}`}>{smaLabel(token.smaSignal)}</span>
-                  </div>
-                  <div>
-                    <span className="text-[var(--cl-text-secondary)] block">From ATL</span>
-                    <span className="text-[var(--cl-text-faint)] font-mono">+{token.distFromATL.toFixed(1)}%</span>
-                  </div>
-                  <div>
-                    <span className="text-[var(--cl-text-secondary)] block">From ATH</span>
-                    <span className="text-[var(--cl-error)] font-mono">-{token.distFromATH.toFixed(1)}%</span>
-                  </div>
-                  <div>
-                    <span className="text-[var(--cl-text-secondary)] block">Vol 24h</span>
-                    <span className="text-[var(--cl-text-faint)] font-mono">
-                      ${token.volumeUsdApprox >= 1000000
-                        ? (token.volumeUsdApprox / 1000000).toFixed(1) + 'M'
-                        : token.volumeUsdApprox >= 1000
-                          ? (token.volumeUsdApprox / 1000).toFixed(0) + 'K'
-                          : token.volumeUsdApprox.toFixed(0)}
-                    </span>
-                  </div>
-                </div>
-                {token.volumeTrend !== 0 && (
-                  <div className="mt-1.5 flex items-center gap-1">
-                    <span className="text-[9px] text-[var(--cl-text-secondary)]">Vol trend (3d):</span>
-                    <span className={`text-[9px] font-mono ${token.volumeTrend > 0 ? 'text-[var(--cl-success)]' : 'text-[var(--cl-error)]'}`}>
-                      {token.volumeTrend > 0 ? '+' : ''}{token.volumeTrend.toFixed(0)}%
-                    </span>
-                  </div>
-                )}
-              </button>
-            ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Token Cards */}
+            <div className="space-y-2">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider px-1">All Candidates</span>
+              {scanData.results.map((token, i) => (
+                <FadeIn key={token.symbol} delay={i * 0.05}>
+                  <Card
+                    className="py-0 gap-0 cursor-pointer hover:border-primary/30 transition-colors group"
+                    onClick={() => handleSelectToken(token.symbol)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
+                          {token.symbol.replace('/USDT:USDT', '')}
+                        </span>
+                        <Badge
+                          variant={token.change24h >= 0 ? 'default' : 'destructive'}
+                          className={`text-[10px] font-mono ${
+                            token.change24h >= 0
+                              ? 'bg-claude-green/15 text-claude-green border-claude-green/30 hover:bg-claude-green/15'
+                              : ''
+                          }`}
+                        >
+                          {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-[10px]">
+                        <div>
+                          <span className="text-muted-foreground block">Price</span>
+                          <span className="text-foreground font-mono">${token.price.toFixed(6)}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block">Leverage</span>
+                          <span className="text-yellow-500 font-mono">{token.maxLeverage ?? '—'}x</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block">SMA</span>
+                          <Badge variant={smaBadgeVariant(token.smaSignal)} className="text-[9px] px-1 py-0">
+                            {smaLabel(token.smaSignal)}
+                          </Badge>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block">From ATL</span>
+                          <span className="text-foreground font-mono">+{token.distFromATL.toFixed(1)}%</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block">From ATH</span>
+                          <span className="text-destructive font-mono">-{token.distFromATH.toFixed(1)}%</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block">Vol 24h</span>
+                          <span className="text-foreground font-mono">
+                            ${token.volumeUsdApprox >= 1000000
+                              ? (token.volumeUsdApprox / 1000000).toFixed(1) + 'M'
+                              : token.volumeUsdApprox >= 1000
+                                ? (token.volumeUsdApprox / 1000).toFixed(0) + 'K'
+                                : token.volumeUsdApprox.toFixed(0)}
+                          </span>
+                        </div>
+                      </div>
+                      {token.volumeTrend !== 0 && (
+                        <div className="mt-1.5 flex items-center gap-1">
+                          <span className="text-[9px] text-muted-foreground">Vol trend (3d):</span>
+                          <span className={`text-[9px] font-mono ${token.volumeTrend > 0 ? 'text-claude-green' : 'text-destructive'}`}>
+                            {token.volumeTrend > 0 ? '+' : ''}{token.volumeTrend.toFixed(0)}%
+                          </span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </FadeIn>
+              ))}
+            </div>
           </div>
-        </div>
+        </FadeIn>
       )}
 
       {/* Empty state */}
       {!scanning && !scanData && !error && (
         <div className="flex flex-col items-center justify-center py-8 text-center opacity-40">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-            <circle cx="11" cy="11" r="8" />
-            <path d="M21 21l-4.35-4.35" />
-            <path d="M8 11h6" />
-            <path d="M11 8v6" />
-          </svg>
-          <p className="text-xs text-[var(--cl-text-secondary)] mt-3">Scan Phemex futures for gems</p>
-          <p className="text-[10px] text-[var(--cl-text-secondary)]">Low price, high leverage, near ATL</p>
+          <Search className="w-9 h-9 text-muted-foreground" strokeWidth={1} />
+          <p className="text-xs text-muted-foreground mt-3">Scan Phemex futures for gems</p>
+          <p className="text-[10px] text-muted-foreground">Low price, high leverage, near ATL</p>
         </div>
       )}
     </div>

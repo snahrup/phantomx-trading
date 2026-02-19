@@ -6,6 +6,15 @@ import remarkGfm from 'remark-gfm';
 import { useTradingStore } from '@/store/trading-store';
 import type { AIMessage, ChartPriceLine, JournalEntry, JournalEntryType } from '@/types/trading';
 import { createPatternDrawings } from '@/lib/chart/pattern-visualizer';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  MessageSquare, Layers, Send, Image as ImageIcon, ChevronDown, ChevronRight,
+  Settings, Zap, Mic, X, Check, Pause, Play, Search, Square,
+} from 'lucide-react';
 
 const VoicePanel = lazy(() => import('./VoicePanel'));
 
@@ -16,31 +25,31 @@ const Markdown = memo(function Markdown({ content }: { content: string }) {
       remarkPlugins={[remarkGfm]}
       components={{
         p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
-        strong: ({ children }) => <strong className="text-[var(--cl-text-primary)]" style={{ fontWeight: 600 }}>{children}</strong>,
-        em: ({ children }) => <em className="text-[var(--cl-text-faint)]" style={{ fontWeight: 100, fontStyle: 'italic' }}>{children}</em>,
-        h1: ({ children }) => <h1 className="text-[13px] text-[var(--cl-text-primary)] mb-1.5 mt-2 first:mt-0" style={{ fontWeight: 900 }}>{children}</h1>,
-        h2: ({ children }) => <h2 className="text-[12px] text-[var(--cl-text-primary)] mb-1 mt-2 first:mt-0" style={{ fontWeight: 600 }}>{children}</h2>,
-        h3: ({ children }) => <h3 className="text-[12px] text-[var(--cl-text-faint)] mb-1 mt-1.5 first:mt-0" style={{ fontWeight: 600 }}>{children}</h3>,
+        strong: ({ children }) => <strong className="text-foreground" style={{ fontWeight: 600 }}>{children}</strong>,
+        em: ({ children }) => <em className="text-muted-foreground" style={{ fontWeight: 100, fontStyle: 'italic' }}>{children}</em>,
+        h1: ({ children }) => <h1 className="text-[13px] text-foreground mb-1.5 mt-2 first:mt-0" style={{ fontWeight: 900 }}>{children}</h1>,
+        h2: ({ children }) => <h2 className="text-[12px] text-foreground mb-1 mt-2 first:mt-0" style={{ fontWeight: 600 }}>{children}</h2>,
+        h3: ({ children }) => <h3 className="text-[12px] text-muted-foreground mb-1 mt-1.5 first:mt-0" style={{ fontWeight: 600 }}>{children}</h3>,
         ul: ({ children }) => <ul className="list-disc list-inside mb-1.5 space-y-0.5">{children}</ul>,
         ol: ({ children }) => <ol className="list-decimal list-inside mb-1.5 space-y-0.5">{children}</ol>,
-        li: ({ children }) => <li className="text-[var(--cl-text-faint)]">{children}</li>,
+        li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
         code: ({ className, children }) => {
           const isBlock = className?.includes('language-');
           return isBlock ? (
-            <pre className="bg-[var(--cl-bg-page)] rounded-md p-2 my-1.5 overflow-x-auto text-[10px] font-mono border border-[var(--cl-border-subtle)]">
+            <pre className="bg-background rounded-md p-2 my-1.5 overflow-x-auto text-[10px] font-mono border border-border/50">
               <code>{children}</code>
             </pre>
           ) : (
-            <code className="bg-[var(--cl-fill-control)] text-[var(--cl-accent)] px-1 py-0.5 rounded text-[11px] font-mono">{children}</code>
+            <code className="bg-muted text-primary px-1 py-0.5 rounded text-[11px] font-mono">{children}</code>
           );
         },
         pre: ({ children }) => <>{children}</>,
-        blockquote: ({ children }) => <blockquote className="border-l-2 border-[var(--cl-accent-border)] pl-2 my-1.5 text-[var(--cl-text-secondary)] italic">{children}</blockquote>,
+        blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/20 pl-2 my-1.5 text-muted-foreground italic">{children}</blockquote>,
         table: ({ children }) => <div className="overflow-x-auto my-1.5"><table className="text-[10px] border-collapse">{children}</table></div>,
-        th: ({ children }) => <th className="border border-[var(--cl-border-subtle)] px-1.5 py-0.5 bg-[var(--cl-fill-control)] text-left" style={{ fontWeight: 600 }}>{children}</th>,
-        td: ({ children }) => <td className="border border-[var(--cl-border-subtle)] px-1.5 py-0.5">{children}</td>,
-        hr: () => <hr className="border-[var(--cl-border-subtle)] my-3" />,
-        a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-[var(--cl-accent)] underline">{children}</a>,
+        th: ({ children }) => <th className="border border-border/50 px-1.5 py-0.5 bg-muted text-left" style={{ fontWeight: 600 }}>{children}</th>,
+        td: ({ children }) => <td className="border border-border/50 px-1.5 py-0.5">{children}</td>,
+        hr: () => <Separator className="my-3" />,
+        a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline">{children}</a>,
       }}
     >
       {content}
@@ -51,11 +60,11 @@ const Markdown = memo(function Markdown({ content }: { content: string }) {
 function extractPriceLinesFromText(text: string): Omit<ChartPriceLine, 'id' | 'timestamp'>[] {
   const lines: Omit<ChartPriceLine, 'id' | 'timestamp'>[] = [];
   const patterns = [
-    { regex: /(?:entry|enter|buy)\s*(?:at|@|:)\s*\$?([\d,]+\.?\d*)/gi, type: 'entry' as const, color: 'var(--cl-info)' },
-    { regex: /(?:exit|sell|target|tp|take.?profit)\s*(?:at|@|:)\s*\$?([\d,]+\.?\d*)/gi, type: 'take_profit' as const, color: 'var(--cl-success)' },
-    { regex: /(?:stop.?loss|sl|stop)\s*(?:at|@|:)\s*\$?([\d,]+\.?\d*)/gi, type: 'stop_loss' as const, color: 'var(--cl-error)' },
-    { regex: /(?:support)\s*(?:at|@|:|\s)\s*\$?([\d,]+\.?\d*)/gi, type: 'support' as const, color: 'var(--cl-success)' },
-    { regex: /(?:resistance)\s*(?:at|@|:|\s)\s*\$?([\d,]+\.?\d*)/gi, type: 'resistance' as const, color: 'var(--cl-error)' },
+    { regex: /(?:entry|enter|buy)\s*(?:at|@|:)\s*\$?([\d,]+\.?\d*)/gi, type: 'entry' as const, color: '#1C6BBB' },
+    { regex: /(?:exit|sell|target|tp|take.?profit)\s*(?:at|@|:)\s*\$?([\d,]+\.?\d*)/gi, type: 'take_profit' as const, color: '#2D8547' },
+    { regex: /(?:stop.?loss|sl|stop)\s*(?:at|@|:)\s*\$?([\d,]+\.?\d*)/gi, type: 'stop_loss' as const, color: '#D4183D' },
+    { regex: /(?:support)\s*(?:at|@|:|\s)\s*\$?([\d,]+\.?\d*)/gi, type: 'support' as const, color: '#2D8547' },
+    { regex: /(?:resistance)\s*(?:at|@|:|\s)\s*\$?([\d,]+\.?\d*)/gi, type: 'resistance' as const, color: '#D4183D' },
   ];
   for (const p of patterns) {
     let match;
@@ -187,7 +196,7 @@ export default function AIChatPanel() {
     autopilotScanMode, setAutopilotScanMode,
     autopilotInterval, setAutopilotInterval,
     autopilotAutoTrade, setAutopilotAutoTrade,
-    viewMode, setViewMode, autopilotClosedTrades, journalEntries,
+    autopilotClosedTrades, journalEntries,
   } = useTradingStore();
 
   const [showRiskMenu, setShowRiskMenu] = useState(false);
@@ -550,13 +559,9 @@ export default function AIChatPanel() {
         currentPrice: ticker?.last ?? 0,
         ticker,
       };
-      if (viewMode === 'dashboard') {
-        requestBody.viewMode = 'dashboard';
-        requestBody.closedTrades = autopilotClosedTrades.slice(-100);
-        requestBody.journalEntries = journalEntries.slice(-100);
-      } else if (viewMode === 'intelligence') {
-        requestBody.viewMode = 'intelligence';
-      }
+      // Include context for AI — always provide closed trades and journal
+      requestBody.closedTrades = autopilotClosedTrades.slice(-100);
+      requestBody.journalEntries = journalEntries.slice(-100);
 
       const response = await fetch('/api/ai', {
         method: 'POST',
@@ -600,6 +605,11 @@ export default function AIChatPanel() {
                     .catch(() => {});
                 }
               }
+              else if (data.type === 'system_result') {
+                const icon = data.success ? '**OK**' : '**FAILED**';
+                appendAIStreamingText(`${icon} \`${data.action}\` — ${data.result}\n`);
+                fullText += `\n${icon} \`${data.action}\` — ${data.result}`;
+              }
               else if (data.type === 'draw_commands' && data.draws?.lines) {
                 const store = useTradingStore.getState();
                 store.clearPriceLines('ai_chat');
@@ -608,7 +618,7 @@ export default function AIChatPanel() {
                   store.addPriceLine({
                     id: `ai-draw-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
                     price: ln.price,
-                    color: ln.color || 'var(--cl-accent)',
+                    color: ln.color || '#AE5630',
                     lineWidth: ln.type === 'entry' ? 2 : 1,
                     lineStyle: (ln.style as 'solid' | 'dashed' | 'dotted') || 'dashed',
                     label: ln.label || `$${ln.price}`,
@@ -676,21 +686,7 @@ export default function AIChatPanel() {
     { label: 'Risk Check', message: 'Given my current positions and risk parameters, how am I looking? Any concerns?' },
   ];
 
-  const dashboardQuickActions = [
-    { label: 'Review Trades', message: 'Review my recent trading activity. What patterns do you see in my wins and losses?' },
-    { label: 'Win Rate', message: 'Break down my win rate by symbol. Which tokens am I best at trading and which should I avoid?' },
-    { label: 'Behavioral Check', message: 'Analyze my trading behavior. Am I revenge trading, FOMO buying, cutting winners too early, or showing any other behavioral patterns?' },
-    { label: 'Generate Learnings', message: 'Based on all my trade history and journal entries, generate behavioral learnings that I should remember for future trading.' },
-  ];
-
-  const intelligenceQuickActions = [
-    { label: 'Knowledge Summary', message: 'Summarize everything in my knowledge base. What are the key themes and how many entries do I have in each category?' },
-    { label: 'Pattern Analysis', message: 'What behavioral patterns have you documented? Which ones have the most interventions and which are most impactful?' },
-    { label: 'Intervention Report', message: 'How accurate have your behavioral interventions been? Show me the full track record with details.' },
-    { label: 'Learning Gaps', message: 'Based on my trading history vs my documented learnings, what behavioral patterns am I missing? Where are the blind spots?' },
-  ];
-
-  const quickActions = viewMode === 'intelligence' ? intelligenceQuickActions : viewMode === 'dashboard' ? dashboardQuickActions : tradingQuickActions;
+  const quickActions = tradingQuickActions;
 
   // Voice panel overlay
   if (showVoicePanel) {
@@ -698,7 +694,7 @@ export default function AIChatPanel() {
       <Suspense fallback={
         <div className="flex flex-col h-full items-center justify-center">
           <div className="ai-thinking"><span /><span /><span /></div>
-          <span className="text-xs text-[var(--cl-text-secondary)] mt-2">Loading Onyx...</span>
+          <span className="text-xs text-muted-foreground mt-2">Loading Onyx...</span>
         </div>
       }>
         <VoicePanel onClose={() => setShowVoicePanel(false)} />
@@ -709,12 +705,10 @@ export default function AIChatPanel() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="panel-header">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border text-[13px] font-medium tracking-[0.01em] text-muted-foreground flex-shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-md bg-[var(--cl-accent)] flex items-center justify-center">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
+          <div className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">
+            <MessageSquare className="w-2.5 h-2.5 text-primary-foreground" />
           </div>
           <span>PhantomX AI</span>
         </div>
@@ -725,57 +719,55 @@ export default function AIChatPanel() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-2">
-        {aiMessages.length === 0 && !aiStreamingText && (
-          <div className="flex flex-col items-center justify-center h-full text-center opacity-50">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--cl-accent)" strokeWidth="1.5" className="mb-3 opacity-30">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
-            <p className="text-[12px] text-[var(--cl-text-faint)]">Ask me anything about the market</p>
-            <p className="text-[10px] text-[var(--cl-text-secondary)] mt-1">Paste screenshots (Ctrl+V) or say &quot;thoughts?&quot;</p>
-          </div>
-        )}
-
-        {aiMessages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
-
-        {/* Streaming response */}
-        {aiStreamingText && (
-          <div className="flex gap-1.5">
-            <div className="w-5 h-5 rounded-full bg-[var(--cl-accent-soft)] flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span className="text-[8px] text-[var(--cl-accent)] font-semibold">AI</span>
+      <ScrollArea className="flex-1">
+        <div className="p-2 space-y-2">
+          {aiMessages.length === 0 && !aiStreamingText && (
+            <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center opacity-50">
+              <Layers className="w-12 h-12 text-primary mb-3 opacity-30" />
+              <p className="text-[12px] text-muted-foreground">Ask me anything about the market</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Paste screenshots (Ctrl+V) or say &quot;thoughts?&quot;</p>
             </div>
-            <div className="glass-card p-2 max-w-[85%] text-[12px] cl-serif">
-              <Markdown content={aiStreamingText} />
-              <span className="inline-block w-1.5 h-4 bg-[var(--cl-accent)] ml-0.5 animate-pulse" />
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* Thinking */}
-        {aiIsThinking && !aiStreamingText && (
-          <div className="flex gap-1.5 items-center">
-            <div className="w-5 h-5 rounded-full bg-[var(--cl-accent-soft)] flex items-center justify-center flex-shrink-0">
-              <span className="text-[8px] text-[var(--cl-accent)] font-semibold">AI</span>
-            </div>
-            <div className="ai-thinking"><span /><span /><span /></div>
-            <span className="text-[10px] text-[var(--cl-text-secondary)]">Analyzing...</span>
-          </div>
-        )}
+          {aiMessages.map((msg) => (
+            <MessageBubble key={msg.id} message={msg} />
+          ))}
 
-        <div ref={messagesEndRef} />
-      </div>
+          {/* Streaming response */}
+          {aiStreamingText && (
+            <div className="flex gap-1.5">
+              <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-[8px] text-primary font-semibold">AI</span>
+              </div>
+              <Card className="p-2 max-w-[85%] text-[12px] cl-serif border-border rounded-xl gap-0 py-2 shadow-sm">
+                <Markdown content={aiStreamingText} />
+                <span className="inline-block w-1.5 h-4 bg-primary ml-0.5 animate-pulse" />
+              </Card>
+            </div>
+          )}
+
+          {/* Thinking */}
+          {aiIsThinking && !aiStreamingText && (
+            <div className="flex gap-1.5 items-center">
+              <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <span className="text-[8px] text-primary font-semibold">AI</span>
+              </div>
+              <div className="ai-thinking"><span /><span /><span /></div>
+              <span className="text-[10px] text-muted-foreground">Analyzing...</span>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
 
       {/* Quick Actions */}
-      <div className="px-3 py-2 flex gap-1.5 flex-wrap border-t border-[var(--cl-border)]">
+      <div className="px-3 py-2 flex gap-1.5 flex-wrap border-t border-border flex-shrink-0">
         {quickActions.map((action) => (
           <button
             key={action.label}
             onClick={() => { setInput(action.message); setTimeout(() => inputRef.current?.focus(), 0); }}
-            className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-[var(--cl-fill-control)] border border-[var(--cl-border)] text-[var(--cl-text-faint)] hover:text-[var(--cl-text-primary)] hover:border-[var(--cl-accent-border)] hover:bg-[var(--cl-fill-accent)] transition-colors"
+            className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-muted border border-border text-muted-foreground hover:text-foreground hover:border-primary/20 hover:bg-primary/5 transition-colors"
           >
             {action.label}
           </button>
@@ -784,50 +776,46 @@ export default function AIChatPanel() {
 
       {/* Image Preview */}
       {pastedImage && (
-        <div className="px-3 py-2 border-t border-[var(--cl-border)] bg-[var(--cl-bg-surface)]">
+        <div className="px-3 py-2 border-t border-border bg-card flex-shrink-0">
           <div className="relative inline-block">
             <img
               src={`data:image/png;base64,${pastedImage}`}
               alt="Pasted screenshot"
-              className="max-h-24 rounded-lg border border-[var(--cl-border)] opacity-90"
+              className="max-h-24 rounded-lg border border-border opacity-90"
             />
             <button
               onClick={() => setPastedImage(null)}
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[var(--cl-error)] text-white flex items-center justify-center text-[10px] font-bold hover:scale-110 transition-transform"
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center text-[10px] font-bold hover:scale-110 transition-transform"
             >
-              x
+              <X className="w-3 h-3" />
             </button>
-            <span className="text-[9px] text-[var(--cl-text-secondary)] block mt-1">Screenshot attached</span>
+            <span className="text-[9px] text-muted-foreground block mt-1">Screenshot attached</span>
           </div>
         </div>
       )}
 
-      {/* Autopilot Settings Panel — inline collapsible */}
+      {/* Autopilot Settings Panel — inline collapsible (constrained height to keep composer visible) */}
       {showAutopilotPanel && (
-        <div className="border-t border-[var(--cl-border)] bg-[var(--cl-bg-surface)] px-3 py-2.5 space-y-2.5">
+        <div className="border-t border-border bg-card px-3 py-2.5 space-y-2.5 max-h-[40vh] overflow-y-auto flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--cl-accent)" strokeWidth="2.5">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-              </svg>
-              <span className="text-[11px] font-semibold text-[var(--cl-text-primary)] uppercase tracking-wider">Autopilot Settings</span>
+              <Zap className="w-3 h-3 text-primary" />
+              <span className="text-[11px] font-semibold text-foreground uppercase tracking-wider">Autopilot Settings</span>
             </div>
-            <button onClick={() => setShowAutopilotPanel(false)} className="text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-primary)] transition-colors p-0.5">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+            <button onClick={() => setShowAutopilotPanel(false)} className="text-muted-foreground hover:text-foreground transition-colors p-0.5">
+              <X className="w-3 h-3" />
             </button>
           </div>
 
           {/* Mode toggle */}
-          <div className="flex gap-1 p-0.5 rounded-lg bg-[var(--cl-fill-control)] border border-[var(--cl-border-subtle)]">
+          <div className="flex gap-1 p-0.5 rounded-lg bg-muted border border-border/50">
             <button
               onClick={() => setAutopilotMode('single')}
               disabled={isExecuting}
               className={`flex-1 py-1 rounded-md text-[10px] font-medium transition-all ${
                 autopilotMode === 'single'
-                  ? 'bg-[var(--cl-bg-surface)] text-[var(--cl-text-primary)] shadow-sm'
-                  : 'text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-faint)]'
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-muted-foreground'
               } ${isExecuting ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Single Symbol
@@ -837,8 +825,8 @@ export default function AIChatPanel() {
               disabled={isExecuting}
               className={`flex-1 py-1 rounded-md text-[10px] font-medium transition-all ${
                 autopilotMode === 'portfolio'
-                  ? 'bg-[var(--cl-bg-surface)] text-[var(--cl-accent)] shadow-sm'
-                  : 'text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-faint)]'
+                  ? 'bg-card text-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-muted-foreground'
               } ${isExecuting ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Portfolio Manager
@@ -850,15 +838,15 @@ export default function AIChatPanel() {
             <>
               {/* Scan mode */}
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-[var(--cl-text-secondary)]">Scan mode</span>
+                <span className="text-[10px] text-muted-foreground">Scan mode</span>
                 <div className="flex gap-1">
                   <button
                     onClick={() => setAutopilotScanMode('watchlist')}
                     disabled={isExecuting}
                     className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
                       autopilotScanMode === 'watchlist'
-                        ? 'bg-[var(--cl-accent-soft)] text-[var(--cl-accent)] border border-[var(--cl-accent-border)]'
-                        : 'text-[var(--cl-text-secondary)] border border-transparent'
+                        ? 'bg-primary/10 text-primary border border-primary/20'
+                        : 'text-muted-foreground border border-transparent'
                     }`}
                   >
                     Watchlist
@@ -868,8 +856,8 @@ export default function AIChatPanel() {
                     disabled={isExecuting}
                     className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
                       autopilotScanMode === 'full_scan'
-                        ? 'bg-[var(--cl-accent-soft)] text-[var(--cl-accent)] border border-[var(--cl-accent-border)]'
-                        : 'text-[var(--cl-text-secondary)] border border-transparent'
+                        ? 'bg-primary/10 text-primary border border-primary/20'
+                        : 'text-muted-foreground border border-transparent'
                     }`}
                   >
                     Full Scan
@@ -882,17 +870,17 @@ export default function AIChatPanel() {
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap gap-1">
                     {watchlist.map(sym => (
-                      <span key={sym} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-[var(--cl-fill-control)] border border-[var(--cl-border-subtle)] text-[var(--cl-text-faint)]">
+                      <Badge key={sym} variant="outline" className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-muted border-border/50 text-muted-foreground">
                         {shortSym(sym)}
                         {!isExecuting && (
                           <button
                             onClick={() => removeFromWatchlist(sym)}
-                            className="text-[var(--cl-text-secondary)] hover:text-[var(--cl-error)] transition-colors ml-0.5"
+                            className="text-muted-foreground hover:text-destructive transition-colors ml-0.5"
                           >
-                            x
+                            <X className="w-2.5 h-2.5" />
                           </button>
                         )}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                   {!isExecuting && (
@@ -902,21 +890,21 @@ export default function AIChatPanel() {
                         value={watchlistInput}
                         onChange={e => setWatchlistInput(e.target.value)}
                         placeholder="Search tokens to add..."
-                        className="w-full px-2 py-1 rounded text-[10px] bg-[var(--cl-bg-page)] border border-[var(--cl-border-subtle)] text-[var(--cl-text-primary)] placeholder:text-[var(--cl-text-secondary)] outline-none focus:border-[var(--cl-accent-border)]"
+                        className="w-full px-2 py-1 rounded text-[10px] bg-background border border-border/50 text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/35"
                       />
                       {marketsLoading && (
-                        <span className="absolute right-2 top-1 text-[9px] text-[var(--cl-text-secondary)]">Loading...</span>
+                        <span className="absolute right-2 top-1 text-[9px] text-muted-foreground">Loading...</span>
                       )}
                       {filteredMarkets.length > 0 && (
-                        <div className="absolute left-0 right-0 top-full mt-0.5 bg-[var(--cl-bg-surface)] border border-[var(--cl-border)] rounded shadow-lg max-h-32 overflow-y-auto z-50">
+                        <div className="absolute left-0 right-0 top-full mt-0.5 bg-card border border-border rounded shadow-lg max-h-32 overflow-y-auto z-50">
                           {filteredMarkets.map(m => (
                             <button
                               key={m.symbol}
                               onClick={() => { addToWatchlist(m.symbol); setWatchlistInput(''); }}
-                              className="w-full flex items-center justify-between px-2 py-1 text-[10px] hover:bg-[var(--cl-fill-hover)] transition-colors"
+                              className="w-full flex items-center justify-between px-2 py-1 text-[10px] hover:bg-muted/80 transition-colors"
                             >
-                              <span className="text-[var(--cl-text-faint)] font-medium">{m.base}</span>
-                              <span className="text-[8px] text-[var(--cl-text-secondary)] font-mono">{m.symbol}</span>
+                              <span className="text-muted-foreground font-medium">{m.base}</span>
+                              <span className="text-[8px] text-muted-foreground font-mono">{m.symbol}</span>
                             </button>
                           ))}
                         </div>
@@ -930,7 +918,7 @@ export default function AIChatPanel() {
 
           {/* Heartbeat interval */}
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-[var(--cl-text-secondary)]">Heartbeat</span>
+            <span className="text-[10px] text-muted-foreground">Heartbeat</span>
             <div className="flex gap-1">
               {INTERVAL_OPTIONS.map(opt => (
                 <button
@@ -939,8 +927,8 @@ export default function AIChatPanel() {
                   disabled={isExecuting}
                   className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
                     autopilotInterval === opt.value
-                      ? 'bg-[var(--cl-accent-soft)] text-[var(--cl-accent)] border border-[var(--cl-accent-border)]'
-                      : 'text-[var(--cl-text-secondary)] border border-transparent'
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-muted-foreground border border-transparent'
                   }`}
                 >
                   {opt.label}
@@ -952,28 +940,22 @@ export default function AIChatPanel() {
           {/* Auto-trade toggle */}
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-[var(--cl-text-secondary)] block">
+              <span className="text-[10px] text-muted-foreground block">
                 {autopilotAutoTrade ? 'Live Trading' : 'Advise Only'}
               </span>
-              <span className="text-[9px] text-[var(--cl-text-secondary)]">
+              <span className="text-[9px] text-muted-foreground">
                 {autopilotAutoTrade ? 'Will place real orders' : 'Analysis only — no orders'}
               </span>
             </div>
-            <button
-              onClick={() => setAutopilotAutoTrade(!autopilotAutoTrade)}
+            <Switch
+              checked={autopilotAutoTrade}
+              onCheckedChange={(checked) => setAutopilotAutoTrade(checked)}
               disabled={isExecuting}
-              className={`w-10 h-5 rounded-full transition-colors relative ${
-                autopilotAutoTrade ? 'bg-[var(--cl-accent)]' : 'bg-[var(--cl-border)]'
-              } ${isExecuting ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-[3px] transition-transform ${
-                autopilotAutoTrade ? 'translate-x-[22px]' : 'translate-x-[3px]'
-              }`} />
-            </button>
+            />
           </div>
 
           {autopilotAutoTrade && !isExecuting && (
-            <div className="p-1.5 rounded bg-[var(--cl-fill-error)] border border-[var(--cl-error-border)] text-[9px] text-[var(--cl-error)]">
+            <div className="p-1.5 rounded bg-destructive/8 border border-destructive/20 text-[9px] text-destructive">
               Live trading ON — Claude will execute real trades on your Phemex account
             </div>
           )}
@@ -1023,7 +1005,7 @@ export default function AIChatPanel() {
                     setExecuting(true);
                     setShowAutopilotPanel(false);
                     // Auto-switch to dashboard so user immediately sees agents working
-                    setViewMode('dashboard');
+                    // Navigation is now handled by sidebar routes
                     addAIMessage({
                       id: `autopilot-start-${Date.now()}`,
                       role: 'assistant',
@@ -1042,24 +1024,20 @@ export default function AIChatPanel() {
             disabled={!isConnected}
             className={`w-full py-2 rounded-lg text-[11px] font-medium transition-all flex items-center justify-center gap-2 ${
               isExecuting
-                ? 'bg-[var(--cl-fill-error-hover)] border border-[var(--cl-error-border)] text-[var(--cl-error)]'
+                ? 'bg-destructive/12 border border-destructive/20 text-destructive'
                 : isConnected
-                  ? 'bg-[var(--cl-success)] text-[var(--cl-text-inverse)] hover:bg-[var(--cl-success-hover)] shadow-lg'
-                  : 'bg-[var(--cl-fill-control)] border border-[var(--cl-border-subtle)] text-[var(--cl-text-secondary)] cursor-not-allowed'
+                  ? 'bg-[#2D8547] text-primary-foreground hover:bg-[#2D8547]/90 shadow-lg'
+                  : 'bg-muted border border-border/50 text-muted-foreground cursor-not-allowed'
             }`}
           >
             {isExecuting ? (
               <>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
-                </svg>
+                <Pause className="w-2.5 h-2.5 fill-current" />
                 Stop Autopilot
               </>
             ) : (
               <>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="5 3 19 12 5 21 5 3" />
-                </svg>
+                <Play className="w-2.5 h-2.5" />
                 {autopilotMode === 'portfolio' ? 'Start Portfolio Autopilot' : 'Start Autopilot'}
               </>
             )}
@@ -1068,8 +1046,8 @@ export default function AIChatPanel() {
       )}
 
       {/* Composer — Claude-style unified input with inline controls */}
-      <div className="p-3 border-t border-[var(--cl-border)]">
-        <div className="relative bg-[var(--cl-bg-surface)] border border-[var(--cl-border)] rounded-xl focus-within:border-[var(--cl-accent-border-focus)] focus-within:ring-2 focus-within:ring-[var(--cl-accent-focus-ring)] transition-all" style={{ boxShadow: 'var(--cl-shadow-composer)' }}>
+      <div className="p-3 border-t border-border flex-shrink-0">
+        <div className="relative bg-card border border-border rounded-xl focus-within:border-primary/35 focus-within:ring-2 focus-within:ring-primary/10 transition-all shadow-lg">
           {/* Hidden file input */}
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
 
@@ -1080,7 +1058,7 @@ export default function AIChatPanel() {
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             placeholder={pastedImage ? 'Add a message about this image...' : 'Ask PhantomX... (Ctrl+V to paste screenshots)'}
-            className="w-full bg-transparent px-3 pt-2.5 pb-1 text-[12px] text-[var(--cl-text-primary)] placeholder-[var(--cl-text-secondary)] resize-none focus:outline-none"
+            className="w-full bg-transparent px-3 pt-2.5 pb-1 text-[12px] text-foreground placeholder-muted-foreground resize-none focus:outline-none"
             rows={2}
             disabled={aiIsThinking}
           />
@@ -1092,61 +1070,53 @@ export default function AIChatPanel() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={aiIsThinking}
-                className="p-1.5 rounded-md text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-primary)] hover:bg-[var(--cl-fill-hover)] disabled:opacity-30 transition-colors"
+                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 disabled:opacity-30 transition-colors"
                 title="Attach image (Ctrl+V)"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
+                <ImageIcon className="w-3.5 h-3.5" />
               </button>
 
               {/* Divider */}
-              <div className="w-px h-4 bg-[var(--cl-border)] mx-0.5" />
+              <Separator orientation="vertical" className="h-4 mx-0.5" />
 
               {/* Risk Level Selector — Claude model-selector style */}
               <div className="relative">
                 <button
                   onClick={() => setShowRiskMenu(!showRiskMenu)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-[var(--cl-text-faint)] hover:bg-[var(--cl-fill-hover)] transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-muted-foreground hover:bg-muted/80 transition-colors"
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${
-                    riskParameters.level === 'conservative' ? 'bg-[var(--cl-info)]' :
-                    riskParameters.level === 'moderate' ? 'bg-[var(--cl-success)]' :
-                    riskParameters.level === 'aggressive' ? 'bg-[var(--cl-warning)]' :
-                    'bg-[var(--cl-error)]'
+                    riskParameters.level === 'conservative' ? 'bg-[#1C6BBB]' :
+                    riskParameters.level === 'moderate' ? 'bg-[#2D8547]' :
+                    riskParameters.level === 'aggressive' ? 'bg-[#B8860B]' :
+                    'bg-destructive'
                   }`} />
                   {riskParameters.level.charAt(0).toUpperCase() + riskParameters.level.slice(1)}
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
+                  <ChevronDown className="w-2 h-2" />
                 </button>
 
                 {showRiskMenu && (
-                  <div className="absolute bottom-full left-0 mb-1 bg-[var(--cl-bg-surface)] border border-[var(--cl-border)] rounded-lg shadow-lg py-1 min-w-[160px] z-50">
+                  <div className="absolute bottom-full left-0 mb-1 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[160px] z-50">
                     {([
-                      { level: 'conservative', label: 'Conservative', desc: 'Tight stops, small positions', color: 'var(--cl-info)' },
-                      { level: 'moderate', label: 'Moderate', desc: 'Balanced risk/reward', color: 'var(--cl-success)' },
-                      { level: 'aggressive', label: 'Aggressive', desc: 'Bigger positions, wider stops', color: 'var(--cl-warning)' },
-                      { level: 'degen', label: 'Degen', desc: 'Full send, max leverage', color: 'var(--cl-error)' },
+                      { level: 'conservative', label: 'Conservative', desc: 'Tight stops, small positions', color: '#1C6BBB' },
+                      { level: 'moderate', label: 'Moderate', desc: 'Balanced risk/reward', color: '#2D8547' },
+                      { level: 'aggressive', label: 'Aggressive', desc: 'Bigger positions, wider stops', color: '#B8860B' },
+                      { level: 'degen', label: 'Degen', desc: 'Full send, max leverage', color: '#D4183D' },
                     ] as const).map(opt => (
                       <button
                         key={opt.level}
                         onClick={() => { setRiskLevel(opt.level); setShowRiskMenu(false); }}
-                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-[var(--cl-fill-hover)] transition-colors ${
-                          riskParameters.level === opt.level ? 'bg-[var(--cl-fill-active)]' : ''
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted/80 transition-colors ${
+                          riskParameters.level === opt.level ? 'bg-accent' : ''
                         }`}
                       >
                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: opt.color }} />
                         <div>
-                          <div className="text-[11px] font-medium text-[var(--cl-text-primary)]">{opt.label}</div>
-                          <div className="text-[9px] text-[var(--cl-text-secondary)]">{opt.desc}</div>
+                          <div className="text-[11px] font-medium text-foreground">{opt.label}</div>
+                          <div className="text-[9px] text-muted-foreground">{opt.desc}</div>
                         </div>
                         {riskParameters.level === opt.level && (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--cl-accent)" strokeWidth="3" className="ml-auto">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <Check className="w-3 h-3 text-primary ml-auto" />
                         )}
                       </button>
                     ))}
@@ -1155,7 +1125,7 @@ export default function AIChatPanel() {
               </div>
 
               {/* Divider */}
-              <div className="w-px h-4 bg-[var(--cl-border)] mx-0.5" />
+              <Separator orientation="vertical" className="h-4 mx-0.5" />
 
               {/* Autopilot Toggle (on/off) */}
               <button
@@ -1172,14 +1142,12 @@ export default function AIChatPanel() {
                 }}
                 className={`flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-medium transition-colors ${
                   isExecuting
-                    ? 'text-[var(--cl-success)] bg-[rgba(0,210,106,0.1)] hover:bg-[rgba(0,210,106,0.15)]'
-                    : 'text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-faint)] hover:bg-[var(--cl-fill-hover)]'
+                    ? 'text-[#2D8547] bg-[#2D8547]/10 hover:bg-[#2D8547]/15'
+                    : 'text-muted-foreground hover:text-muted-foreground hover:bg-muted/80'
                 }`}
                 title={isExecuting ? 'Stop Autopilot' : 'Open Autopilot Settings'}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                </svg>
+                <Zap className="w-3 h-3" />
                 {isExecuting ? 'ON' : 'Auto'}
               </button>
 
@@ -1188,36 +1156,28 @@ export default function AIChatPanel() {
                 onClick={() => setShowAutopilotPanel(!showAutopilotPanel)}
                 className={`p-1 rounded-md transition-colors ${
                   showAutopilotPanel
-                    ? 'text-[var(--cl-accent)] bg-[var(--cl-fill-accent)]'
-                    : 'text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-faint)] hover:bg-[var(--cl-fill-hover)]'
+                    ? 'text-primary bg-primary/5'
+                    : 'text-muted-foreground hover:text-muted-foreground hover:bg-muted/80'
                 }`}
                 title="Autopilot settings"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
+                <Settings className="w-3 h-3" />
               </button>
 
               {/* Divider */}
-              <div className="w-px h-4 bg-[var(--cl-border)] mx-0.5" />
+              <Separator orientation="vertical" className="h-4 mx-0.5" />
 
               {/* Voice (Onyx) */}
               <button
                 onClick={() => setShowVoicePanel(!showVoicePanel)}
                 className={`flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-medium transition-colors ${
                   showVoicePanel
-                    ? 'text-[var(--cl-accent)] bg-[var(--cl-fill-accent)]'
-                    : 'text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-faint)] hover:bg-[var(--cl-fill-hover)]'
+                    ? 'text-primary bg-primary/5'
+                    : 'text-muted-foreground hover:text-muted-foreground hover:bg-muted/80'
                 }`}
                 title="Onyx Voice Agent"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                  <line x1="12" y1="19" x2="12" y2="23" />
-                  <line x1="8" y1="23" x2="16" y2="23" />
-                </svg>
+                <Mic className="w-3 h-3" />
                 Voice
               </button>
             </div>
@@ -1226,12 +1186,9 @@ export default function AIChatPanel() {
             <button
               onClick={sendMessage}
               disabled={(!input.trim() && !pastedImage) || aiIsThinking}
-              className="p-1.5 rounded-lg bg-[var(--cl-accent)] text-white hover:bg-[var(--cl-accent-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
+              <Send className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -1248,10 +1205,10 @@ function MessageBubble({ message }: { message: AIMessage }) {
   return (
     <div className={`flex gap-1.5 ${isUser ? 'flex-row-reverse' : ''}`}>
       <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-        isUser ? 'bg-[var(--cl-fill-active)]' : isProactive ? 'bg-[rgba(255,193,7,0.15)]' : 'bg-[var(--cl-accent-soft)]'
+        isUser ? 'bg-accent' : isProactive ? 'bg-[#B8860B]/15' : 'bg-primary/10'
       }`}>
         <span className={`text-[8px] font-semibold ${
-          isUser ? 'text-[var(--cl-text-faint)]' : isProactive ? 'text-[var(--cl-warning)]' : 'text-[var(--cl-accent)]'
+          isUser ? 'text-muted-foreground' : isProactive ? 'text-[#B8860B]' : 'text-primary'
         }`}>
           {isUser ? 'U' : isProactive ? 'AP' : 'AI'}
         </span>
@@ -1259,26 +1216,23 @@ function MessageBubble({ message }: { message: AIMessage }) {
 
       <div className={`max-w-[85%] ${isUser ? 'text-right' : ''}`}>
         {isProactive && (
-          <span className="text-[9px] text-[var(--cl-warning)] font-medium uppercase tracking-wider block mb-0.5">Autopilot Insight</span>
+          <span className="text-[9px] text-[#B8860B] font-medium uppercase tracking-wider block mb-0.5">Autopilot Insight</span>
         )}
 
         {message.metadata?.thinkingContent && (
           <button
             onClick={() => setShowThinking(!showThinking)}
-            className="text-[10px] text-[var(--cl-text-secondary)] hover:text-[var(--cl-text-faint)] mb-1 flex items-center gap-1"
+            className="text-[10px] text-muted-foreground hover:text-muted-foreground mb-1 flex items-center gap-1"
           >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-              className={`transform transition-transform ${showThinking ? 'rotate-90' : ''}`}>
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRight className={`w-2.5 h-2.5 transform transition-transform ${showThinking ? 'rotate-90' : ''}`} />
             Reasoning
           </button>
         )}
 
         {showThinking && message.metadata?.thinkingContent && (
-          <div className="glass-card p-1.5 mb-1.5 text-[10px] text-[var(--cl-text-secondary)] italic max-h-28 overflow-y-auto">
+          <Card className="p-1.5 mb-1.5 text-[10px] text-muted-foreground italic max-h-28 overflow-y-auto gap-0 py-1.5 rounded-xl shadow-sm">
             {message.metadata.thinkingContent}
-          </div>
+          </Card>
         )}
 
         {/* Attached image */}
@@ -1287,19 +1241,19 @@ function MessageBubble({ message }: { message: AIMessage }) {
             <img
               src={`data:image/png;base64,${message.metadata.imageBase64}`}
               alt="Attached screenshot"
-              className="max-w-full max-h-48 rounded-lg border border-[var(--cl-border)] opacity-90"
+              className="max-w-full max-h-48 rounded-lg border border-border opacity-90"
             />
           </div>
         )}
 
-        <div className={`glass-card p-2 text-[12px] cl-serif ${
-          isUser ? 'bg-[var(--cl-bg-hover)] border-[var(--cl-border)] whitespace-pre-wrap' :
-          isProactive ? 'border-l-2 border-l-[var(--cl-warning)]' : ''
+        <Card className={`p-2 text-[12px] cl-serif gap-0 py-2 rounded-xl shadow-sm ${
+          isUser ? 'bg-accent border-border whitespace-pre-wrap' :
+          isProactive ? 'border-l-2 border-l-[#B8860B]' : ''
         }`}>
           {isUser ? message.content : <Markdown content={message.content} />}
-        </div>
+        </Card>
 
-        <span className="text-[9px] text-[var(--cl-text-secondary)] mt-0.5 block">
+        <span className="text-[9px] text-muted-foreground mt-0.5 block">
           {new Date(message.timestamp).toLocaleTimeString()}
         </span>
       </div>

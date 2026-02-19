@@ -58,5 +58,13 @@ QA_REPORT.md
 # Jira scripts (local tooling)
 /scripts/create-jira-tickets.py
 
+# Temp analysis scripts
+.temp-*
+.phantomx-kill
+cd
+
 # OpenMemory - IDE/Assistant specific rules
 .windsurf\rules\openmemory.md
+
+# SQLite database (local data)
+/data/

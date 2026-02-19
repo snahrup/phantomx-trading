@@ -157,7 +157,10 @@ export type IndicatorType =
   | 'ATR' | 'ADX' | 'CCI'
   | 'STOCH' | 'STOCHRSI'
   | 'VWAP' | 'OBV'
-  | 'ICHIMOKU' | 'SUPERTREND';
+  | 'ICHIMOKU' | 'SUPERTREND'
+  | 'DONCHIAN' | 'ATR_BANDS' | 'EMA_RIBBON' | 'PIVOT'
+  | 'EMA_CROSS' | 'RSI_DIVERGENCE' | 'CANDLE_PATTERNS' | 'SWING_POINTS'
+  | 'MACD_HIST_FLIP' | 'RSI_REVERSAL' | 'VOLUME_PROFILE';
 
 export interface Condition {
   indicator: string;
@@ -747,4 +750,869 @@ export interface TraderProfile {
   topStrength: string;          // "Your best quality as a trader is..."
   topWeakness: string;          // "Your biggest area for improvement is..."
   actionableAdvice: string[];   // 3-5 specific strategies for improvement
+}
+
+// ============================================================================
+// Strategy Lifecycle Engine — Types
+// ============================================================================
+
+// --- Decision Audit Trail ---
+
+export interface DecisionRecord {
+  id: string;
+  timestamp: number;
+  agent: string;                    // which agent/module made the decision
+  action: string;                   // what was decided
+  reasoning: string;                // WHY — mandatory, never empty
+  confidence: number;               // 0-100
+  inputs: Record<string, unknown>;  // what data informed the decision
+  supportingEvidence: string[];     // specific data points backing the decision
+  contraEvidence?: string[];        // what argued against (shows thoroughness)
+  outcome?: {
+    result: string;
+    wasCorrect: boolean;
+    actualPnl?: number;
+  };
+  parentDecisionId?: string;        // links to the decision this stems from
+  phase: 'research' | 'backtest' | 'optimization' | 'live' | 'supervision';
+}
+
+// --- Strategy Goals ---
+
+export interface StrategyGoals {
+  minWinRate: number;               // e.g., 0.55 = 55%
+  minProfitFactor: number;          // e.g., 1.5
+  maxDrawdownPercent: number;       // e.g., 15
+  minSharpeRatio: number;           // e.g., 1.0
+  duration: 'scalp' | 'day' | 'swing' | 'position';
+  maxOptimizationIterations: number; // default 10
+  questions: string[];              // focus areas for deep research
+}
+
+// --- Backtesting ---
+
+export interface BacktestConfig {
+  strategy: StrategyConfig;
+  ohlcv: OHLCV[];
+  initialCapital: number;
+  fees: number;                     // 0.001 = 0.1% per trade
+  slippage: number;                 // 0.0005 = 0.05%
+}
+
+export interface BacktestTrade {
+  id: string;
+  entryTime: number;
+  exitTime: number;
+  side: 'long' | 'short';
+  entryPrice: number;
+  exitPrice: number;
+  size: number;
+  pnl: number;
+  pnlPercent: number;
+  exitReason: 'signal' | 'stop_loss' | 'take_profit' | 'trailing_stop' | 'end_of_data';
+  fees: number;
+  decision?: DecisionRecord;
+}
+
+export interface BacktestMetrics {
+  totalPnl: number;
+  totalPnlPercent: number;
+  winRate: number;
+  profitFactor: number;
+  maxDrawdown: number;
+  maxDrawdownPercent: number;
+  sharpeRatio: number;
+  sortinoRatio: number;
+  totalTrades: number;
+  winCount: number;
+  lossCount: number;
+  avgWin: number;
+  avgLoss: number;
+  avgHoldTime: number;              // ms
+  bestTrade: number;
+  worstTrade: number;
+  consecutiveWins: number;
+  consecutiveLosses: number;
+  buyAndHoldReturn: number;
+  buyAndHoldReturnPercent: number;
+}
+
+export interface BacktestResult {
+  id: string;
+  strategyId: string;
+  config: BacktestConfig;
+  trades: BacktestTrade[];
+  equityCurve: { time: number; equity: number }[];
+  metrics: BacktestMetrics;
+  duration: number;                 // ms to compute
+  timestamp: number;
+}
+
+// --- Walk-Forward Validation ---
+
+export interface WalkForwardWindow {
+  inSampleStart: number;            // index into OHLCV array
+  inSampleEnd: number;
+  outOfSampleStart: number;
+  outOfSampleEnd: number;
+}
+
+export interface WalkForwardResult {
+  windows: {
+    window: WalkForwardWindow;
+    inSampleMetrics: BacktestMetrics;
+    outOfSampleMetrics: BacktestMetrics;
+    trades: BacktestTrade[];
+  }[];
+  aggregateOutOfSample: BacktestMetrics;
+  overfitRatio: number;             // in-sample Sharpe / out-of-sample Sharpe (>2 = likely overfit)
+  totalResult: BacktestResult;
+}
+
+// --- Research Pipeline ---
+
+export type ResearchPhaseId =
+  | 'market_structure'
+  | 'technical_confluence'
+  | 'agent_consensus'
+  | 'pattern_matching'
+  | 'risk_reward'
+  | 'scenario_analysis'
+  | 'knowledge_integration'
+  | 'strategy_synthesis';
+
+export interface ResearchPhaseStatus {
+  phase: ResearchPhaseId;
+  status: 'pending' | 'running' | 'complete' | 'error';
+  startedAt?: number;
+  completedAt?: number;
+  streamingContent?: string;        // live AI thinking text
+  error?: string;
+}
+
+export interface ResearchBrief {
+  phase: ResearchPhaseId;
+  title: string;
+  summary: string;                  // 2-3 sentence overview
+  findings: string;                 // full detailed analysis
+  confidence: number;               // 0-100
+  keyDataPoints: string[];          // specific evidence
+  decisionRecord: DecisionRecord;
+  timestamp: number;
+}
+
+// --- Optimization ---
+
+export interface OptimizationIteration {
+  iteration: number;
+  strategyConfig: StrategyConfig;
+  backtestResult: BacktestResult;
+  changes: {
+    field: string;
+    oldValue: string | number;
+    newValue: string | number;
+    reasoning: string;
+  }[];
+  metricsVsGoals: {
+    metric: string;
+    value: number;
+    goal: number;
+    met: boolean;
+  }[];
+  decisionRecord: DecisionRecord;
+  timestamp: number;
+}
+
+// --- AI Supervisor & Anomaly Detection ---
+
+export interface MarketAnomaly {
+  id: string;
+  type: 'volume_spike' | 'whale_move' | 'social_surge' | 'news_shock' | 'price_deviation' | 'exchange_flow';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  symbol: string;
+  summary: string;
+  data: Record<string, unknown>;
+  timestamp: number;
+  suggestedAction?: string;
+  decisionRecord: DecisionRecord;
+}
+
+export interface SupervisorIntervention {
+  id: string;
+  timestamp: number;
+  anomalyId?: string;               // which anomaly triggered this
+  action: 'ignore' | 'alert_user' | 'tighten_stops' | 'reduce_position' | 'pause_entries' | 'emergency_exit';
+  reasoning: string;
+  confidence: number;
+  strategyAdjustments?: {
+    field: string;
+    oldValue: string | number;
+    newValue: string | number;
+  }[];
+  decisionRecord: DecisionRecord;
+  outcome?: {
+    wasCorrect: boolean;
+    pnlImpact?: number;
+  };
+}
+
+// ============================================================================
+// Market Data Service
+// ============================================================================
+
+export interface DataBufferConfig {
+  symbol: string;
+  timeframe: string;
+  maxBars: number;               // rolling buffer size (e.g., 1000)
+}
+
+export interface DataBuffer {
+  symbol: string;
+  timeframe: string;
+  bars: OHLCV[];
+  lastUpdate: number;
+  isLive: boolean;               // receiving WebSocket updates
+}
+
+// ============================================================================
+// Market Regime Classifier
+// ============================================================================
+
+export type MarketRegime = 'trending_up' | 'trending_down' | 'ranging' | 'volatile' | 'unknown';
+
+export interface RegimeClassification {
+  regime: MarketRegime;
+  confidence: number;            // 0-1
+  adx: number;                   // ADX value (>25 = trending)
+  volatilityPercentile: number;  // 0-100 percentile vs recent history
+  trendStrength: number;         // -1 to 1 (neg = down, pos = up)
+  atrPercent: number;            // ATR as % of price
+  timestamp: number;
+}
+
+// ============================================================================
+// HFT / Rule-Based Execution Engine
+// ============================================================================
+
+export type HFTEngineState = 'idle' | 'running' | 'paused' | 'cooldown' | 'stopped' | 'error';
+
+export interface HFTConfig {
+  strategy: StrategyConfig;
+  mode: 'live' | 'paper';
+  maxTradesPerMinute: number;    // rate limiter
+  minTimeBetweenTradesMs: number; // cooldown between trades
+  maxConcurrentPositions: number;
+  positionSizeMode: 'fixed_usd' | 'percent_equity' | 'kelly';
+  fixedSizeUsd?: number;
+  percentEquity?: number;
+  kellyFraction?: number;        // fractional Kelly (0.25 = quarter Kelly)
+}
+
+export interface HFTSignal {
+  type: 'entry' | 'exit';
+  side: 'long' | 'short';
+  price: number;
+  timestamp: number;
+  conditionsMet: string[];       // which conditions triggered
+  strength: number;              // 0-1 signal strength
+}
+
+export interface HFTTradeRecord {
+  id: string;
+  strategyId: string;
+  symbol: string;
+  side: PositionSide;
+  entryPrice: number;
+  exitPrice?: number;
+  size: number;
+  leverage: number;
+  pnl?: number;
+  pnlPercent?: number;
+  fees: number;
+  slippage: number;
+  entrySignal: HFTSignal;
+  exitSignal?: HFTSignal;
+  entryTime: number;
+  exitTime?: number;
+  exitReason?: 'signal' | 'stop_loss' | 'take_profit' | 'trailing_stop' | 'max_hold_time' | 'kill_switch';
+  latencyMs: number;             // signal → order submission time
+}
+
+// ============================================================================
+// Paper Trading Engine
+// ============================================================================
+
+export interface PaperAccount {
+  equity: number;
+  initialEquity: number;
+  availableMargin: number;
+  positions: PaperPosition[];
+  closedTrades: PaperTrade[];
+  peakEquity: number;
+  currentDrawdownPercent: number;
+}
+
+export interface PaperPosition {
+  id: string;
+  symbol: string;
+  side: PositionSide;
+  size: number;
+  entryPrice: number;
+  leverage: number;
+  openedAt: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  trailingStop?: number;
+  unrealizedPnl: number;
+  markPrice: number;
+}
+
+export interface PaperTrade {
+  id: string;
+  symbol: string;
+  side: PositionSide;
+  entryPrice: number;
+  exitPrice: number;
+  size: number;
+  leverage: number;
+  pnl: number;
+  pnlPercent: number;
+  fees: number;
+  slippage: number;
+  openedAt: number;
+  closedAt: number;
+  reason: string;
+  holdDurationMs: number;
+}
+
+// ============================================================================
+// Multi-Strategy Portfolio Manager
+// ============================================================================
+
+export interface StrategyAllocation {
+  strategyId: string;
+  strategyName: string;
+  allocationPercent: number;     // % of total portfolio
+  capitalUsd: number;
+  currentPnl: number;
+  currentPnlPercent: number;
+  isActive: boolean;
+  regime: MarketRegime;          // strategy's target regime
+  maxDrawdownPercent: number;
+  currentDrawdownPercent: number;
+}
+
+export interface PortfolioRiskState {
+  totalEquity: number;
+  totalDrawdownPercent: number;
+  peakEquity: number;
+  strategyAllocations: StrategyAllocation[];
+  circuitBreakerTriggered: boolean;
+  circuitBreakerReason?: string;
+  portfolioHeatPercent: number;  // total exposure as % of equity
+  correlationWarnings: string[]; // e.g., "BTC/USDT and ETH/USDT are 95% correlated"
+}
+
+// ============================================================================
+// Notification System
+// ============================================================================
+
+export type NotificationType =
+  | 'trade_executed'
+  | 'kill_switch'
+  | 'supervisor_intervention'
+  | 'drawdown_alert'
+  | 'goal_reached'
+  | 'strategy_deployed'
+  | 'regime_change'
+  | 'error';
+
+export type NotificationSeverity = 'info' | 'warning' | 'critical';
+
+export type NotificationChannel = 'console' | 'webhook' | 'store';
+
+export interface NotificationConfig {
+  channels: NotificationChannel[];
+  webhookUrl?: string;           // Slack / Discord / custom webhook
+  minSeverity: NotificationSeverity;
+  muteUntil?: number;            // timestamp — suppress notifications until
+}
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  severity: NotificationSeverity;
+  title: string;
+  message: string;
+  timestamp: number;
+  strategyId?: string;
+  symbol?: string;
+  read: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+// ============================================================================
+// Drawdown Recovery Protocol
+// ============================================================================
+
+export type RecoveryPhase = 'normal' | 'caution' | 'reduced' | 'minimal' | 'halted';
+
+export interface DrawdownRecoveryConfig {
+  cautionThresholdPercent: number;   // e.g., 5% → scale to 75%
+  reducedThresholdPercent: number;   // e.g., 10% → scale to 50%
+  minimalThresholdPercent: number;   // e.g., 15% → scale to 25%
+  haltedThresholdPercent: number;    // e.g., 20% → stop trading
+  consecutiveLossLimit: number;      // e.g., 5 consecutive losses → pause
+  cooldownMs: number;                // pause duration after hitting limit
+  recoveryStepPercent: number;       // how much drawdown must recover before scaling back up
+}
+
+export interface DrawdownRecoveryState {
+  phase: RecoveryPhase;
+  currentDrawdownPercent: number;
+  peakEquity: number;
+  positionSizeMultiplier: number;   // 1.0 = normal, 0.5 = half size, etc.
+  consecutiveLosses: number;
+  cooldownUntil?: number;
+  lastPhaseChange: number;
+  recoveryHistory: {
+    timestamp: number;
+    fromPhase: RecoveryPhase;
+    toPhase: RecoveryPhase;
+    drawdownPercent: number;
+    reason: string;
+  }[];
+}
+
+// ============================================================================
+// Exchange-Specific Model (Phemex)
+// ============================================================================
+
+export interface ExchangeModel {
+  exchange: Exchange;
+  fundingRateIntervalMs: number;    // 8h = 28800000 for Phemex
+  currentFundingRate: number;
+  nextFundingTime: number;
+  makerFeePercent: number;
+  takerFeePercent: number;
+  minOrderSizes: Record<string, number>;  // symbol → min size
+  maxLeverage: Record<string, number>;    // symbol → max leverage
+  adlEnabled: boolean;
+  liquidationFeePercent: number;
+  maintenanceMarginPercent: number;
+}
+
+export interface FundingRateSnapshot {
+  symbol: string;
+  rate: number;                     // positive = longs pay shorts
+  predictedRate: number;
+  nextFundingTime: number;
+  timestamp: number;
+}
+
+// ============================================================================
+// Dynamic Slippage Model
+// ============================================================================
+
+export interface SlippageEstimate {
+  baseSlippage: number;             // % — from exchange model
+  volumeAdjustment: number;         // % — increases for large orders
+  volatilityAdjustment: number;     // % — increases in volatile conditions
+  depthAdjustment: number;          // % — increases when book is thin
+  totalSlippage: number;            // sum of above
+  confidence: number;               // 0-1
+}
+
+// ============================================================================
+// Scanner → Strategy Pipeline
+// ============================================================================
+
+export interface ScannerOpportunity {
+  symbol: string;
+  score: number;                    // composite score from scanner
+  regime: MarketRegime;
+  suggestedStrategies: string[];    // strategy template IDs that fit
+  volatility: number;
+  volume24h: number;
+  changePercent24h: number;
+  fundingRate?: number;
+  timestamp: number;
+}
+
+// ============================================================================
+// Background Research Engine
+// ============================================================================
+
+export type ResearchCycleType = 'quick_scan' | 'deep_dive' | 'thesis_generation';
+
+export interface ResearchEngineConfig {
+  quickScanIntervalMs: number;       // default: 10 min — market overview, top movers
+  deepDiveIntervalMs: number;        // default: 30 min — full analysis on top opportunities
+  thesisIntervalMs: number;          // default: 60 min — synthesize into trading theses
+  maxTheses: number;                 // max theses to accumulate (default: 50)
+  maxFindings: number;               // max findings to keep (default: 200)
+  maxEvents: number;                 // max upcoming events (default: 100)
+  watchlistSymbols: string[];        // symbols to focus on (empty = auto-discover)
+  riskProfile: RiskLevel;            // influences thesis risk parameters
+  focusAreas: string[];              // e.g., 'memecoins', 'layer2', 'defi', 'macro'
+}
+
+export type ResearchEngineState = 'idle' | 'running' | 'paused' | 'error';
+
+export interface ResearchEngineStatus {
+  state: ResearchEngineState;
+  startedAt: number | null;
+  lastQuickScan: number | null;
+  lastDeepDive: number | null;
+  lastThesisGen: number | null;
+  totalQuickScans: number;
+  totalDeepDives: number;
+  totalThesesGenerated: number;
+  totalFindings: number;
+  currentCycle: ResearchCycleType | null;
+  error: string | null;
+}
+
+export interface ResearchFinding {
+  id: string;
+  cycle: ResearchCycleType;
+  category: 'technical_setup' | 'momentum_shift' | 'volume_anomaly' | 'sentiment_change'
+    | 'macro_event' | 'whale_activity' | 'funding_rate' | 'correlation_break'
+    | 'new_listing' | 'social_trend' | 'regime_change' | 'divergence';
+  symbol: string;
+  title: string;
+  summary: string;
+  evidence: string[];                // specific data points
+  confidence: number;                // 0-100
+  urgency: 'low' | 'medium' | 'high' | 'critical';
+  timestamp: number;
+  expiresAt: number;                 // findings become stale
+  data: Record<string, unknown>;     // raw data backing this finding
+}
+
+export interface TradingThesis {
+  id: string;
+  title: string;                     // e.g., "SOL breakout above $185 resistance"
+  symbol: string;
+  direction: 'long' | 'short' | 'neutral';
+  timeHorizon: 'scalp' | 'day' | 'swing' | 'position';
+  confidence: number;                // 0-100
+
+  // The thesis narrative
+  thesis: string;                    // 2-4 sentence core argument
+  supportingEvidence: string[];      // specific data points that support
+  contraEvidence: string[];          // what argues against (shows thoroughness)
+  catalysts: string[];               // what could trigger the move
+
+  // Concrete trade plan
+  proposedEntry: number;
+  proposedStopLoss: number;
+  proposedTakeProfit: number;
+  riskRewardRatio: number;
+  suggestedPositionSizePercent: number;
+  suggestedLeverage: number;
+
+  // Status tracking
+  status: 'draft' | 'ready' | 'deployed' | 'expired' | 'invalidated';
+  createdAt: number;
+  updatedAt: number;
+  expiresAt: number;
+  deployedStrategyId?: string;       // if the user deploys this thesis
+
+  // Supporting research
+  findingIds: string[];              // which findings contributed to this thesis
+  decisionRecord: DecisionRecord;
+  backtestSummary?: {                // optional backtest of the thesis conditions
+    winRate: number;
+    profitFactor: number;
+    sampleSize: number;
+    sharpeRatio: number;
+  };
+}
+
+export interface UpcomingMarketEvent {
+  id: string;
+  title: string;                     // e.g., "FOMC Rate Decision"
+  category: 'macro' | 'crypto_specific' | 'token_unlock' | 'airdrop'
+    | 'hard_fork' | 'earnings' | 'regulatory' | 'exchange_listing';
+  expectedDate: string;              // ISO date string
+  impactAssessment: string;          // AI's assessment of market impact
+  affectedSymbols: string[];         // which symbols this impacts
+  expectedImpact: 'low' | 'medium' | 'high' | 'critical';
+  direction: 'bullish' | 'bearish' | 'uncertain';
+  confidence: number;                // 0-100
+  source: string;                    // where this info came from
+  timestamp: number;
+}
+
+export interface TopOpportunity {
+  rank: number;
+  symbol: string;
+  score: number;                     // composite score 0-100
+  direction: 'long' | 'short' | 'neutral';
+  headline: string;                  // one-liner why it's ranked here
+  topReason: string;                 // the #1 reason to trade this
+  riskRewardRatio: number;
+  confidence: number;                // 0-100
+  timeHorizon: 'scalp' | 'day' | 'swing' | 'position';
+  proposedEntry: number;
+  proposedStopLoss: number;
+  proposedTakeProfit: number;
+  findingCount: number;              // how many findings support this
+  thesisId: string | null;           // link to full thesis if exists
+  lastUpdated: number;
+  tags: string[];                    // e.g., ['momentum', 'SMA_crossover', 'volume_spike']
+}
+
+// --- Paper Trading (Thesis Validation) ---
+
+export type ResearchPaperTradeStatus = 'pending' | 'open' | 'closed' | 'cancelled';
+
+export interface ResearchPaperTrade {
+  id: string;
+  thesisId: string;                  // which thesis this is testing
+  symbol: string;
+  direction: 'long' | 'short';
+
+  // Entry
+  entryPrice: number;               // price when opened (from live market)
+  entryTimestamp: number;
+  positionSizeUsd: number;           // virtual position size
+  leverage: number;
+
+  // Exit targets
+  stopLoss: number;
+  takeProfit: number;
+  trailingStopPercent?: number;
+
+  // Current state
+  status: ResearchPaperTradeStatus;
+  currentPrice: number;              // last tracked price
+  unrealizedPnl: number;            // current floating P&L (USD)
+  unrealizedPnlPercent: number;     // current floating P&L (%)
+  maxFavorableExcursion: number;    // best it ever was (MFE)
+  maxAdverseExcursion: number;      // worst it ever was (MAE)
+
+  // Exit (filled on close)
+  exitPrice?: number;
+  exitTimestamp?: number;
+  realizedPnl?: number;
+  realizedPnlPercent?: number;
+  exitReason?: 'stop_loss' | 'take_profit' | 'trailing_stop' | 'thesis_invalidated'
+    | 'time_expired' | 'manual' | 'ai_intervention';
+
+  // Journal thread
+  journalEntryIds: string[];         // linked journal entries about this trade
+  decisionRecord: DecisionRecord;
+}
+
+export interface PaperTradingState {
+  isActive: boolean;
+  virtualBalance: number;            // starting virtual balance
+  currentEquity: number;             // current virtual equity
+  peakEquity: number;                // highest equity reached
+  totalTrades: number;
+  winCount: number;
+  lossCount: number;
+  totalPnl: number;
+  maxDrawdownPercent: number;
+  sharpeRatio: number;
+  profitFactor: number;
+  avgWin: number;
+  avgLoss: number;
+  bestTrade: number;
+  worstTrade: number;
+  openTrades: ResearchPaperTrade[];
+  closedTrades: ResearchPaperTrade[];
+  startedAt: number | null;
+}
+
+// --- AI Internal Journal ---
+
+export type AIJournalType =
+  | 'observation'     // noticed something in the market
+  | 'hypothesis'      // forming a theory
+  | 'trade_idea'      // specific trade idea being considered
+  | 'position_open'   // opened a paper trade — why
+  | 'position_monitor'// monitoring a live position — current thinking
+  | 'intervention'    // considering or taking action on a position
+  | 'exit'            // closing a position — reasoning
+  | 'retrospective'   // post-trade analysis — what happened and why
+  | 'learning'        // distilled lesson from experience
+  | 'agent_discussion'// discussion between research sub-agents
+  | 'market_shift'    // noticed a regime change or macro shift
+  | 'risk_alert';     // flagging a risk concern
+
+export type JournalMood =
+  | 'confident'   // strong conviction
+  | 'cautious'    // proceeding carefully
+  | 'curious'     // exploring an idea
+  | 'concerned'   // something doesn't look right
+  | 'excited'     // found something promising
+  | 'frustrated'  // thesis being challenged
+  | 'reflective'  // thinking about past actions
+  | 'neutral';    // routine observation
+
+export interface AIJournalEntry {
+  id: string;
+  type: AIJournalType;
+  mood: JournalMood;
+  timestamp: number;
+
+  // Content
+  title: string;                     // short headline: "Watching SOL flag formation..."
+  content: string;                   // full thought — 1-4 paragraphs, conversational
+  thinking?: string;                 // optional chain-of-thought (collapsed in UI)
+
+  // Context links
+  symbol?: string;                   // which symbol this relates to
+  thesisId?: string;                 // linked thesis
+  paperTradeId?: string;             // linked paper trade
+  relatedEntryIds?: string[];        // previous journal entries this references
+
+  // Agent attribution
+  agent: string;                     // which agent/module wrote this (e.g., 'research-engine', 'sentinel', 'macro')
+  replyTo?: string;                  // if this is a reply to another agent's entry
+
+  // Metadata
+  confidence?: number;               // 0-100 if applicable
+  tags: string[];                    // e.g., ['SOL', 'breakout', 'volume']
+  data?: Record<string, unknown>;    // any structured data backing this entry
+}
+
+// ============================================================================
+// Autopilot Orchestrator Types
+// ============================================================================
+
+export type WorkflowId = 'research' | 'paper' | 'live';
+export type WorkflowStatus = 'idle' | 'running' | 'paused' | 'error';
+
+export type OrchestratorEventType =
+  | 'objective_update'
+  | 'reasoning_step'
+  | 'finding'
+  | 'decision'
+  | 'action'
+  | 'progress'
+  | 'workflow_status'
+  | 'promotion'
+  | 'error';
+
+export interface OrchestratorEvent {
+  id: string;
+  type: OrchestratorEventType;
+  workflow: WorkflowId;
+  timestamp: number;
+  data: {
+    title: string;
+    detail: string;
+    symbol?: string;
+    thesisId?: string;
+    confidence?: number;
+    stage?: string;
+    progress?: number;
+    severity?: 'info' | 'warning' | 'critical';
+    [key: string]: unknown;
+  };
+}
+
+export interface WorkflowState {
+  enabled: boolean;
+  status: WorkflowStatus;
+  currentObjective: string;
+  currentStage: string;
+  lastActivityAt: number | null;
+  recentEvents: OrchestratorEvent[];
+  error: string | null;
+}
+
+export interface ResearchWorkflowMetrics {
+  totalScans: number;
+  totalDeepDives: number;
+  totalThesesGenerated: number;
+  activeFindings: number;
+  readyTheses: number;
+  currentCycle: string | null;
+}
+
+export interface PaperWorkflowMetrics {
+  totalTrades: number;
+  openTrades: number;
+  winRate: number;
+  profitFactor: number;
+  totalPnl: number;
+  currentEquity: number;
+  thesesTested: number;
+  thesesValidated: number;
+}
+
+export interface LiveWorkflowMetrics {
+  mode: 'single' | 'portfolio' | null;
+  isAutoTrading: boolean;
+  tickCount: number;
+  openPositions: number;
+  dailyPnlPercent: number;
+  strategiesDeployed: number;
+  isKilled: boolean;
+}
+
+export interface ThesisValidationRecord {
+  id: string;
+  thesisId: string;
+  symbol: string;
+  direction: 'long' | 'short';
+  paperTradeIds: string[];
+  totalTrades: number;
+  winCount: number;
+  winRate: number;
+  profitFactor: number;
+  avgPnlPercent: number;
+  maxDrawdownPercent: number;
+  status: 'testing' | 'validated' | 'rejected' | 'promoted';
+  promotedAt?: number;
+  rejectedReason?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PromotionCriteria {
+  minTrades: number;
+  minWinRate: number;
+  minProfitFactor: number;
+  maxDrawdownPercent: number;
+  requireUserApproval: boolean;
+}
+
+export interface TradingOrchestratorConfig {
+  research: {
+    enabled: boolean;
+    quickScanIntervalMs?: number;
+    deepDiveIntervalMs?: number;
+    thesisIntervalMs?: number;
+    agentPipelineEnabled: boolean;
+  };
+  paper: {
+    enabled: boolean;
+    virtualBalance: number;
+    maxConcurrentTrades: number;
+    promotionCriteria: PromotionCriteria;
+  };
+  live: {
+    enabled: boolean;
+    mode: 'single' | 'portfolio';
+    onlyValidatedStrategies: boolean;
+    requireUserApproval: boolean;
+    heartbeatIntervalMs?: number;
+    confidenceThreshold?: number;
+  };
+}
+
+export interface OrchestratorState {
+  isRunning: boolean;
+  startedAt: number | null;
+  research: WorkflowState & { metrics: ResearchWorkflowMetrics };
+  paper: WorkflowState & { metrics: PaperWorkflowMetrics };
+  live: WorkflowState & { metrics: LiveWorkflowMetrics };
+  validationRecords: ThesisValidationRecord[];
+  config: TradingOrchestratorConfig;
 }
