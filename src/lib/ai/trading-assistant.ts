@@ -163,12 +163,11 @@ async function runQuery(
 
   const queryOptions: Record<string, unknown> = {
     pathToClaudeCodeExecutable: claudeCodePath,
-    model: 'claude-opus-4-6',
-    fallbackModel: 'claude-sonnet-4-5-20250929',
-    maxTurns: 10,
+    model: 'claude-sonnet-4-5-20250929',
+    maxTurns: 3,
     includePartialMessages: true,
     thinking: { type: 'adaptive' },
-    effort: 'max',
+    effort: 'high',
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
     systemPrompt: {
