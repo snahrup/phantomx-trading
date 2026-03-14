@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, LineChart, MessageSquare, Network, BookOpen,
+  LayoutDashboard, LineChart, Crosshair, MessageSquare, Network, BookOpen,
   Puzzle, Search, Shield, Settings, ChevronLeft, ChevronRight, Zap,
-  Microscope,
+  Microscope, Workflow, Library,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTradingStore } from '@/store/trading-store';
@@ -17,8 +17,10 @@ const navSections = [
     items: [
       { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
       { path: '/trading', icon: LineChart, label: 'Trading' },
-      { path: '/ai', icon: MessageSquare, label: 'AI Chat' },
+      { path: '/mission-control', icon: Crosshair, label: 'Mission Control' },
+      { path: '/ai', icon: MessageSquare, label: 'Concierge' },
       { path: '/agents', icon: Network, label: 'Agents' },
+      { path: '/pipeline', icon: Workflow, label: 'Pipeline' },
     ],
   },
   {
@@ -28,6 +30,7 @@ const navSections = [
       { path: '/journal', icon: BookOpen, label: 'Journal' },
       { path: '/strategy', icon: Puzzle, label: 'Strategy' },
       { path: '/scanner', icon: Search, label: 'Gem Scanner' },
+      { path: '/knowledge', icon: Library, label: 'Knowledge' },
     ],
   },
   {
