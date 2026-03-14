@@ -100,7 +100,7 @@ export default function TokenSelector({ selected, onChange, onFilterChange, acti
     onFilterChange(null);
   }, [selected, onChange, onFilterChange]);
 
-  const displayName = (symbol: string) => symbol.replace('/USDT:USDT', '').replace('/USDT', '');
+  const displayName = (symbol: string) => (symbol ?? '').replace('/USDT:USDT', '').replace('/USDT', '');
 
   return (
     <div className="space-y-2">
@@ -164,7 +164,7 @@ export default function TokenSelector({ selected, onChange, onFilterChange, acti
         {(activeFilter && selected.length > 5
           ? selected.slice(0, 4)
           : selected
-        ).map(symbol => (
+        ).filter(Boolean).map(symbol => (
           <Badge
             key={symbol}
             variant="outline"
