@@ -4,7 +4,7 @@ import React from 'react';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
-  fallback?: 'global' | 'chart' | 'chat' | 'agents' | 'journal' | 'strategy' | 'scanner' | 'controls' | 'analytics' | 'research';
+  fallback?: 'global' | 'chart' | 'chat' | 'agents' | 'journal' | 'strategy' | 'scanner' | 'controls' | 'analytics' | 'research' | 'knowledge' | 'trading' | 'mission-control';
 }
 
 interface ErrorBoundaryState {
