@@ -23,6 +23,8 @@ import type {
   // Orchestrator
   OrchestratorState, OrchestratorEvent, WorkflowId,
 } from '@/types/trading';
+import type { MissionControlConfig } from '@/types/mission-control';
+import { DEFAULT_MISSION_CONFIG } from '@/types/mission-control';
 
 // --- Risk Presets ---
 
@@ -263,13 +265,21 @@ interface TradingState {
   theme: 'light' | 'dark';
   activePanelTab: 'chart' | 'orders' | 'positions' | 'history';
   viewMode: 'trading' | 'dashboard' | 'intelligence';
-  sidePanel: 'ai' | 'strategy' | 'risk' | 'settings' | 'journal' | 'agents';
+  sidePanel: 'ai' | 'strategy' | 'risk' | 'settings' | 'journal' | 'agents' | 'signals';
   sidebarMode: 'docked' | 'floating' | 'minimized';
   sidebarWidth: number;
   sidebarCollapsed: boolean;
   aiPanelMode: 'hidden' | 'floating' | 'fullpage';
   showPineScriptModal: boolean;
   generatedPineScript: string;
+
+  // Mission Control
+  missionControlConfig: MissionControlConfig;
+  focusedPositionSymbol: string | null;
+  isFeedCollapsed: boolean;
+  setMissionControlConfig: (config: Partial<MissionControlConfig>) => void;
+  setFocusedPositionSymbol: (symbol: string | null) => void;
+  setIsFeedCollapsed: (collapsed: boolean) => void;
 
   // Actions
   setConnection: (apiKey: string, apiSecret: string, testnet: boolean) => void;
@@ -560,6 +570,16 @@ export const useTradingStore = create<TradingState>()(
   aiPanelMode: 'hidden' as const,
   showPineScriptModal: false,
   generatedPineScript: '',
+
+  // Mission Control
+  missionControlConfig: DEFAULT_MISSION_CONFIG,
+  focusedPositionSymbol: null,
+  isFeedCollapsed: false,
+  setMissionControlConfig: (config) => set((state) => ({
+    missionControlConfig: { ...state.missionControlConfig, ...config },
+  })),
+  setFocusedPositionSymbol: (symbol) => set({ focusedPositionSymbol: symbol }),
+  setIsFeedCollapsed: (collapsed) => set({ isFeedCollapsed: collapsed }),
 
   // Actions
   setConnection: (apiKey, apiSecret, testnet) => set({ apiKey, apiSecret, isTestnet: testnet }),
