@@ -35,6 +35,7 @@ export function useMissionPolling() {
   const orchestratorRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sparklineRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sparklineBusyRef = useRef(false);
+  const mountedRef = useRef(true);
 
   const clearAll = useCallback(() => {
     if (positionsRef.current) { clearInterval(positionsRef.current); positionsRef.current = null; }
@@ -62,9 +63,10 @@ export function useMissionPolling() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'positions' }),
         });
+        if (!mountedRef.current) return;
         if (res.ok) {
           const data = await res.json();
-          if (data.positions) {
+          if (mountedRef.current && data.positions) {
             useTradingStore.getState().setPositions(data.positions);
           }
         }
@@ -80,8 +82,10 @@ export function useMissionPolling() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'account' }),
         });
+        if (!mountedRef.current) return;
         if (res.ok) {
           const data = await res.json();
+          if (!mountedRef.current) return;
           // API returns { account: { balances, totalUsdValue } }
           const value = data.account?.totalUsdValue ?? 0;
           useTradingStore.getState().setAccountValue(value);
@@ -114,9 +118,10 @@ export function useMissionPolling() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'orchestrator_status' }),
         });
+        if (!mountedRef.current) return;
         if (!res.ok) return;
         const data = await res.json();
-        if (!data.symbols) return;
+        if (!mountedRef.current || !data.symbols) return;
 
         // Extract symbols with active phases (scanning, pipeline, monitoring)
         const activeSymbols: { symbol: string; phase: string }[] = [];
@@ -175,6 +180,7 @@ export function useMissionPolling() {
         if (symbols.length === 0) return;
 
         for (let i = 0; i < symbols.length; i++) {
+          if (!mountedRef.current) return;
           const symbol = symbols[i];
           try {
             const res = await fetch('/api/phemex', {
@@ -182,9 +188,10 @@ export function useMissionPolling() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ action: 'ohlcv', symbol, timeframe: '5m', limit: 50 }),
             });
+            if (!mountedRef.current) return;
             if (res.ok) {
               const data = await res.json();
-              if (data.ohlcv && Array.isArray(data.ohlcv)) {
+              if (mountedRef.current && data.ohlcv && Array.isArray(data.ohlcv)) {
                 // OHLCV comes as objects { timestamp, open, high, low, close, volume }
                 const closes = data.ohlcv.map((c: { close: number } | number[]) =>
                   Array.isArray(c) ? c[4] : c.close
@@ -231,6 +238,10 @@ export function useMissionPolling() {
 
   // Clean up on unmount (safety net)
   useEffect(() => {
-    return () => clearAll();
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      clearAll();
+    };
   }, [clearAll]);
 }

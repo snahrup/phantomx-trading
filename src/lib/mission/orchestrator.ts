@@ -382,10 +382,17 @@ class MissionOrchestrator {
                 state.activeIssueId = null;
                 state.monitorCount++;
 
-                if (triggerHit && activePipelines < MAX_CONCURRENT_PIPELINES) {
+                if (triggerHit) {
                   state.consecutiveNoTrigger = 0;
-                  await this.createTradingIssue(symbol, state);
-                  activePipelines++;
+                  if (activePipelines < MAX_CONCURRENT_PIPELINES) {
+                    await this.createTradingIssue(symbol, state);
+                    // Only count the slot if the issue was actually created (phase changed to pipeline)
+                    if ((state.phase as SymbolPhase) === 'pipeline') activePipelines++;
+                  } else {
+                    // Trigger fired but pipeline slots full — DON'T increment consecutiveNoTrigger
+                    // (it was a real trigger). Next tick will retry if a slot opens.
+                    console.log(`[orchestrator] ${symbol} trigger hit but pipeline slots full (${activePipelines}/${MAX_CONCURRENT_PIPELINES}) — will retry`);
+                  }
                 } else {
                   state.consecutiveNoTrigger++;
                 }

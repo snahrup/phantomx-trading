@@ -36,8 +36,8 @@ export async function monitorPositions(
 ): Promise<MonitorSnapshot> {
   const alerts: string[] = [];
   const paperPositions = executionEngine.getOpen();
-  const dailyPnl = executionEngine.getDailyPnl();
-  const dailyPnlPercent = equity > 0 ? (dailyPnl / equity) * 100 : 0;
+  const dailyRealizedPnl = executionEngine.getDailyPnl();
+  const dailyRealizedPnlPercent = equity > 0 ? (dailyRealizedPnl / equity) * 100 : 0;
 
   // Check paper positions against stops and targets
   for (const pos of paperPositions) {
@@ -83,13 +83,13 @@ export async function monitorPositions(
     totalUnrealizedPnl += pos.unrealizedPnl;
   }
 
-  // Drawdown kill-switch check
-  const totalPnlPercent = equity > 0
-    ? ((dailyPnl + totalUnrealizedPnl) / equity) * 100
+  // Drawdown kill-switch check (realized + unrealized combined)
+  const totalDailyPnlPercent = equity > 0
+    ? ((dailyRealizedPnl + totalUnrealizedPnl) / equity) * 100
     : 0;
 
-  if (totalPnlPercent < -config.maxDailyLossPercent) {
-    const reason = `Daily loss limit breached: ${totalPnlPercent.toFixed(2)}% (limit: -${config.maxDailyLossPercent}%)`;
+  if (totalDailyPnlPercent < -config.maxDailyLossPercent) {
+    const reason = `Daily loss limit breached: ${totalDailyPnlPercent.toFixed(2)}% (limit: -${config.maxDailyLossPercent}%)`;
     triggerKillSwitch(reason);
     alerts.push(`KILL SWITCH TRIGGERED: ${reason}`);
   }
@@ -106,8 +106,8 @@ export async function monitorPositions(
     paperPositions: remainingPaper,
     livePositions,
     totalUnrealizedPnl,
-    totalRealizedPnl: dailyPnl,
-    dailyPnlPercent: totalPnlPercent,
+    totalRealizedPnl: dailyRealizedPnl,
+    dailyPnlPercent: totalDailyPnlPercent,
     alerts,
     whipsawCount: whipsawTrades.length,
   };

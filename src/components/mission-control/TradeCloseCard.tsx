@@ -1,7 +1,7 @@
 // src/components/mission-control/TradeCloseCard.tsx
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import type { TradeCloseEvent } from '@/types/mission-control';
 
@@ -11,11 +11,15 @@ interface TradeCloseCardProps {
 }
 
 export default function TradeCloseCard({ event, onDismiss }: TradeCloseCardProps) {
-  // Auto-dismiss after 30 seconds
+  // Ref-stabilize onDismiss to prevent timer reset on parent re-renders
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+
+  // Auto-dismiss after 30 seconds — stable ref avoids timer churn
   useEffect(() => {
-    const timer = setTimeout(onDismiss, 30_000);
+    const timer = setTimeout(() => onDismissRef.current(), 30_000);
     return () => clearTimeout(timer);
-  }, [onDismiss]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const borderColor = event.isWin ? 'border-emerald-500/50' : 'border-red-500/50';
   const bgColor = event.isWin ? 'bg-emerald-500/5' : 'bg-red-500/5';

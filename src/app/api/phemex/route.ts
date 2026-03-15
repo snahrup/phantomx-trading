@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       const apiKey = process.env.PHEMEX_API_KEY;
       const secret = process.env.PHEMEX_API_SECRET;
       if (!apiKey || !secret) {
-        return NextResponse.json({ success: false, message: 'No env credentials configured' });
+        return NextResponse.json({ success: false, message: 'No env credentials configured' }, { status: 503 });
       }
       const testnet = body.testnet ?? (process.env.PHEMEX_TESTNET === 'true');
       getPhemexClient({ apiKey, secret, testnet, marketType: body.marketType ?? 'swap' });
@@ -150,16 +150,25 @@ export async function POST(req: NextRequest) {
 
     switch (action) {
       case 'ticker': {
+        if (!body.symbol || typeof body.symbol !== 'string') {
+          return NextResponse.json({ error: 'symbol is required' }, { status: 400 });
+        }
         const ticker = await client.getTicker(body.symbol);
         return NextResponse.json({ ticker });
       }
 
       case 'ohlcv': {
+        if (!body.symbol || typeof body.symbol !== 'string') {
+          return NextResponse.json({ error: 'symbol is required' }, { status: 400 });
+        }
         const ohlcv = await client.getOHLCV(body.symbol, body.timeframe, body.limit);
         return NextResponse.json({ ohlcv });
       }
 
       case 'orderbook': {
+        if (!body.symbol || typeof body.symbol !== 'string') {
+          return NextResponse.json({ error: 'symbol is required' }, { status: 400 });
+        }
         const orderBook = await client.getOrderBook(body.symbol, body.limit);
         return NextResponse.json({ orderBook });
       }
@@ -223,6 +232,12 @@ export async function POST(req: NextRequest) {
       }
 
       case 'cancel_order': {
+        if (!body.orderId) {
+          return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
+        }
+        if (!body.symbol || typeof body.symbol !== 'string') {
+          return NextResponse.json({ error: 'symbol is required' }, { status: 400 });
+        }
         await client.cancelOrder(body.orderId, body.symbol);
         return NextResponse.json({ success: true });
       }
@@ -236,6 +251,9 @@ export async function POST(req: NextRequest) {
       }
 
       case 'trades': {
+        if (!body.symbol || typeof body.symbol !== 'string') {
+          return NextResponse.json({ error: 'symbol is required' }, { status: 400 });
+        }
         const trades = await client.getMyTrades(body.symbol, body.limit);
         return NextResponse.json({ trades });
       }
@@ -260,6 +278,9 @@ export async function POST(req: NextRequest) {
       }
 
       case 'funding_rate': {
+        if (!body.symbol || typeof body.symbol !== 'string') {
+          return NextResponse.json({ error: 'symbol is required' }, { status: 400 });
+        }
         // Use underlying CCXT exchange directly (avoids singleton cache issues)
         const exchange = client.getExchange();
         const fr = await exchange.fetchFundingRate(body.symbol);
@@ -276,6 +297,9 @@ export async function POST(req: NextRequest) {
       }
 
       case 'funding_rate_history': {
+        if (!body.symbol || typeof body.symbol !== 'string') {
+          return NextResponse.json({ error: 'symbol is required' }, { status: 400 });
+        }
         const exchange = client.getExchange();
         const history = await exchange.fetchFundingRateHistory(body.symbol, body.since, body.limit);
         return NextResponse.json({
@@ -288,6 +312,12 @@ export async function POST(req: NextRequest) {
       }
 
       case 'set_leverage': {
+        if (!body.symbol || typeof body.symbol !== 'string') {
+          return NextResponse.json({ error: 'symbol is required' }, { status: 400 });
+        }
+        if (typeof body.leverage !== 'number' || !isFinite(body.leverage) || body.leverage < 1 || body.leverage > 100) {
+          return NextResponse.json({ error: 'leverage must be a number between 1 and 100' }, { status: 400 });
+        }
         await client.setLeverage(body.symbol, body.leverage);
         return NextResponse.json({ success: true });
       }

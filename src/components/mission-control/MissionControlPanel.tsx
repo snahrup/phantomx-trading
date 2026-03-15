@@ -32,7 +32,6 @@ export default function MissionControlPanel() {
   const agentActiveSymbols = useTradingStore(s => s.agentActiveSymbols);
 
   const [tradeCloseEvents, setTradeCloseEvents] = useState<TradeCloseEvent[]>([]);
-  const [closeFlashes, setCloseFlashes] = useState<Record<string, 'win' | 'loss'>>({});
   const reconciledRef = useRef(false);
 
   // Reconcile on mount — check if agents are actually running on Axon.
@@ -166,7 +165,7 @@ export default function MissionControlPanel() {
       </div>
 
       {/* Mini Chart Strip */}
-      <MiniChartStrip closeFlashes={closeFlashes} />
+      <MiniChartStrip closeFlashes={{}} />
     </div>
   );
 }

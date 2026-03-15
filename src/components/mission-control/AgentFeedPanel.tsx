@@ -114,6 +114,12 @@ export default function AgentFeedPanel({ tradeCloseEvents, onDismissClose }: Age
   const [feedFilter, setFeedFilter] = useState<'all' | 'focused'>('focused');
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const isFeedCollapsed = useTradingStore(s => s.isFeedCollapsed);
   const setIsFeedCollapsed = useTradingStore(s => s.setIsFeedCollapsed);
@@ -128,8 +134,8 @@ export default function AgentFeedPanel({ tradeCloseEvents, onDismissClose }: Age
   const [localMessages, setLocalMessages] = useState<FeedMessage[]>([]);
   const [commentMessages, setCommentMessages] = useState<FeedMessage[]>([]);
 
-  // Build agent ID → name lookup
-  const agentNameMap = useCallback(() => {
+  // Build agent ID → name lookup (memoized map, not a factory function)
+  const agentNameMap = useMemo(() => {
     const map: Record<string, string> = {};
     for (const a of agents) {
       map[a.id] = a.name;
@@ -157,7 +163,7 @@ export default function AgentFeedPanel({ tradeCloseEvents, onDismissClose }: Age
         const result = await axon.getIssueComments(activeMissionIssueId);
         if (cancelled || !result.ok) return;
 
-        const nameMap = agentNameMap();
+        const nameMap = agentNameMap;
         const msgs: FeedMessage[] = result.data.map((c: AxonIssueComment) => {
           const agentName = c.agent_id ? (nameMap[c.agent_id] || 'Agent') : 'System';
           return {
@@ -187,7 +193,7 @@ export default function AgentFeedPanel({ tradeCloseEvents, onDismissClose }: Age
 
   // Convert axon activity to feed messages
   useEffect(() => {
-    const nameMap = agentNameMap();
+    const nameMap = agentNameMap;
     const messages: FeedMessage[] = activity
       .filter((a: any) => !SUPPRESSED_ACTIONS.has(a.action))
       .map((a: any) => {
@@ -291,7 +297,7 @@ export default function AgentFeedPanel({ tradeCloseEvents, onDismissClose }: Age
     } catch (err) {
       console.error('Send failed:', err);
     } finally {
-      setSending(false);
+      if (mountedRef.current) setSending(false);
     }
   };
 

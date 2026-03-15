@@ -1082,7 +1082,7 @@ export type MarketRegime = 'trending_up' | 'trending_down' | 'ranging' | 'volati
 export interface RegimeClassification {
   regime: MarketRegime;
   confidence: number;            // 0-1
-  adx: number;                   // ADX value (>25 = trending)
+  adx: number;                   // ADX value (>30 = trending)
   volatilityPercentile: number;  // 0-100 percentile vs recent history
   trendStrength: number;         // -1 to 1 (neg = down, pos = up)
   atrPercent: number;            // ATR as % of price

@@ -30,8 +30,8 @@ export function checkRisk(
     p => p.symbol === signal.asset && p.side === signal.direction,
   );
 
-  // Daily P&L check
-  const dailyPnlOk = Math.abs(ctx.dailyPnlPercent) < config.maxDailyLossPercent;
+  // Daily P&L check — only block on LOSSES (negative P&L), not profits
+  const dailyPnlOk = ctx.dailyPnlPercent > -config.maxDailyLossPercent;
 
   // Exposure check — sum of all position notional values as % of equity
   const currentExposure = ctx.positions.reduce((sum, p) => {

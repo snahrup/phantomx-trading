@@ -233,8 +233,19 @@ async function executeLive(
   const side = signal.direction === 'long' ? 'buy' : 'sell';
 
   try {
+    // Set leverage BEFORE placing the order — exchange default may differ
+    try {
+      await client.setLeverage(signal.asset, leverage);
+    } catch (levErr) {
+      console.warn('[ExecutionEngine] Leverage set failed (using exchange default):', levErr);
+    }
+
     const order = await client.createOrder(signal.asset, 'market', side, size);
-    const fillPrice = order.price ?? signal.entry;
+    // Derive average fill price: cost/filled is most accurate for market orders
+    // (order.price is often undefined for market orders on Phemex)
+    const fillPrice = (order.cost > 0 && order.filled > 0)
+      ? order.cost / order.filled
+      : (order.price ?? signal.entry);
     const slippage = Math.abs(fillPrice - signal.entry);
 
     // Place stop-loss order (2s delay — Phemex rate-limits rapid sequential calls)
@@ -370,9 +381,10 @@ export const executionEngine = {
 
     if (record.status !== 'filled') return record;
 
-    // Calculate P&L and hold time
+    // Calculate P&L and hold time — use fillPrice (actual entry) not entryPrice (signal target)
     const direction = record.direction === 'long' ? 1 : -1;
-    const pnl = (exitPrice - record.entryPrice) * record.size * direction;
+    const actualEntry = record.fillPrice ?? record.entryPrice;
+    const pnl = (exitPrice - actualEntry) * record.size * direction;
     const now = Date.now();
     const holdTimeMs = now - record.createdAt;
     const exitRationale = reason ?? 'manual';

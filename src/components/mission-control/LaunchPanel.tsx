@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Rocket, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -317,7 +317,7 @@ export default function LaunchPanel() {
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">USDT</span>
             </div>
-            {config.profitGoal && accountBalance !== null && (
+            {config.profitGoal && accountBalance !== null && accountBalance > 0 && (
               <p className="text-xs text-muted-foreground">
                 {((config.profitGoal / accountBalance) * 100).toFixed(0)}% return on ${accountBalance.toFixed(0)} balance
               </p>

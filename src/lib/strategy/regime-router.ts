@@ -49,7 +49,7 @@ const STRATEGY_REGIME_MAP: StrategyRegimeMapping[] = [
     strategyName: 'Funding Rate Carry v1.0',
     regimes: ['volatile', 'ranging', 'trending_up'],
     additionalConditions: [
-      { type: 'funding_negative', threshold: -0.01, description: 'Funding rate < -0.01% per 8h' },
+      { type: 'funding_negative', threshold: -0.0001, description: 'Funding rate < -0.01% per 8h' },
     ],
   },
   {
@@ -113,7 +113,7 @@ export function routeStrategies(
             if (marketData.fundingRate !== undefined && marketData.fundingRate >= cond.threshold) {
               conditionsMet = false;
               reasoning.push(
-                `PAUSE ${mapping.strategyName}: funding ${(marketData.fundingRate * 100).toFixed(4)}% >= ${cond.threshold}% (${cond.description})`,
+                `PAUSE ${mapping.strategyName}: funding ${(marketData.fundingRate * 100).toFixed(4)}% >= ${(cond.threshold * 100).toFixed(4)}% (${cond.description})`,
               );
             }
             break;

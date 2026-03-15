@@ -45,6 +45,7 @@ export default function TokenSelector({ selected, onChange, onFilterChange, acti
   }, [dropdownOpen]);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchSymbols = async () => {
       try {
         // Use 'markets' action which returns rich data (leverage, base, etc.)
@@ -54,7 +55,9 @@ export default function TokenSelector({ selected, onChange, onFilterChange, acti
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'markets' }),
         });
+        if (cancelled) return;
         const data = await res.json();
+        if (cancelled) return;
         if (data.markets && Array.isArray(data.markets)) {
           setSymbols(data.markets.map((m: { symbol: string; maxLeverage?: number }) => ({
             symbol: m.symbol,
@@ -79,6 +82,7 @@ export default function TokenSelector({ selected, onChange, onFilterChange, acti
       }
     };
     fetchSymbols();
+    return () => { cancelled = true; };
   }, []);
 
   const filtered = useMemo(() => {

@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 
 const KILL_FILE = path.join(process.cwd(), '.phantomx-kill');
+const KILL_FILE_TMP = KILL_FILE + '.tmp';
 
 // ---------------------------------------------------------------------------
 // Concrete risk thresholds (source: risk-params.json, enforced here)
@@ -71,9 +72,17 @@ const globalForKill = globalThis as unknown as { __phantomxKill?: KillState };
 function getState(): KillState {
   if (!globalForKill.__phantomxKill) {
     // Check persisted file on first access (CRIT-11: survive server restart)
+    // SAFETY: If file exists but is corrupt, treat as killed (fail-safe, not fail-open)
     try {
       if (fs.existsSync(KILL_FILE)) {
-        const raw = JSON.parse(fs.readFileSync(KILL_FILE, 'utf-8'));
+        let raw: { mode?: KillMode; reason?: string; triggeredAt?: number | null };
+        try {
+          raw = JSON.parse(fs.readFileSync(KILL_FILE, 'utf-8'));
+        } catch {
+          // Corrupt file — fail-safe: assume killed
+          console.error('[PhantomX] Kill switch file is corrupt — fail-safe: treating as KILLED');
+          raw = { mode: 'killed', reason: 'corrupt kill file — fail-safe' };
+        }
         const mode: KillMode = raw.mode ?? 'killed';
         globalForKill.__phantomxKill = {
           isKilled: true,
@@ -84,7 +93,7 @@ function getState(): KillState {
         console.log(`[PhantomX] Kill switch restored from file (${mode}):`, raw.reason);
         return globalForKill.__phantomxKill;
       }
-    } catch { /* ignore corrupt file */ }
+    } catch { /* existsSync or readFileSync failed — no file, default to inactive */ }
     globalForKill.__phantomxKill = { isKilled: false, mode: 'inactive', reason: null, triggeredAt: null };
   }
   return globalForKill.__phantomxKill;
@@ -121,9 +130,11 @@ export function triggerKillSwitch(reason: string, mode: KillMode = 'killed'): vo
   state.mode = mode === 'inactive' ? 'killed' : mode; // prevent setting inactive via trigger
   state.reason = reason;
   state.triggeredAt = Date.now();
-  // Persist to file (CRIT-11)
+  // Persist to file (CRIT-11) — atomic write-then-rename to prevent corruption on crash
   try {
-    fs.writeFileSync(KILL_FILE, JSON.stringify({ reason, mode: state.mode, triggeredAt: state.triggeredAt }));
+    const payload = JSON.stringify({ reason, mode: state.mode, triggeredAt: state.triggeredAt });
+    fs.writeFileSync(KILL_FILE_TMP, payload);
+    fs.renameSync(KILL_FILE_TMP, KILL_FILE);
   } catch { /* best effort */ }
   console.log(`[PhantomX] KILL SWITCH TRIGGERED (${state.mode}): ${reason}`);
 }
@@ -141,7 +152,9 @@ export function setCloseOnlyMode(reason?: string): void {
   state.mode = 'close_only';
   if (reason) state.reason = reason;
   try {
-    fs.writeFileSync(KILL_FILE, JSON.stringify({ reason: state.reason, mode: 'close_only', triggeredAt: state.triggeredAt }));
+    const payload = JSON.stringify({ reason: state.reason, mode: 'close_only', triggeredAt: state.triggeredAt });
+    fs.writeFileSync(KILL_FILE_TMP, payload);
+    fs.renameSync(KILL_FILE_TMP, KILL_FILE);
   } catch { /* best effort */ }
   console.log(`[PhantomX] Kill switch mode changed to CLOSE_ONLY`);
 }
@@ -179,6 +192,7 @@ export function resetKillSwitch(force = false): { success: boolean; message: str
   state.triggeredAt = null;
   try {
     if (fs.existsSync(KILL_FILE)) fs.unlinkSync(KILL_FILE);
+    if (fs.existsSync(KILL_FILE_TMP)) fs.unlinkSync(KILL_FILE_TMP);
   } catch { /* best effort */ }
   console.log('[PhantomX] Kill switch reset' + (force ? ' (forced with CEO authorization)' : ''));
   return { success: true, message: 'Kill switch reset successfully.' };

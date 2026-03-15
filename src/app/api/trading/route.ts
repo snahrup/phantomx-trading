@@ -95,8 +95,23 @@ export async function POST(req: Request) {
       case 'submit_signal': {
         const { asset, direction, strategy, entry, stop, targets, confidence, metadata,
                 strategyId, source, regime, triggerDetails } = body;
-        if (!asset || !direction || !strategy || !entry || !stop) {
+        if (!asset || !direction || !strategy || entry == null || stop == null) {
           return NextResponse.json({ error: 'Missing required fields: asset, direction, strategy, entry, stop' }, { status: 400 });
+        }
+        if (!['long', 'short'].includes(direction)) {
+          return NextResponse.json({ error: 'direction must be "long" or "short"' }, { status: 400 });
+        }
+        const numEntry = Number(entry);
+        const numStop = Number(stop);
+        const numConfidence = Number(confidence ?? 50);
+        if (!isFinite(numEntry) || numEntry <= 0) {
+          return NextResponse.json({ error: 'entry must be a positive finite number' }, { status: 400 });
+        }
+        if (!isFinite(numStop) || numStop <= 0) {
+          return NextResponse.json({ error: 'stop must be a positive finite number' }, { status: 400 });
+        }
+        if (!isFinite(numConfidence) || numConfidence < 0 || numConfidence > 100) {
+          return NextResponse.json({ error: 'confidence must be a number between 0 and 100' }, { status: 400 });
         }
         const config = pipeline.getConfig();
         const id = tradingSignalBus.submit({
@@ -107,10 +122,10 @@ export async function POST(req: Request) {
           source: source ?? undefined,
           regime: regime ?? undefined,
           triggerDetails: triggerDetails ?? undefined,
-          entry: Number(entry),
-          stop: Number(stop),
+          entry: numEntry,
+          stop: numStop,
           targets: targets ?? [],
-          confidence: Number(confidence ?? 50),
+          confidence: numConfidence,
           metadata,
           expiresAt: Date.now() + config.signalTtlMs,
         });
@@ -230,10 +245,14 @@ export async function POST(req: Request) {
       // ---------------------------------------------------------------
       case 'close': {
         const { executionId, exitPrice, reason: closeReason, exitContext } = body;
-        if (!executionId || !exitPrice) {
+        if (!executionId || exitPrice == null) {
           return NextResponse.json({ error: 'Missing executionId and exitPrice' }, { status: 400 });
         }
-        const record = await executionEngine.close(executionId, Number(exitPrice), closeReason, exitContext);
+        const numExitPrice = Number(exitPrice);
+        if (!isFinite(numExitPrice) || numExitPrice <= 0) {
+          return NextResponse.json({ error: 'exitPrice must be a positive finite number' }, { status: 400 });
+        }
+        const record = await executionEngine.close(executionId, numExitPrice, closeReason, exitContext);
         if (!record) {
           return NextResponse.json({ error: 'Execution not found' }, { status: 404 });
         }
