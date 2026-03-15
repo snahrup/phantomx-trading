@@ -36,7 +36,10 @@ import type {
 /** Phantom Trading Co. company ID in the Axon database */
 export const PHANTOM_COMPANY_ID = '8fc360f2-31bc-4ab2-a441-e69b2d260126';
 
-const DEFAULT_BASE_URL = 'http://localhost:8400/api';
+// IMPORTANT: Use 127.0.0.1, NOT localhost. Node.js 18+ resolves localhost to
+// IPv6 (::1) first, but Axon only listens on IPv4. This caused silent fetch
+// failures where issues were never created from the orchestrator.
+const DEFAULT_BASE_URL = 'http://127.0.0.1:8400/api';
 
 // ---------------------------------------------------------------------------
 // Client
@@ -195,16 +198,20 @@ export class AxonClient {
     return this.get(this.co(`/issues${query ? `?${query}` : ''}`));
   }
 
+  // IMPORTANT: Single-issue endpoints are NOT company-scoped in Axon.
+  // GET /api/companies/{id}/issues/{issueId} returns 404.
+  // Use /api/issues/{issueId} directly instead.
+
   getIssue(issueId: string): Promise<AxonResult<AxonIssue>> {
-    return this.get(this.co(`/issues/${issueId}`));
+    return this.get(`/issues/${issueId}`);
   }
 
   getIssueComments(issueId: string): Promise<AxonResult<AxonIssueComment[]>> {
-    return this.get(this.co(`/issues/${issueId}/comments`));
+    return this.get(`/issues/${issueId}/comments`);
   }
 
   getSubIssues(issueId: string): Promise<AxonResult<AxonIssue[]>> {
-    return this.get(this.co(`/issues/${issueId}/sub-issues`));
+    return this.get(`/issues/${issueId}/sub-issues`);
   }
 
   addComment(
@@ -212,7 +219,7 @@ export class AxonClient {
     content: string,
     opts?: { agent_id?: string; wave?: number; comment_type?: string },
   ): Promise<AxonResult<AxonIssueComment>> {
-    return this.post(this.co(`/issues/${issueId}/comments`), {
+    return this.post(`/issues/${issueId}/comments`, {
       content,
       ...opts,
     });
@@ -235,7 +242,7 @@ export class AxonClient {
       Pick<AxonIssue, 'title' | 'description' | 'status' | 'priority' | 'assigned_agent_id'>
     >,
   ): Promise<AxonResult<AxonIssue>> {
-    return this.patch(this.co(`/issues/${issueId}`), updates);
+    return this.patch(`/issues/${issueId}`, updates);
   }
 
   /** Delete an issue with cascade (sub-issues, comments, trade executions). */

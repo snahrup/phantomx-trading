@@ -22,7 +22,7 @@
 // Start it from LaunchPanel, stop it from the kill switch.
 // ============================================================================
 
-import { getAxonClient } from '@/lib/axon/client';
+import { getAxonClient, resetAxonClient } from '@/lib/axon/client';
 import type { AxonIssue } from '@/lib/axon/types';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -172,6 +172,10 @@ class MissionOrchestrator {
 
     console.log(`[orchestrator] Started v2 (Analyze Once, Monitor Fast) with ${config.selectedPairs.length} pairs — ${config.riskLevel} mode`);
 
+    // Force-reset the Axon client to ensure it uses the current URL config
+    // (globalThis cache may hold a stale instance from a previous hot reload)
+    resetAxonClient();
+
     // Resolve agent IDs from Axon before first tick
     this.resolveAgentIds().then(() => {
       this.tick().catch(console.error);
@@ -255,9 +259,14 @@ class MissionOrchestrator {
           // IDLE → start deep analysis (Phase 1)
           // ---------------------------------------------------------------
           case 'idle': {
-            if (activeAnalyses >= MAX_CONCURRENT_ANALYSES) break;
+            if (activeAnalyses >= MAX_CONCURRENT_ANALYSES) {
+              console.log(`[orchestrator] ${symbol} idle but at max analyses (${activeAnalyses}/${MAX_CONCURRENT_ANALYSES})`);
+              break;
+            }
+            console.log(`[orchestrator] ${symbol} idle → creating deep analysis (active: ${activeAnalyses})`);
             await this.createDeepAnalysisIssue(symbol, state);
-            activeAnalyses++;
+            console.log(`[orchestrator] ${symbol} after createDeepAnalysis: phase=${state.phase} issueId=${state.activeIssueId}`);
+            if (state.activeIssueId) activeAnalyses++;
             break;
           }
 
@@ -404,7 +413,7 @@ class MissionOrchestrator {
           }
         }
       } catch (err) {
-        console.error(`[orchestrator] Error processing ${symbol}:`, err);
+        console.error(`[orchestrator] CATCH error processing ${symbol} (phase was ${state.phase}):`, err);
         // Don't crash — keep in current phase but clear active issue
         state.activeIssueId = null;
       }
@@ -473,12 +482,13 @@ class MissionOrchestrator {
       ...(this.scanAgentId ? { assigned_agent_id: this.scanAgentId } : {}),
     });
 
+    console.log(`[orchestrator] createIssue result for ${base}: ok=${result.ok}`, result.ok ? `id=${result.data.id}` : `error=${(result as { error: string }).error} status=${(result as { status: number }).status}`);
     if (result.ok) {
       state.phase = 'analyzing';
       state.activeIssueId = result.data.id;
-      console.log(`[orchestrator] Created deep analysis for ${base}: ${result.data.id}`);
+      console.log(`[orchestrator] Created deep analysis for ${base}: ${result.data.id} — phase now: ${state.phase}`);
     } else {
-      console.error(`[orchestrator] Failed to create analysis for ${base}:`, result.error);
+      console.error(`[orchestrator] FAILED to create analysis for ${base}:`, (result as { error: string }).error);
     }
   }
 
@@ -598,17 +608,19 @@ class MissionOrchestrator {
   /** Fetch agent list from Axon and resolve IDs for scan/pipeline assignment */
   private async resolveAgentIds(): Promise<void> {
     const axon = getAxonClient();
+    console.log(`[orchestrator] resolveAgentIds: fetching agent list...`);
     const result = await axon.listAgents();
     if (!result.ok) {
-      console.warn('[orchestrator] Could not fetch agents — issues will be unassigned:', result.error);
+      console.warn('[orchestrator] resolveAgentIds FAILED:', (result as { error: string }).error);
       return;
     }
 
     const agents = result.data;
+    console.log(`[orchestrator] resolveAgentIds: found ${agents.length} agents`);
 
     for (const keyword of SCAN_AGENT_KEYWORDS) {
       const match = agents.find(
-        (a) => a.title.toLowerCase().includes(keyword) || a.role.toLowerCase().includes(keyword),
+        (a) => (a.title ?? '').toLowerCase().includes(keyword) || (a.role ?? '').toLowerCase().includes(keyword),
       );
       if (match) {
         this.scanAgentId = match.id;
@@ -619,7 +631,7 @@ class MissionOrchestrator {
 
     for (const keyword of PIPELINE_AGENT_KEYWORDS) {
       const match = agents.find(
-        (a) => a.title.toLowerCase().includes(keyword) || a.role.toLowerCase().includes(keyword),
+        (a) => (a.title ?? '').toLowerCase().includes(keyword) || (a.role ?? '').toLowerCase().includes(keyword),
       );
       if (match) {
         this.pipelineAgentId = match.id;
@@ -629,11 +641,12 @@ class MissionOrchestrator {
     }
 
     if (!this.scanAgentId) {
-      console.warn('[orchestrator] No scan agent found — issues will be unassigned');
+      console.warn('[orchestrator] No scan agent found — listing all titles:', agents.map(a => a.title).join(', '));
     }
     if (!this.pipelineAgentId) {
-      console.warn('[orchestrator] No pipeline agent found — pipeline issues will be unassigned');
+      console.warn('[orchestrator] No pipeline agent found — listing all titles:', agents.map(a => a.title).join(', '));
     }
+    console.log(`[orchestrator] Agent IDs resolved: scan=${this.scanAgentId} pipeline=${this.pipelineAgentId}`);
   }
 
   /** Extract structured trigger conditions from deep analysis issue comments */
