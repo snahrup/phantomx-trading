@@ -8,7 +8,7 @@ import { useTradingStore, RISK_PRESETS } from '@/store/trading-store';
 import { useAxonStore } from '@/store/axon-store';
 import { getAxonClient } from '@/lib/axon/client';
 import TokenSelector from './TokenSelector';
-import type { RiskLevel } from '@/types/mission-control';
+import type { RiskLevel, TeamSize, ScanInterval } from '@/types/mission-control';
 import type { AxonPriority } from '@/lib/axon/types';
 
 const RISK_LEVELS: { id: RiskLevel; label: string }[] = [
@@ -19,6 +19,19 @@ const RISK_LEVELS: { id: RiskLevel; label: string }[] = [
 ];
 
 const MAX_POSITIONS_OPTIONS = [1, 2, 3, 5] as const;
+
+const TEAM_SIZE_OPTIONS: { id: TeamSize; label: string; desc: string }[] = [
+  { id: 'lean', label: 'Lean', desc: '2 analysts, faster, lower cost' },
+  { id: 'standard', label: 'Standard', desc: '4 analysts + full debate' },
+  { id: 'full', label: 'Full', desc: '4 analysts + microstructure + on-chain' },
+];
+
+const SCAN_INTERVAL_OPTIONS: { value: ScanInterval; label: string }[] = [
+  { value: 60, label: '1 min' },
+  { value: 120, label: '2 min' },
+  { value: 300, label: '5 min' },
+  { value: 600, label: '10 min' },
+];
 
 const RISK_PRIORITY_MAP: Record<RiskLevel, AxonPriority> = {
   conservative: 'low',
@@ -104,6 +117,8 @@ export default function LaunchPanel() {
           maxConcurrentPositions: config.maxConcurrentPositions,
           profitGoal: config.profitGoal,
           startingBalance: accountBalance,
+          teamSize: config.teamSize,
+          scanIntervalSec: config.scanIntervalSec,
         }),
       });
 
@@ -321,6 +336,50 @@ export default function LaunchPanel() {
                   }`}
                 >
                   {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Agent Team Size */}
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase text-muted-foreground tracking-wider">Agent Team</label>
+            <div className="flex gap-1.5">
+              {TEAM_SIZE_OPTIONS.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setConfig({ teamSize: t.id })}
+                  title={t.desc}
+                  className={`px-3 py-1.5 rounded text-xs cursor-pointer transition-colors ${
+                    config.teamSize === t.id
+                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-muted text-muted-foreground border border-transparent hover:bg-muted/80'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {TEAM_SIZE_OPTIONS.find(t => t.id === config.teamSize)?.desc}
+            </p>
+          </div>
+
+          {/* Scan Interval */}
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase text-muted-foreground tracking-wider">Scan Interval</label>
+            <div className="flex gap-1.5">
+              {SCAN_INTERVAL_OPTIONS.map(s => (
+                <button
+                  key={s.value}
+                  onClick={() => setConfig({ scanIntervalSec: s.value })}
+                  className={`px-3 py-1.5 rounded text-xs cursor-pointer transition-colors ${
+                    config.scanIntervalSec === s.value
+                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-muted text-muted-foreground border border-transparent hover:bg-muted/80'
+                  }`}
+                >
+                  {s.label}
                 </button>
               ))}
             </div>

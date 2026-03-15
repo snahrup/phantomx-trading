@@ -2,12 +2,17 @@
 
 export type RiskLevel = 'conservative' | 'moderate' | 'aggressive' | 'degen';
 
+export type TeamSize = 'lean' | 'standard' | 'full';
+export type ScanInterval = 60 | 120 | 300 | 600;
+
 export interface MissionControlConfig {
   riskLevel: RiskLevel;
   selectedPairs: string[];
   pairFilter: string | null;
   maxConcurrentPositions: 1 | 2 | 3 | 5;
   profitGoal: number | null;
+  teamSize: TeamSize;
+  scanIntervalSec: ScanInterval;
 }
 
 export const DEFAULT_MISSION_CONFIG: MissionControlConfig = {
@@ -16,6 +21,8 @@ export const DEFAULT_MISSION_CONFIG: MissionControlConfig = {
   pairFilter: null,
   maxConcurrentPositions: 3,
   profitGoal: null,
+  teamSize: 'standard',
+  scanIntervalSec: 120,
 };
 
 export type AgentRole = 'scanner' | 'strategy' | 'risk' | 'execution' | 'research' | 'user' | 'system';

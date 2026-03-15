@@ -279,6 +279,8 @@ export async function POST(req: Request) {
           maxConcurrentPositions: body.maxConcurrentPositions ?? 3,
           profitGoal: body.profitGoal ?? null,
           startingBalance: body.startingBalance ?? null,
+          teamSize: body.teamSize ?? 'standard',
+          scanIntervalSec: body.scanIntervalSec ?? 120,
         };
         orchestrator.start(missionConfig);
         return NextResponse.json({ started: true, status: orchestrator.getStatus() });

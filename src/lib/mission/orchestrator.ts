@@ -39,12 +39,16 @@ interface SymbolState {
   consecutiveNoOpportunity: number;
 }
 
+export type TeamSize = 'lean' | 'standard' | 'full';
+
 export interface MissionConfig {
   selectedPairs: string[];
   riskLevel: string;
   maxConcurrentPositions: number;
   profitGoal: number | null;
   startingBalance: number | null;
+  teamSize: TeamSize;
+  scanIntervalSec: number;
 }
 
 export interface OrchestratorStatus {
@@ -66,10 +70,16 @@ export interface OrchestratorStatus {
 // ---------------------------------------------------------------------------
 
 const TICK_INTERVAL_MS = 15_000;           // Check every 15s
-const SCAN_COOLDOWN_MS = 60_000;           // Min 60s between scans per symbol
+const DEFAULT_SCAN_COOLDOWN_MS = 120_000;  // Default 2 min between scans (overridden by config)
 const POST_TRADE_COOLDOWN_MS = 120_000;    // 2 min cooldown after trade/rejection
 const MAX_CONCURRENT_PIPELINES = 2;        // Don't overwhelm Axon
 const STALE_ISSUE_TIMEOUT_MS = 30 * 60_000; // 30 min — cancel stale issues
+
+const TEAM_SIZE_DESCRIPTIONS: Record<TeamSize, string> = {
+  lean: 'Lean team (2 analysts). Focus on technical analysis + sentiment only.',
+  standard: 'Standard team (4 analysts). Technical, sentiment, on-chain, microstructure.',
+  full: 'Full team (4 analysts + deep microstructure + on-chain whale tracking). Maximum intelligence.',
+};
 
 // ---------------------------------------------------------------------------
 // Orchestrator
@@ -184,11 +194,12 @@ class MissionOrchestrator {
       try {
         switch (state.phase) {
           case 'idle': {
-            // Ready to scan — check cooldown
+            // Ready to scan — check cooldown (use config scanIntervalSec)
             const timeSinceLastScan = now - state.lastScanAt;
+            const baseCooldown = (this.config!.scanIntervalSec ?? 120) * 1000;
             // Back off scan interval based on consecutive no-opportunity results
             const backoffMultiplier = Math.min(state.consecutiveNoOpportunity, 5);
-            const effectiveCooldown = SCAN_COOLDOWN_MS * (1 + backoffMultiplier);
+            const effectiveCooldown = baseCooldown * (1 + backoffMultiplier);
 
             if (timeSinceLastScan >= effectiveCooldown) {
               await this.createScanIssue(symbol, state);
@@ -329,6 +340,7 @@ class MissionOrchestrator {
         `6. If NO opportunity exists, clearly state "NO ENTRY" and why`,
         '',
         `**Risk Level**: ${config.riskLevel}`,
+        `**Team**: ${TEAM_SIZE_DESCRIPTIONS[config.teamSize ?? 'standard']}`,
         `**Scan #${state.scanCount + 1}** for this symbol this session`,
         config.profitGoal ? `**Profit Goal**: $${config.profitGoal}` : '',
       ].filter(Boolean).join('\n'),
