@@ -130,12 +130,12 @@ export function useMissionPolling() {
         store.setAgentActiveSymbols(activeSymbols);
 
         // Auto-switch chart to the most interesting agent-active symbol
-        // Priority: pipeline > scanning > monitoring
+        // Priority: pipeline > analyzing > monitoring
         // Only auto-switch if user hasn't manually focused a position
         if (activeSymbols.length > 0 && store.positions.length === 0) {
           const pipelineSym = activeSymbols.find(s => s.phase === 'pipeline');
-          const scanningSym = activeSymbols.find(s => s.phase === 'scanning');
-          const best = pipelineSym ?? scanningSym ?? activeSymbols[0];
+          const analyzingSym = activeSymbols.find(s => s.phase === 'analyzing');
+          const best = pipelineSym ?? analyzingSym ?? activeSymbols[0];
 
           if (best && store.focusedPositionSymbol !== best.symbol) {
             store.setFocusedPositionSymbol(best.symbol);
