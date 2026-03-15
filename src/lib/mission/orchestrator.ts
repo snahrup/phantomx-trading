@@ -24,6 +24,7 @@
 
 import { getAxonClient, resetAxonClient } from '@/lib/axon/client';
 import type { AxonIssue } from '@/lib/axon/types';
+import { isKillSwitchActive } from '@/lib/kill-switch';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -196,8 +197,39 @@ class MissionOrchestrator {
     console.log(`[orchestrator] Stopped after ${this.tickCount} ticks`);
   }
 
+  /**
+   * Pause the orchestrator — stops the tick interval but PRESERVES all state
+   * (symbol phases, trigger conditions, analysis progress). Use resume() to
+   * continue from where it left off.
+   */
+  pause(): void {
+    if (!this.running) return;
+    this.running = false;
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+    console.log(`[orchestrator] Paused (preserving state for ${this.symbolStates.size} symbols)`);
+  }
+
+  /**
+   * Resume the orchestrator after a pause — restarts the tick interval using
+   * the existing config and preserved symbol state. Does NOT re-analyze.
+   */
+  resume(): void {
+    if (this.running || !this.config) return;
+    this.running = true;
+    console.log(`[orchestrator] Resumed — continuing with ${this.symbolStates.size} symbols`);
+    this.tick().catch(console.error);
+    this.intervalId = setInterval(() => this.tick().catch(console.error), TICK_INTERVAL_MS);
+  }
+
   isRunning(): boolean {
     return this.running;
+  }
+
+  isPaused(): boolean {
+    return !this.running && this.config !== null && this.symbolStates.size > 0;
   }
 
   getStatus(): OrchestratorStatus {
@@ -240,6 +272,13 @@ class MissionOrchestrator {
       return;
     }
 
+    // Safety: check if kill switch was activated
+    if (isKillSwitchActive()) {
+      console.log('[orchestrator] Kill switch active — stopping');
+      this.stop();
+      return;
+    }
+
     const axon = getAxonClient();
 
     // Count active phases to respect concurrency limits
@@ -259,13 +298,8 @@ class MissionOrchestrator {
           // IDLE → start deep analysis (Phase 1)
           // ---------------------------------------------------------------
           case 'idle': {
-            if (activeAnalyses >= MAX_CONCURRENT_ANALYSES) {
-              console.log(`[orchestrator] ${symbol} idle but at max analyses (${activeAnalyses}/${MAX_CONCURRENT_ANALYSES})`);
-              break;
-            }
-            console.log(`[orchestrator] ${symbol} idle → creating deep analysis (active: ${activeAnalyses})`);
+            if (activeAnalyses >= MAX_CONCURRENT_ANALYSES) break;
             await this.createDeepAnalysisIssue(symbol, state);
-            console.log(`[orchestrator] ${symbol} after createDeepAnalysis: phase=${state.phase} issueId=${state.activeIssueId}`);
             if (state.activeIssueId) activeAnalyses++;
             break;
           }
@@ -350,7 +384,8 @@ class MissionOrchestrator {
             const timeSinceLastMonitor = now - state.lastMonitorAt;
             // Adaptive backoff: extend interval for consecutive no-triggers
             const backoff = Math.min(state.consecutiveNoTrigger, 5);
-            const effectiveInterval = MONITORING_INTERVAL_MS * (1 + backoff * 0.5);
+            const baseIntervalMs = (this.config?.scanIntervalSec ?? 45) * 1000;
+            const effectiveInterval = baseIntervalMs * (1 + backoff * 0.5);
 
             if (timeSinceLastMonitor >= effectiveInterval) {
               await this.createMonitoringIssue(symbol, state);
@@ -477,16 +512,20 @@ class MissionOrchestrator {
         `**Team**: ${TEAM_SIZE_DESCRIPTIONS[config.teamSize ?? 'standard']}`,
         config.profitGoal ? `**Profit Goal**: $${config.profitGoal}` : '',
       ].filter(Boolean).join('\n'),
-      issue_type: 'trading',
+      // Use 'operational' so Axon doesn't run the 5-wave trading executor.
+      // We just want the agent to analyze and post trigger JSON, then mark done.
+      issue_type: 'operational',
       priority: 'medium',
       ...(this.scanAgentId ? { assigned_agent_id: this.scanAgentId } : {}),
     });
 
-    console.log(`[orchestrator] createIssue result for ${base}: ok=${result.ok}`, result.ok ? `id=${result.data.id}` : `error=${(result as { error: string }).error} status=${(result as { status: number }).status}`);
     if (result.ok) {
       state.phase = 'analyzing';
       state.activeIssueId = result.data.id;
-      console.log(`[orchestrator] Created deep analysis for ${base}: ${result.data.id} — phase now: ${state.phase}`);
+      console.log(`[orchestrator] Created deep analysis for ${base}: ${result.data.id}`);
+      if (this.scanAgentId) {
+        axon.wakeupAgent(this.scanAgentId).catch(() => {});
+      }
     } else {
       console.error(`[orchestrator] FAILED to create analysis for ${base}:`, (result as { error: string }).error);
     }
@@ -539,7 +578,8 @@ class MissionOrchestrator {
         `Keep response SHORT. This runs every 45-90 seconds.`,
         `Monitor check #${state.monitorCount + 1} for this symbol.`,
       ].join('\n'),
-      issue_type: 'trading',
+      // 'operational' — lightweight check, no 5-wave pipeline
+      issue_type: 'operational',
       priority: 'low',
       ...(this.scanAgentId ? { assigned_agent_id: this.scanAgentId } : {}),
     });
@@ -547,7 +587,10 @@ class MissionOrchestrator {
     if (result.ok) {
       state.activeIssueId = result.data.id;
       state.lastMonitorAt = Date.now();
-      console.log(`[orchestrator] Monitor check #${state.monitorCount + 1} for ${base}: ${result.data.id}`);
+      console.log(`[orchestrator] Monitor #${state.monitorCount + 1} for ${base}: ${result.data.id}`);
+      if (this.scanAgentId) {
+        axon.wakeupAgent(this.scanAgentId).catch(() => {});
+      }
     } else {
       console.error(`[orchestrator] Failed to create monitor for ${base}:`, result.error);
     }
@@ -594,6 +637,9 @@ class MissionOrchestrator {
       state.phase = 'pipeline';
       state.activeIssueId = result.data.id;
       console.log(`[orchestrator] TRIGGER HIT — created pipeline for ${base}: ${result.data.id}`);
+      if (this.pipelineAgentId) {
+        axon.wakeupAgent(this.pipelineAgentId).catch(() => {});
+      }
     } else {
       console.error(`[orchestrator] Failed to create pipeline for ${base}:`, result.error);
       state.phase = 'cooldown';
@@ -608,45 +654,29 @@ class MissionOrchestrator {
   /** Fetch agent list from Axon and resolve IDs for scan/pipeline assignment */
   private async resolveAgentIds(): Promise<void> {
     const axon = getAxonClient();
-    console.log(`[orchestrator] resolveAgentIds: fetching agent list...`);
     const result = await axon.listAgents();
     if (!result.ok) {
-      console.warn('[orchestrator] resolveAgentIds FAILED:', (result as { error: string }).error);
+      console.warn('[orchestrator] Failed to resolve agent IDs:', (result as { error: string }).error);
       return;
     }
 
     const agents = result.data;
-    console.log(`[orchestrator] resolveAgentIds: found ${agents.length} agents`);
 
     for (const keyword of SCAN_AGENT_KEYWORDS) {
       const match = agents.find(
         (a) => (a.title ?? '').toLowerCase().includes(keyword) || (a.role ?? '').toLowerCase().includes(keyword),
       );
-      if (match) {
-        this.scanAgentId = match.id;
-        console.log(`[orchestrator] Scan agent resolved: ${match.title} (${match.id})`);
-        break;
-      }
+      if (match) { this.scanAgentId = match.id; break; }
     }
 
     for (const keyword of PIPELINE_AGENT_KEYWORDS) {
       const match = agents.find(
         (a) => (a.title ?? '').toLowerCase().includes(keyword) || (a.role ?? '').toLowerCase().includes(keyword),
       );
-      if (match) {
-        this.pipelineAgentId = match.id;
-        console.log(`[orchestrator] Pipeline agent resolved: ${match.title} (${match.id})`);
-        break;
-      }
+      if (match) { this.pipelineAgentId = match.id; break; }
     }
 
-    if (!this.scanAgentId) {
-      console.warn('[orchestrator] No scan agent found — listing all titles:', agents.map(a => a.title).join(', '));
-    }
-    if (!this.pipelineAgentId) {
-      console.warn('[orchestrator] No pipeline agent found — listing all titles:', agents.map(a => a.title).join(', '));
-    }
-    console.log(`[orchestrator] Agent IDs resolved: scan=${this.scanAgentId} pipeline=${this.pipelineAgentId}`);
+    console.log(`[orchestrator] Agents: scan=${this.scanAgentId ? 'OK' : 'MISSING'} pipeline=${this.pipelineAgentId ? 'OK' : 'MISSING'}`);
   }
 
   /** Extract structured trigger conditions from deep analysis issue comments */

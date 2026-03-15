@@ -92,6 +92,12 @@ const WAVE_LABELS: Record<number, string> = {
   5: 'Execution',
 };
 
+// Actions that are just lifecycle noise — suppress from the feed
+const SUPPRESSED_ACTIONS = new Set([
+  'heartbeat_started', 'heartbeat_failed', 'heartbeat_skipped',
+  'agent_paused', 'agent_resumed', 'wake_all',
+]);
+
 /** Border color class for comment_type */
 const COMMENT_TYPE_STYLES: Record<string, string> = {
   finding: 'border-l-2 border-blue-400 pl-2',
@@ -178,12 +184,6 @@ export default function AgentFeedPanel({ tradeCloseEvents, onDismissClose }: Age
       clearInterval(interval);
     };
   }, [activeMissionIssueId, agentNameMap]);
-
-  // Actions that are just lifecycle noise — suppress from the feed
-  const SUPPRESSED_ACTIONS = new Set([
-    'heartbeat_started', 'heartbeat_failed', 'heartbeat_skipped',
-    'agent_paused', 'agent_resumed', 'wake_all',
-  ]);
 
   // Convert axon activity to feed messages
   useEffect(() => {

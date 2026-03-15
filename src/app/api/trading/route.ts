@@ -292,6 +292,21 @@ export async function POST(req: Request) {
         return NextResponse.json({ stopped: true, status: orchestrator.getStatus() });
       }
 
+      case 'pause_orchestrator': {
+        const orchestrator = getOrchestrator();
+        orchestrator.pause();
+        return NextResponse.json({ paused: true, status: orchestrator.getStatus() });
+      }
+
+      case 'resume_orchestrator': {
+        const orchestrator = getOrchestrator();
+        if (!orchestrator.isPaused()) {
+          return NextResponse.json({ error: 'Orchestrator is not paused', status: orchestrator.getStatus() }, { status: 409 });
+        }
+        orchestrator.resume();
+        return NextResponse.json({ resumed: true, status: orchestrator.getStatus() });
+      }
+
       case 'orchestrator_status': {
         const orchestrator = getOrchestrator();
         return NextResponse.json(orchestrator.getStatus());
@@ -328,7 +343,7 @@ export async function POST(req: Request) {
 
       default:
         return NextResponse.json(
-          { error: `Unknown action: ${action}. Available: submit_signal, process, positions, signals, portfolio, kill_switch, config, close, history, strategy_stats, whipsaw, set_mode, start_orchestrator, stop_orchestrator, orchestrator_status` },
+          { error: `Unknown action: ${action}. Available: submit_signal, process, positions, signals, portfolio, kill_switch, config, close, history, strategy_stats, whipsaw, set_mode, start_orchestrator, stop_orchestrator, pause_orchestrator, resume_orchestrator, orchestrator_status` },
           { status: 400 },
         );
     }

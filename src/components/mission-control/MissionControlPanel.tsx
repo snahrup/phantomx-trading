@@ -70,13 +70,19 @@ export default function MissionControlPanel() {
     if (!focusedSymbol && positions.length > 0) {
       setFocused(positions[0].symbol);
     } else if (focusedSymbol && positions.length > 0 && !positions.some(p => p.symbol === focusedSymbol)) {
-      // Focused position was closed — switch to first remaining position
-      setFocused(positions[0].symbol);
+      // Only switch if not an agent-active symbol
+      const isAgentActive = agentActiveSymbols.some(s => s.symbol === focusedSymbol);
+      if (!isAgentActive) {
+        setFocused(positions[0].symbol);
+      }
     } else if (focusedSymbol && positions.length === 0) {
-      // All positions closed — clear focus
-      setFocused(null);
+      // Don't clear if the symbol is being actively scanned by agents
+      const isAgentActive = agentActiveSymbols.some(s => s.symbol === focusedSymbol);
+      if (!isAgentActive) {
+        setFocused(null);
+      }
     }
-  }, [focusedSymbol, positions, setFocused]);
+  }, [focusedSymbol, positions, agentActiveSymbols, setFocused]);
 
   // Sync focused symbol to the store's selectedSymbol so TradingChart renders the right chart
   useEffect(() => {
@@ -133,9 +139,11 @@ export default function MissionControlPanel() {
                   <span className={`text-xs font-mono px-1.5 py-0.5 rounded border ${
                     agentActive.phase === 'pipeline'
                       ? 'text-amber-400 border-amber-500/30 animate-pulse'
+                      : agentActive.phase === 'monitoring'
+                      ? 'text-emerald-400 border-emerald-500/30'
                       : 'text-blue-400 border-blue-500/30'
                   }`}>
-                    {agentActive.phase === 'pipeline' ? 'PIPELINE' : 'SCANNING'}
+                    {agentActive.phase.toUpperCase()}
                   </span>
                 ) : null}
               </div>

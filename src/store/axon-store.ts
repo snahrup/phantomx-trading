@@ -252,6 +252,10 @@ export const useAxonStore = create<AxonState>()((set, get) => ({
         } else if (row.detail && typeof row.detail === 'object') {
           detail = row.detail;
         }
+        // Normalize SQLite "YYYY-MM-DD HH:MM:SS" → ISO "YYYY-MM-DDTHH:MM:SS"
+        const ts = typeof row.timestamp === 'string' && !row.timestamp.includes('T')
+          ? row.timestamp.replace(' ', 'T')
+          : row.timestamp;
         return {
           id: row.id,
           company_id: row.company_id,
@@ -259,7 +263,7 @@ export const useAxonStore = create<AxonState>()((set, get) => ({
           issue_id: row.issue_id,
           action: row.action,
           detail,
-          timestamp: row.timestamp,
+          timestamp: ts,
         };
       });
 
@@ -418,6 +422,10 @@ export const useAxonStore = create<AxonState>()((set, get) => ({
     if (data.thinking_text && !detail.thinking_text) detail.thinking_text = data.thinking_text;
     if (data.decisions_json && !detail.decisions_json) detail.decisions_json = data.decisions_json;
 
+    // Normalize SQLite "YYYY-MM-DD HH:MM:SS" → ISO "YYYY-MM-DDTHH:MM:SS"
+    const rawTs = (data.timestamp as string) || new Date().toISOString();
+    const hbTs = rawTs.includes('T') ? rawTs : rawTs.replace(' ', 'T');
+
     const activity: AxonActivity = {
       id: (data.id as string) || (data.heartbeat_id as string) || `hb-${Date.now()}`,
       company_id: (data.company_id as string) || '',
@@ -425,7 +433,7 @@ export const useAxonStore = create<AxonState>()((set, get) => ({
       issue_id: (data.issue_id as string) || null,
       action: (data.action as string) || 'heartbeat',
       detail,
-      timestamp: (data.timestamp as string) || new Date().toISOString(),
+      timestamp: hbTs,
     };
 
     set((s) => ({
@@ -486,6 +494,10 @@ export const useAxonStore = create<AxonState>()((set, get) => ({
     if (data.wave != null && detail.wave == null) detail.wave = data.wave;
     if (data.issue_title && !detail.issue_title) detail.issue_title = data.issue_title;
 
+    // Normalize SQLite "YYYY-MM-DD HH:MM:SS" → ISO "YYYY-MM-DDTHH:MM:SS"
+    const rawActTs = (data.timestamp as string) || new Date().toISOString();
+    const actTs = rawActTs.includes('T') ? rawActTs : rawActTs.replace(' ', 'T');
+
     const activity: AxonActivity = {
       id: (data.id as string) || `act-${Date.now()}`,
       company_id: (data.company_id as string) || '',
@@ -493,7 +505,7 @@ export const useAxonStore = create<AxonState>()((set, get) => ({
       issue_id: (data.issue_id as string) || null,
       action: (data.action as string) || 'unknown',
       detail,
-      timestamp: (data.timestamp as string) || new Date().toISOString(),
+      timestamp: actTs,
     };
 
     set((s) => ({

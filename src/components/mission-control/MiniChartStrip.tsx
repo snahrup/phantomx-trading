@@ -4,13 +4,13 @@ import { useTradingStore } from '@/store/trading-store';
 import MiniChartCard from './MiniChartCard';
 
 const PHASE_LABELS: Record<string, string> = {
-  scanning: 'SCANNING',
+  analyzing: 'ANALYZING',
   pipeline: 'PIPELINE',
   monitoring: 'MONITORING',
 };
 
 const PHASE_COLORS: Record<string, string> = {
-  scanning: 'text-blue-400 border-blue-500/30',
+  analyzing: 'text-blue-400 border-blue-500/30',
   pipeline: 'text-amber-400 border-amber-500/30 animate-pulse',
   monitoring: 'text-emerald-400 border-emerald-500/30',
 };
@@ -92,7 +92,7 @@ export default function MiniChartStrip({ closeFlashes }: MiniChartStripProps) {
           key={`empty-${i}`}
           className="flex-1 border border-dashed border-border rounded-lg flex items-center justify-center min-h-[72px]"
         >
-          <span className="text-xs text-zinc-700">Waiting for agent</span>
+          <span className="text-xs text-muted-foreground">Waiting for agent</span>
         </div>
       ))}
     </div>

@@ -39,7 +39,8 @@ const DEFAULT_STYLE = { icon: Activity, color: 'text-muted-foreground', label: '
 function groupByDate(entries: AxonActivity[]): Map<string, AxonActivity[]> {
   const groups = new Map<string, AxonActivity[]>();
   for (const entry of entries) {
-    const date = entry.timestamp.split('T')[0];
+    // Axon timestamps may be ISO "2026-03-15T17:45:26" or SQLite "2026-03-15 17:45:26"
+    const date = entry.timestamp.slice(0, 10); // Always "YYYY-MM-DD"
     const existing = groups.get(date);
     if (existing) existing.push(entry);
     else groups.set(date, [entry]);
@@ -47,9 +48,11 @@ function groupByDate(entries: AxonActivity[]): Map<string, AxonActivity[]> {
   return groups;
 }
 
-function formatTime(iso: string): string {
+function formatTime(ts: string): string {
   try {
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // Normalize SQLite "YYYY-MM-DD HH:MM:SS" to ISO "YYYY-MM-DDTHH:MM:SS"
+    const normalized = ts.includes('T') ? ts : ts.replace(' ', 'T');
+    return new Date(normalized).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   } catch {
     return '';
   }
@@ -82,8 +85,21 @@ export default function AxonJournalPanel() {
     setLoading(true);
     const result = await getAxonClient().getActivityLog(200);
     if (result.ok) {
+      // Normalize: API returns detail_json (string) + SQLite timestamps
+      const normalized: AxonActivity[] = result.data.map((row: any) => {
+        let detail: Record<string, unknown> = {};
+        if (typeof row.detail_json === 'string') {
+          try { detail = JSON.parse(row.detail_json); } catch { detail = {}; }
+        } else if (row.detail && typeof row.detail === 'object') {
+          detail = row.detail;
+        }
+        const ts = typeof row.timestamp === 'string' && !row.timestamp.includes('T')
+          ? row.timestamp.replace(' ', 'T')
+          : row.timestamp;
+        return { ...row, detail, timestamp: ts };
+      });
       // Newest first
-      setEntries([...result.data].reverse());
+      setEntries(normalized.reverse());
     }
     setLoading(false);
   }, []);

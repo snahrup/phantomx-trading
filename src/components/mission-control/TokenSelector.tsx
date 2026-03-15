@@ -175,7 +175,9 @@ export default function TokenSelector({ selected, onChange, onFilterChange, acti
                   <span className={`text-xs ${s.maxLeverage >= 50 ? 'text-emerald-400' : 'text-amber-400'}`}>
                     {s.maxLeverage}x
                   </span>
-                  <span className="text-xs text-muted-foreground">${s.price.toFixed(s.price < 1 ? 6 : 2)}</span>
+                  {s.price > 0 && (
+                    <span className="text-xs text-muted-foreground">${s.price.toFixed(s.price < 1 ? 6 : 2)}</span>
+                  )}
                 </span>
               </button>
             ))}

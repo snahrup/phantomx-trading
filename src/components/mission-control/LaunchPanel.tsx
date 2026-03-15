@@ -115,7 +115,7 @@ export default function LaunchPanel() {
 
       // Start the mission orchestrator — continuous task recycler that keeps
       // agents scanning, researching, debating, and executing non-stop
-      await fetch('/api/trading', {
+      const orchRes = await fetch('/api/trading', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -129,6 +129,10 @@ export default function LaunchPanel() {
           scanIntervalSec: config.scanIntervalSec,
         }),
       });
+      if (!orchRes.ok) {
+        const orchData = await orchRes.json();
+        throw new Error(orchData.error || 'Failed to start orchestrator');
+      }
 
       const axon = getAxonClient();
       const riskPreset = RISK_PRESETS[config.riskLevel];
@@ -198,14 +202,16 @@ export default function LaunchPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'config',
-          riskLevel: config.riskLevel,
-          maxOpenPositions: config.maxConcurrentPositions,
-          maxPositionSizePercent: riskPreset.maxPositionSizePercent,
-          stopLossPercent: riskPreset.stopLossPercent,
-          takeProfitPercent: riskPreset.takeProfitPercent,
-          maxDailyLossPercent: riskPreset.maxDailyLossPercent,
-          maxDrawdownPercent: riskPreset.maxDrawdownPercent,
-          trailingStopPercent: riskPreset.trailingStopPercent,
+          updates: {
+            riskLevel: config.riskLevel,
+            maxOpenPositions: config.maxConcurrentPositions,
+            maxPositionSizePercent: riskPreset.maxPositionSizePercent,
+            stopLossPercent: riskPreset.stopLossPercent,
+            takeProfitPercent: riskPreset.takeProfitPercent,
+            maxDailyLossPercent: riskPreset.maxDailyLossPercent,
+            maxDrawdownPercent: riskPreset.maxDrawdownPercent,
+            trailingStopPercent: riskPreset.trailingStopPercent,
+          },
         }),
       });
 
@@ -218,40 +224,24 @@ export default function LaunchPanel() {
       // Also update the store's risk parameters to stay in sync
       setRiskParameters(riskPreset);
 
-      // 3. Activate agent heartbeats + wake them AFTER issue creation so they pick it up
+      // 3. Wake agents so they're ready to pick up orchestrator-created issues.
+      // NOTE: We do NOT set heartbeat_interval_s here. The orchestrator handles
+      // targeted wakeups via wakeupAgent() when it creates analysis/monitoring
+      // issues. Setting heartbeat intervals on all 13 agents caused Axon to
+      // spawn a Claude terminal every ~5 seconds — all producing zero work
+      // ($0.00 cost, 94 chars, no tools) because the generic heartbeat had
+      // no issue context. The orchestrator is the sole work dispatcher.
       try {
-        // Fetch current agents so we can set heartbeat intervals on the key ones
+        // Clear any leftover heartbeat intervals from a previous mission so
+        // the scheduler doesn't re-spawn terminals for idle agents.
         const agentsResult = await axon.listAgents();
         if (agentsResult.ok) {
-          const HEARTBEAT_ROLES: Record<string, number> = {
-            'head of trading': 45,
-            'head of research': 45,
-            'market research analyst': 60,
-            'risk officer': 90,
-            'execution trader': 60,
-            'strategy architect': 90,
-            'meta-strategist': 120,
-            'scanner monitor': 60,
-            'sentiment analyst': 90,
-            'on-chain analyst': 90,
-            'microstructure analyst': 90,
-            'portfolio manager': 120,
-            'trade analyst': 60,
-          };
-
-          // Set heartbeat intervals for all matching agents (in parallel)
-          const updates = agentsResult.data
-            .filter((a: { name: string }) => {
-              const lower = a.name.toLowerCase();
-              return Object.keys(HEARTBEAT_ROLES).some(role => lower.includes(role));
-            })
-            .map((a: { id: string; name: string }) => {
-              const lower = a.name.toLowerCase();
-              const matchedRole = Object.keys(HEARTBEAT_ROLES).find(role => lower.includes(role));
-              const interval = matchedRole ? HEARTBEAT_ROLES[matchedRole] : 60;
-              return axon.updateAgent(a.id, { heartbeat_interval_s: interval }).catch(() => {});
-            });
-          await Promise.all(updates);
+          const clearOps = agentsResult.data
+            .filter((a: { heartbeat_interval_s: number }) => a.heartbeat_interval_s > 0)
+            .map((a: { id: string }) =>
+              axon.updateAgent(a.id, { heartbeat_interval_s: 0 }).catch(() => {})
+            );
+          if (clearOps.length > 0) await Promise.all(clearOps);
         }
 
         await axon.wakeAll();
@@ -262,7 +252,7 @@ export default function LaunchPanel() {
             timestamp: new Date().toISOString(),
             detail: {
               agent_name: 'Mission Control',
-              content: `All agents woken with heartbeat intervals. Agents are now assessing the mission config and preparing their research...`,
+              content: `All agents woken. Orchestrator will dispatch targeted work — no background heartbeat spam.`,
             },
           });
         }

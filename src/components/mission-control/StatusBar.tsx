@@ -59,9 +59,21 @@ export default function StatusBar() {
       const axon = getAxonClient();
       if (isPaused) {
         await axon.resumeAll();
+        // Resume orchestrator (preserves analysis state)
+        fetch('/api/trading', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'resume_orchestrator' }),
+        }).catch(console.warn);
         if (mountedRef.current) setPausedStore(false);
       } else {
         await axon.pauseAll();
+        // Pause orchestrator (preserves analysis state)
+        fetch('/api/trading', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'pause_orchestrator' }),
+        }).catch(console.warn);
         if (mountedRef.current) setPausedStore(true);
       }
     } catch (err) {
@@ -80,15 +92,25 @@ export default function StatusBar() {
     try {
       const axon = getAxonClient();
 
-      // 1. Kill all agents on Axon
+      // 1. Kill all agents on Axon + clear heartbeat intervals to stop terminal spam
       await axon.killAll();
+      try {
+        const agentsResult = await axon.listAgents();
+        if (agentsResult.ok) {
+          await Promise.all(
+            agentsResult.data
+              .filter((a: { heartbeat_interval_s: number }) => a.heartbeat_interval_s > 0)
+              .map((a: { id: string }) => axon.updateAgent(a.id, { heartbeat_interval_s: 0 }).catch(() => {}))
+          );
+        }
+      } catch { /* best-effort */ }
 
       // 2. Activate the server-side kill switch
       try {
         await fetch('/api/trading', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'kill_switch', command: 'activate', reason: 'Emergency kill from Mission Control' }),
+          body: JSON.stringify({ action: 'kill_switch', command: 'trigger', reason: 'Emergency kill from Mission Control' }),
         });
       } catch (ksErr) {
         console.warn('Kill switch activation failed (continuing with position close):', ksErr);
@@ -275,9 +297,18 @@ export default function StatusBar() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                // Clear activity feed and reset mission timestamp so the next
-                // launch starts with a blank slate
+              onClick={async () => {
+                // Reset server-side kill switch first
+                try {
+                  await fetch('/api/trading', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'kill_switch', command: 'reset', force: true }),
+                  });
+                } catch (e) {
+                  console.warn('Kill switch reset failed:', e);
+                }
+                // Clear activity feed and reset mission timestamp
                 useAxonStore.getState().clearActivity();
                 useTradingStore.getState().setMissionStartedAt(null);
                 setKilled(false);

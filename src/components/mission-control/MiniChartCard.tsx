@@ -75,7 +75,7 @@ export default function MiniChartCard({
       </div>
 
       <div className="text-[10px] text-muted-foreground mb-1">
-        {direction} {leverage}x · {entryPrice.toFixed(entryPrice < 1 ? 6 : 2)}
+        {direction} {leverage}x · {Number.isFinite(entryPrice) ? entryPrice.toFixed(entryPrice < 1 ? 6 : 2) : '—'}
       </div>
 
       <svg viewBox="0 0 200 30" className="w-full h-6">
