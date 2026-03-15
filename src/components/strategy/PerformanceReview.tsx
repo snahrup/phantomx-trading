@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTradingStore } from '@/store/trading-store';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { streamConciergeChat } from '@/lib/axon/concierge-stream';
 import {
   Brain, AlertTriangle, TrendingUp, TrendingDown, CheckCircle2,
   XCircle, Loader2, BookOpen, Shield, Zap, Target,
@@ -79,65 +80,56 @@ export default function PerformanceReview() {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    let accumulated = '';
+
+    const message = [
+      'Perform a detailed performance review of these closed trades and generate a structured analysis.',
+      '',
+      `Strategy: ${JSON.stringify(activeStrategy)}`,
+      '',
+      `Closed Trades (${closedTrades.length}): ${JSON.stringify(closedTrades)}`,
+      '',
+      `Decision Log: ${JSON.stringify(decisionLog)}`,
+      '',
+      'Respond with ONLY valid JSON matching this shape:',
+      '{ "tradesReviewed": number, "tradeReviews": [{ "tradeId": string, "grade": "A"|"B"|"C"|"D"|"F", "thesisCorrect": boolean, "entryQuality": number (0-100), "exitQuality": number (0-100), "ruleCompliance": boolean, "errorType": string|null, "explanation": string, "lessonLearned": string }], "patterns": [{ "pattern": string, "frequency": number, "impact": "positive"|"negative"|"neutral", "severity": "low"|"medium"|"high"|"critical", "description": string, "affectedTrades": string[], "suggestedAction": string }], "improvements": [{ "type": "lesson"|"constraint"|"adjustment", "title": string, "description": string, "evidence": string, "priority": number, "suggestedChange"?: { "field": string, "from": string, "to": string } }], "overallGrade": string }',
+    ].join('\n');
+
     try {
-      const res = await fetch('/api/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'review_performance',
-          closedTrades: closedTrades,
-          decisionLog: decisionLog,
-          strategyConfig: activeStrategy,
-        }),
-        signal: controller.signal,
-      });
-
-      if (!res.ok || !res.body) {
-        setError(`API error: ${res.status}`);
-        setPhase('idle');
-        return;
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let finalResult: ReviewResult | null = null;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-
-            if (event.type === 'phase') {
-              if (event.status === 'running') {
-                setPhase(event.phase);
-                setStreamContent('');
-              }
-            } else if (event.type === 'stream') {
-              setStreamContent(prev => prev + event.content);
-            } else if (event.type === 'review_complete') {
-              finalResult = event.summary;
-            } else if (event.type === 'error') {
-              setError(event.error);
+      await streamConciergeChat(
+        message,
+        {
+          onText: (text) => {
+            accumulated += text;
+            setStreamContent(prev => prev + text);
+            // Update phase based on accumulated content length as a progress heuristic
+            if (accumulated.length > 500 && accumulated.length < 2000) {
+              setPhase('pattern_detection');
+            } else if (accumulated.length >= 2000) {
+              setPhase('improvements');
             }
-          } catch { /* skip bad lines */ }
-        }
-      }
-
-      if (finalResult) {
-        setResult(finalResult);
-        setPhase('complete');
-      } else {
-        setPhase('idle');
-      }
+          },
+          onToolUse: () => {},
+          onToolResult: () => {},
+          onDone: () => {
+            try {
+              // Extract JSON from the response (may be wrapped in markdown code fences)
+              const jsonMatch = accumulated.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, accumulated];
+              const parsed = JSON.parse(jsonMatch[1]!.trim()) as ReviewResult;
+              setResult(parsed);
+              setPhase('complete');
+            } catch {
+              setError('Failed to parse AI performance review response.');
+              setPhase('idle');
+            }
+          },
+          onError: (err) => {
+            setError(err);
+            setPhase('idle');
+          },
+        },
+        controller.signal,
+      );
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         setError(String(err));

@@ -23,6 +23,7 @@ import { registerAllIndicators } from '@/lib/chart/indicator-definitions';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import IndicatorSelector from './IndicatorSelector';
+import { streamConciergeChat } from '@/lib/axon/concierge-stream';
 
 // Initialize indicator registry once
 registerAllIndicators();
@@ -435,32 +436,42 @@ export default function TradingChart() {
     const store = useTradingStore.getState();
     setPatternDetecting(true);
 
-    fetch('/api/ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'analyze_chart',
-        chartImage: img,
-        symbol: selectedSymbol,
-        timeframe: selectedTimeframe,
-      }),
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.analysis) {
-          store.setChartAnalysis(data.analysis);
-          store.setPriceLinesFromAnalysis(data.analysis);
-          store.clearDrawings('ai');
-          const patternDrawings = createPatternDrawings(data.analysis, store.ohlcv);
-          for (const d of patternDrawings) store.addDrawing(d);
-          store.setLastAutoPatternTime(Date.now());
-          setPatternOverlayDismissed(false); // Show overlay with new results
-        }
-      })
-      .catch(err => {
-        console.error('[PhantomX] Auto pattern detection error:', err);
-      })
-      .finally(() => setPatternDetecting(false));
+    const prompt = `Analyze this ${selectedSymbol} chart on the ${selectedTimeframe} timeframe for pattern detection. Chart image (base64): ${img}\n\nRespond with ONLY a JSON object (no markdown fences) with this schema: { "pattern": string, "sentiment": "bullish"|"bearish"|"neutral", "confidence": number (0-1), "keyLevels": [{ "type": "support"|"resistance", "price": number }], "recommendation": string }`;
+
+    let accumulated = '';
+
+    streamConciergeChat(
+      prompt,
+      {
+        onText: (text) => { accumulated += text; },
+        onToolUse: () => {},
+        onToolResult: () => {},
+        onDone: () => {
+          try {
+            const cleaned = accumulated.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+            if (!cleaned.startsWith('{') && !cleaned.startsWith('[')) {
+              throw new Error(`Response is not JSON: ${cleaned.slice(0, 120)}`);
+            }
+            const analysis = JSON.parse(cleaned);
+            store.setChartAnalysis(analysis);
+            store.setPriceLinesFromAnalysis(analysis);
+            store.clearDrawings('ai');
+            const patternDrawings = createPatternDrawings(analysis, store.ohlcv);
+            for (const d of patternDrawings) store.addDrawing(d);
+            store.setLastAutoPatternTime(Date.now());
+            setPatternOverlayDismissed(false);
+          } catch (err) {
+            console.error('[PhantomX] Failed to parse chart analysis response:', err);
+          } finally {
+            setPatternDetecting(false);
+          }
+        },
+        onError: (error) => {
+          console.error('[PhantomX] Auto pattern detection error:', error);
+          setPatternDetecting(false);
+        },
+      },
+    );
   }, [captureChart, selectedSymbol, selectedTimeframe]);
 
   // Manual AI Vision click
@@ -478,41 +489,60 @@ export default function TradingChart() {
     });
     store.setAIThinking(true);
 
-    fetch('/api/ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'analyze_chart',
-        chartImage: img,
-        symbol: selectedSymbol,
-        timeframe: selectedTimeframe,
-      }),
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.analysis) {
-          store.setChartAnalysis(data.analysis);
-          store.setPriceLinesFromAnalysis(data.analysis);
-          store.clearDrawings('ai');
-          const patternDrawings = createPatternDrawings(data.analysis, store.ohlcv);
-          for (const d of patternDrawings) store.addDrawing(d);
-          store.setLastAutoPatternTime(Date.now());
-          setPatternOverlayDismissed(false); // Show overlay with new results
+    const prompt = `Analyze this ${selectedSymbol} chart on the ${selectedTimeframe} timeframe. Chart image (base64): ${img}\n\nRespond with ONLY a JSON object (no markdown fences) with this schema: { "pattern": string, "sentiment": "bullish"|"bearish"|"neutral", "confidence": number (0-1), "keyLevels": [{ "type": "support"|"resistance", "price": number }], "recommendation": string }`;
+
+    let accumulated = '';
+
+    streamConciergeChat(
+      prompt,
+      {
+        onText: (text) => { accumulated += text; },
+        onToolUse: () => {},
+        onToolResult: () => {},
+        onDone: () => {
+          try {
+            const cleaned = accumulated.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+            if (!cleaned.startsWith('{') && !cleaned.startsWith('[')) {
+              throw new Error(`Response is not JSON: ${cleaned.slice(0, 120)}`);
+            }
+            const analysis = JSON.parse(cleaned);
+            store.setChartAnalysis(analysis);
+            store.setPriceLinesFromAnalysis(analysis);
+            store.clearDrawings('ai');
+            const patternDrawings = createPatternDrawings(analysis, store.ohlcv);
+            for (const d of patternDrawings) store.addDrawing(d);
+            store.setLastAutoPatternTime(Date.now());
+            setPatternOverlayDismissed(false);
+            store.addAIMessage({
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: `**Chart Analysis — ${selectedSymbol} (${selectedTimeframe})**\n\n**Pattern:** ${analysis.pattern}\n**Sentiment:** ${analysis.sentiment} (${(analysis.confidence * 100).toFixed(0)}% confidence)\n\n**Key Levels:**\n${analysis.keyLevels.map((l: { type: string; price: number }) => `- ${l.type}: $${l.price}`).join('\n')}\n\n**Recommendation:** ${analysis.recommendation}`,
+              timestamp: Date.now(),
+              metadata: { chartAnalysis: analysis },
+            });
+          } catch (err) {
+            store.addAIMessage({
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: `Chart analysis failed: unable to parse response`,
+              timestamp: Date.now(),
+            });
+            console.error('[PhantomX] Failed to parse chart analysis response:', err);
+          } finally {
+            store.setAIThinking(false);
+          }
+        },
+        onError: (error) => {
           store.addAIMessage({
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: `**Chart Analysis — ${selectedSymbol} (${selectedTimeframe})**\n\n**Pattern:** ${data.analysis.pattern}\n**Sentiment:** ${data.analysis.sentiment} (${(data.analysis.confidence * 100).toFixed(0)}% confidence)\n\n**Key Levels:**\n${data.analysis.keyLevels.map((l: { type: string; price: number }) => `- ${l.type}: $${l.price}`).join('\n')}\n\n**Recommendation:** ${data.analysis.recommendation}`,
+            content: `Chart analysis error: ${error}`,
             timestamp: Date.now(),
-            metadata: { chartAnalysis: data.analysis },
           });
-        } else if (data.error) {
-          store.addAIMessage({ id: crypto.randomUUID(), role: 'assistant', content: `Chart analysis failed: ${data.error}`, timestamp: Date.now() });
-        }
-      })
-      .catch((err) => {
-        store.addAIMessage({ id: crypto.randomUUID(), role: 'assistant', content: `Chart analysis error: ${String(err)}`, timestamp: Date.now() });
-      })
-      .finally(() => store.setAIThinking(false));
+          store.setAIThinking(false);
+        },
+      },
+    );
   }, [captureChart, selectedSymbol, selectedTimeframe]);
 
   // --- Auto Pattern Detection ---

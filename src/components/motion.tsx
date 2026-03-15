@@ -141,7 +141,7 @@ export function AnimatedPercentage({ value, duration = 1.0, className }: { value
 // === HOVER LIFT CARD ===
 // Cards lift with subtle shadow depth on hover
 
-export function HoverCard({ children, className, onClick }: { children: ReactNode; className?: string; onClick?: () => void }) {
+export function HoverCard({ children, className, onClick, role, tabIndex, onKeyDown }: { children: ReactNode; className?: string; onClick?: () => void; role?: string; tabIndex?: number; onKeyDown?: (e: React.KeyboardEvent) => void }) {
   return (
     <motion.div
       whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
@@ -149,6 +149,9 @@ export function HoverCard({ children, className, onClick }: { children: ReactNod
       transition={{ duration: 0.15, ease: 'easeOut' }}
       className={className}
       onClick={onClick}
+      role={role}
+      tabIndex={tabIndex}
+      onKeyDown={onKeyDown}
     >
       {children}
     </motion.div>

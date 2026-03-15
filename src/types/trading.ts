@@ -46,6 +46,15 @@ export interface OrderBook {
   timestamp: number;
 }
 
+export interface FundingRate {
+  symbol: string;
+  fundingRate: number;
+  fundingTimestamp: number;
+  nextFundingTimestamp?: number;
+  markPrice?: number;
+  indexPrice?: number;
+}
+
 // --- Account Types ---
 
 export interface Balance {
@@ -160,7 +169,8 @@ export type IndicatorType =
   | 'ICHIMOKU' | 'SUPERTREND'
   | 'DONCHIAN' | 'ATR_BANDS' | 'EMA_RIBBON' | 'PIVOT'
   | 'EMA_CROSS' | 'RSI_DIVERGENCE' | 'CANDLE_PATTERNS' | 'SWING_POINTS'
-  | 'MACD_HIST_FLIP' | 'RSI_REVERSAL' | 'VOLUME_PROFILE';
+  | 'MACD_HIST_FLIP' | 'RSI_REVERSAL' | 'VOLUME_PROFILE'
+  | 'VOLUME_SMA';
 
 export interface Condition {
   indicator: string;
@@ -233,7 +243,7 @@ export interface ChartAnnotation {
 
 // --- Chart Price Line Types (AI-driven S/R levels, entry/exit plans) ---
 
-export type PriceLineSource = 'ai_analysis' | 'ai_chat' | 'manual' | 'execution_engine' | 'open_orders' | 'positions';
+export type PriceLineSource = 'ai_analysis' | 'ai_chat' | 'manual' | 'execution_engine' | 'open_orders' | 'positions' | 'agent_analysis';
 
 export interface ChartPriceLine {
   id: string;
@@ -581,6 +591,95 @@ export interface SignalSummary {
   byAgent: Record<string, { count: number; latestSentiment: AgentSentiment; latestConfidence: number }>;
   consensusSentiment: AgentSentiment;
   consensusConfidence: number;
+}
+
+// ---------------------------------------------------------------------------
+// Trading Pipeline — Execution Signal Types
+// ---------------------------------------------------------------------------
+
+export type TradingSignalStatus = 'pending' | 'approved' | 'rejected' | 'executed' | 'closed' | 'expired';
+export type TradeDirection = 'long' | 'short';
+
+export interface TradingSignal {
+  id: string;
+  asset: string;                    // e.g. 'BTC/USDT:USDT'
+  direction: TradeDirection;
+  strategy: string;                 // strategy name (human-readable)
+  strategyId?: string;              // unique strategy identifier (e.g. 'strat-ema-ribbon-v2.0')
+  source?: string;                  // scanner/system that generated the signal (e.g. 'regime-scanner', 'manual')
+  regime?: string;                  // market regime at signal time (e.g. 'trending', 'ranging', 'risk-off')
+  triggerDetails?: string;          // what triggered entry (e.g. 'EMA8 crossed above EMA21, ADX > 25')
+  entry: number;                    // target entry price
+  stop: number;                     // stop-loss price
+  targets: number[];                // take-profit levels
+  confidence: number;               // 0-100
+  status: TradingSignalStatus;
+  rejectionReason?: string;
+  executionId?: string;             // linked execution log entry
+  metadata?: Record<string, unknown>;
+  createdAt: number;
+  updatedAt: number;
+  expiresAt: number;                // auto-expire stale signals
+}
+
+export interface RiskCheckResult {
+  approved: boolean;
+  reason: string;
+  checks: {
+    positionCount: { passed: boolean; current: number; max: number };
+    dailyPnl: { passed: boolean; currentPercent: number; limitPercent: number };
+    exposure: { passed: boolean; currentPercent: number; maxPercent: number };
+    killSwitch: { passed: boolean; active: boolean };
+    signalQuality: { passed: boolean; confidence: number; minRequired: number };
+  };
+}
+
+export interface ExecutionRecord {
+  id: string;
+  signalId: string;
+  asset: string;
+  direction: TradeDirection;
+  mode: 'paper' | 'live';
+  entryPrice: number;
+  fillPrice?: number;
+  size: number;                     // position size in contracts/units
+  sizeUsdt: number;                 // notional value in USDT
+  stopLoss: number;
+  takeProfit?: number;
+  leverage: number;
+  status: 'pending' | 'filled' | 'partial' | 'failed' | 'closed';
+  exitPrice?: number;
+  realizedPnl?: number;
+  fees?: number;
+  slippage?: number;                // entry vs fill difference
+  orderId?: string;                 // exchange order ID (live mode only)
+  error?: string;
+  createdAt: number;
+  closedAt?: number;
+  // --- Attribution fields (PAP-22) ---
+  strategyId?: string;              // unique strategy identifier
+  strategyName?: string;            // human-readable strategy name
+  confidence?: number;              // signal confidence at entry (0-100)
+  source?: string;                  // scanner/system that generated the signal
+  regime?: string;                  // market regime at entry
+  triggerDetails?: string;          // what triggered the entry
+  exitRationale?: string;           // why the position was closed
+  holdTimeMs?: number;              // how long position was held (closedAt - createdAt)
+  entryContext?: Record<string, unknown>;  // market context snapshot at entry
+  exitContext?: Record<string, unknown>;   // market context snapshot at exit
+}
+
+export interface PipelineConfig {
+  mode: 'paper' | 'live';
+  minConfidence: number;            // minimum signal confidence to accept (0-100)
+  maxOpenPositions: number;
+  maxDailyLossPercent: number;
+  maxExposurePercent: number;       // max % of equity in positions
+  defaultLeverage: number;
+  positionSizePercent: number;      // % of equity per trade
+  signalTtlMs: number;             // how long a signal is valid
+  requireStopLoss: boolean;
+  minHoldTimeMs?: number;           // minimum hold time — closes below this are flagged as whipsaw (PAP-23)
 }
 
 // ---------------------------------------------------------------------------
@@ -1257,20 +1356,25 @@ export interface ResearchEngineConfig {
   focusAreas: string[];              // e.g., 'memecoins', 'layer2', 'defi', 'macro'
 }
 
-export type ResearchEngineState = 'idle' | 'running' | 'paused' | 'error';
+export type ResearchEngineState = 'idle' | 'running' | 'paused' | 'error' | 'stopped';
 
 export interface ResearchEngineStatus {
   state: ResearchEngineState;
-  startedAt: number | null;
-  lastQuickScan: number | null;
-  lastDeepDive: number | null;
-  lastThesisGen: number | null;
-  totalQuickScans: number;
-  totalDeepDives: number;
-  totalThesesGenerated: number;
-  totalFindings: number;
-  currentCycle: ResearchCycleType | null;
-  error: string | null;
+  currentCycle: ResearchCycleType | number | null;
+  lastCycleAt: string | number | null;
+  nextCycleAt: string | number | null;
+  activeSymbols: string[];
+  findingsCount: number;
+  thesesCount: number;
+  startedAt?: number | null;
+  lastQuickScan?: number | null;
+  lastDeepDive?: number | null;
+  lastThesisGen?: number | null;
+  totalQuickScans?: number;
+  totalDeepDives?: number;
+  totalThesesGenerated?: number;
+  totalFindings?: number;
+  error?: string | null;
 }
 
 export interface ResearchFinding {
@@ -1350,18 +1454,25 @@ export interface TopOpportunity {
   symbol: string;
   score: number;                     // composite score 0-100
   direction: 'long' | 'short' | 'neutral';
-  headline: string;                  // one-liner why it's ranked here
-  topReason: string;                 // the #1 reason to trade this
-  riskRewardRatio: number;
-  confidence: number;                // 0-100
-  timeHorizon: 'scalp' | 'day' | 'swing' | 'position';
-  proposedEntry: number;
-  proposedStopLoss: number;
-  proposedTakeProfit: number;
-  findingCount: number;              // how many findings support this
   thesisId: string | null;           // link to full thesis if exists
-  lastUpdated: number;
-  tags: string[];                    // e.g., ['momentum', 'SMA_crossover', 'volume_spike']
+  reasoning?: string;                // Axon-era: issue description
+  suggestedEntry?: number;           // Axon-era: suggested entry price
+  suggestedStop?: number;            // Axon-era: suggested stop loss
+  suggestedTarget?: number;          // Axon-era: suggested target
+  riskReward?: number;               // Axon-era: risk/reward ratio
+  timeframe?: string;                // Axon-era: timeframe string
+  catalysts?: string[];              // Axon-era: catalyst tags
+  headline?: string;                 // one-liner why it's ranked here
+  topReason?: string;                // the #1 reason to trade this
+  riskRewardRatio?: number;
+  confidence?: number;               // 0-100
+  timeHorizon?: 'scalp' | 'day' | 'swing' | 'position';
+  proposedEntry?: number;
+  proposedStopLoss?: number;
+  proposedTakeProfit?: number;
+  findingCount?: number;             // how many findings support this
+  lastUpdated?: number;
+  tags?: string[];                   // e.g., ['momentum', 'SMA_crossover', 'volume_spike']
 }
 
 // --- Paper Trading (Thesis Validation) ---

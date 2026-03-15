@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTradingStore } from '@/store/trading-store';
+import { getAxonClient } from '@/lib/axon/client';
+import { useAxonStore } from '@/store/axon-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -408,7 +410,7 @@ function OpportunityCard({
                 {opp.direction}
               </Badge>
             </div>
-            <p className="text-xs text-zinc-400 truncate mt-0.5">{opp.headline}</p>
+            <p className="text-xs text-zinc-400 truncate mt-0.5">{opp.headline ?? opp.reasoning?.slice(0, 80) ?? ''}</p>
           </div>
         </div>
 
@@ -423,11 +425,11 @@ function OpportunityCard({
 
       {/* Quick stats */}
       <div className="flex items-center gap-3 mt-2 text-[11px] text-zinc-500">
-        {opp.riskRewardRatio > 0 && (
-          <span>R:R <span className="text-zinc-300">{opp.riskRewardRatio.toFixed(1)}:1</span></span>
+        {(opp.riskRewardRatio ?? 0) > 0 && (
+          <span>R:R <span className="text-zinc-300">{opp.riskRewardRatio!.toFixed(1)}:1</span></span>
         )}
-        <span>Conf <span className="text-zinc-300">{opp.confidence}%</span></span>
-        <span>{opp.findingCount} findings</span>
+        {opp.confidence != null && <span>Conf <span className="text-zinc-300">{opp.confidence}%</span></span>}
+        {(opp.findingCount ?? 0) > 0 && <span>{opp.findingCount} findings</span>}
         {opp.timeHorizon && (
           <Badge variant="outline" className="text-[10px] px-1 py-0 border-white/10">
             {opp.timeHorizon}
@@ -436,9 +438,9 @@ function OpportunityCard({
       </div>
 
       {/* Tags */}
-      {opp.tags.length > 0 && (
+      {(opp.tags?.length ?? 0) > 0 && (
         <div className="flex flex-wrap gap-1 mt-1.5">
-          {opp.tags.slice(0, 4).map(tag => (
+          {opp.tags!.slice(0, 4).map(tag => (
             <span
               key={tag}
               className="text-[10px] px-1.5 py-0 rounded bg-white/5 text-zinc-500"
@@ -655,8 +657,8 @@ function EngineStatusBar({
           </span>
           {status && (
             <p className="text-[11px] text-zinc-500">
-              {status.totalQuickScans} scans · {status.totalDeepDives} deep dives · {status.totalThesesGenerated} theses
-              {status.currentCycle && (
+              {status.findingsCount ?? status.totalFindings ?? 0} findings · {status.thesesCount ?? status.totalThesesGenerated ?? 0} theses
+              {status.currentCycle && typeof status.currentCycle === 'string' && (
                 <span className="text-amber-400 ml-2">● {status.currentCycle.replace('_', ' ')}</span>
               )}
               {configSummary && !status.currentCycle && (
@@ -670,9 +672,9 @@ function EngineStatusBar({
       <div className="flex items-center gap-2">
         {status && (
           <div className="text-[10px] text-zinc-500 text-right mr-2 hidden sm:block">
-            <div>Scan: {formatAgo(status.lastQuickScan)}</div>
-            <div>Deep: {formatAgo(status.lastDeepDive)}</div>
-            <div>Thesis: {formatAgo(status.lastThesisGen)}</div>
+            {status.lastCycleAt && <div>Last: {formatAgo(typeof status.lastCycleAt === 'string' ? new Date(status.lastCycleAt).getTime() : status.lastCycleAt)}</div>}
+            {status.activeSymbols?.length > 0 && <div>{status.activeSymbols.length} symbols</div>}
+            <div>{status.findingsCount ?? 0} findings</div>
           </div>
         )}
         {!isRunning && !isPaused && (
@@ -762,7 +764,10 @@ export default function ResearchDashboard() {
   } = useTradingStore();
 
   const [isLoading, setIsLoading] = useState(false);
-  const eventSourceRef = useRef<EventSource | null>(null);
+
+  // Axon store — SSE events arrive automatically via the store-bridge
+  const axonIssues = useAxonStore((s) => s.issues);
+  const axonAgentEvents = useAxonStore((s) => s.agentEvents);
 
   // Research config state — defaults to "scan everything"
   const [researchConfig, setResearchConfig] = useState<
@@ -777,119 +782,143 @@ export default function ResearchDashboard() {
     virtualBalance: 100_000,
   });
 
-  // SSE connection for real-time updates
+  // Derive top opportunities from Axon trading issues (replaces SSE EventSource)
   useEffect(() => {
-    const es = new EventSource('/api/research');
-    eventSourceRef.current = es;
+    const tradingIssues = axonIssues.filter((i) => i.issue_type === 'trading');
+    if (tradingIssues.length > 0) {
+      const opportunities: TopOpportunity[] = tradingIssues.map((issue, idx) => ({
+        rank: idx + 1,
+        symbol: issue.title.split(' ')[0] || 'UNKNOWN',
+        direction: (issue.description?.toLowerCase().includes('short') ? 'short' : 'long') as 'long' | 'short',
+        score: issue.priority === 'critical' ? 95 : issue.priority === 'high' ? 80 : issue.priority === 'medium' ? 65 : 50,
+        thesisId: issue.id,
+        reasoning: issue.description || '',
+        suggestedEntry: 0,
+        suggestedStop: 0,
+        suggestedTarget: 0,
+        riskReward: 0,
+        timeframe: '4h',
+        catalysts: [],
+      }));
+      setTopOpportunities(opportunities);
+    }
 
-    es.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-
-        if (data.type === 'initial_state' || data.type === 'top_opportunities_update') {
-          if (data.status) setResearchEngineStatus(data.status);
-          if (data.topOpportunities) setTopOpportunities(data.topOpportunities);
-          if (data.opportunities) setTopOpportunities(data.opportunities);
-        } else if (data.type === 'finding') {
-          setResearchFindings([...researchFindings, data.data]);
-        } else if (data.type === 'thesis') {
-          setTradingTheses([...tradingTheses, data.data]);
-        } else if (data.type === 'event') {
-          setUpcomingEvents([...upcomingEvents, data.data]);
-        } else if (data.type === 'status_change' || data.type === 'cycle_start' || data.type === 'cycle_complete') {
-          // Refresh full state
-          fetchFullState();
-        }
-      } catch { /* ignore parse errors */ }
-    };
-
-    return () => {
-      es.close();
-      eventSourceRef.current = null;
-    };
+    // Map agent events to research engine status
+    const latestEvent = axonAgentEvents[axonAgentEvents.length - 1];
+    if (latestEvent) {
+      setResearchEngineStatus({
+        state: 'running',
+        currentCycle: 0,
+        lastCycleAt: latestEvent.timestamp,
+        nextCycleAt: null,
+        activeSymbols: [],
+        findingsCount: axonAgentEvents.filter((e) => e.action === 'finding').length,
+        thesesCount: tradingIssues.length,
+      });
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [axonIssues, axonAgentEvents]);
 
   const fetchFullState = useCallback(async () => {
-    try {
-      const res = await fetch('/api/research', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'top_opportunities', count: 10 }),
-      });
-      const data = await res.json();
-      if (data.opportunities) setTopOpportunities(data.opportunities);
-      if (data.theses) setTradingTheses(data.theses);
-      if (data.findings) setResearchFindings(data.findings);
-      if (data.events) setUpcomingEvents(data.events);
-      if (data.status) setResearchEngineStatus(data.status);
-    } catch { /* ignore */ }
+    // Fetch trading issues from Axon as the source of truth for opportunities
+    const client = getAxonClient();
+    const result = await client.listIssues({ issue_type: 'trading' });
+    if (result.ok) {
+      const opportunities: TopOpportunity[] = result.data.map((issue, idx) => ({
+        rank: idx + 1,
+        symbol: issue.title.split(' ')[0] || 'UNKNOWN',
+        direction: (issue.description?.toLowerCase().includes('short') ? 'short' : 'long') as 'long' | 'short',
+        score: issue.priority === 'critical' ? 95 : issue.priority === 'high' ? 80 : issue.priority === 'medium' ? 65 : 50,
+        thesisId: issue.id,
+        reasoning: issue.description || '',
+        suggestedEntry: 0,
+        suggestedStop: 0,
+        suggestedTarget: 0,
+        riskReward: 0,
+        timeframe: '4h',
+        catalysts: [],
+      }));
+      setTopOpportunities(opportunities);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fetch initial state on mount (replaces SSE initial_state event)
+  useEffect(() => {
+    fetchFullState();
+  }, [fetchFullState]);
 
   const handleStart = async () => {
     setIsLoading(true);
     try {
+      // Create a trading issue in Axon to kick off research
       const { virtualBalance, ...engineConfig } = researchConfig;
-      const res = await fetch('/api/research', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'start',
-          config: engineConfig,
-          virtualBalance,
-        }),
+      const client = getAxonClient();
+      await client.createIssue({
+        title: `Research Scan — ${(engineConfig.watchlistSymbols ?? []).join(', ') || 'All Symbols'}`,
+        description: JSON.stringify({ config: engineConfig, virtualBalance }),
+        issue_type: 'trading',
+        priority: 'medium',
       });
-      const data = await res.json();
-      if (data.status) setResearchEngineStatus(data.status);
+      setResearchEngineStatus({
+        state: 'running',
+        currentCycle: 0,
+        lastCycleAt: new Date().toISOString(),
+        nextCycleAt: null,
+        activeSymbols: engineConfig.watchlistSymbols ?? [],
+        findingsCount: 0,
+        thesesCount: 0,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleStop = async () => {
-    const res = await fetch('/api/research', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'stop' }),
+    const client = getAxonClient();
+    await client.killAll();
+    setResearchEngineStatus({
+      state: 'stopped',
+      currentCycle: 0,
+      lastCycleAt: new Date().toISOString(),
+      nextCycleAt: null,
+      activeSymbols: [],
+      findingsCount: 0,
+      thesesCount: 0,
     });
-    const data = await res.json();
-    if (data.status) setResearchEngineStatus(data.status);
   };
 
   const handlePause = async () => {
-    const res = await fetch('/api/research', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'pause' }),
-    });
-    const data = await res.json();
-    if (data.status) setResearchEngineStatus(data.status);
+    const client = getAxonClient();
+    await client.pauseAll();
+    if (researchEngineStatus) {
+      setResearchEngineStatus({ ...researchEngineStatus, state: 'paused' });
+    }
   };
 
   const handleResume = async () => {
-    const res = await fetch('/api/research', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'resume' }),
-    });
-    const data = await res.json();
-    if (data.status) setResearchEngineStatus(data.status);
+    const client = getAxonClient();
+    await client.resumeAll();
+    if (researchEngineStatus) {
+      setResearchEngineStatus({ ...researchEngineStatus, state: 'running' });
+    }
   };
 
   const handleConfigChange = async (
     newConfig: Partial<ResearchEngineConfig> & { virtualBalance: number }
   ) => {
     setResearchConfig(newConfig);
-    // If engine is already running, push config update live
+    // If engine is already running, push config update as a new trading issue
     const isRunning = researchEngineStatus?.state === 'running' || researchEngineStatus?.state === 'paused';
     if (isRunning) {
       const { virtualBalance: _vb, ...engineConfig } = newConfig;
       try {
-        await fetch('/api/research', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'configure', config: engineConfig }),
+        const client = getAxonClient();
+        await client.createIssue({
+          title: `Config Update — ${(engineConfig.watchlistSymbols ?? []).join(', ') || 'All Symbols'}`,
+          description: JSON.stringify({ action: 'configure', config: engineConfig }),
+          issue_type: 'trading',
+          priority: 'low',
         });
       } catch { /* ignore — best-effort live update */ }
     }

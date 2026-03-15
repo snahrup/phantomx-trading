@@ -5,7 +5,7 @@
 import ccxt, { type Exchange, type Order as CCXTOrder } from 'ccxt';
 import type {
   Ticker, OHLCV, OrderBook, AccountInfo, Balance,
-  Position, Order, Trade, OrderSide, OrderType
+  Position, Order, Trade, OrderSide, OrderType, FundingRate
 } from '@/types/trading';
 
 export interface PhemexClientConfig {
@@ -128,6 +128,31 @@ export class PhemexClient {
       if (!m) return false;
       return this.config.marketType === 'spot' ? m.spot : m.swap;
     });
+  }
+
+  // --- Funding Rates ---
+
+  async getFundingRate(symbol: string): Promise<FundingRate> {
+    const fr = await this.exchange.fetchFundingRate(symbol);
+    return {
+      symbol: fr.symbol ?? symbol,
+      fundingRate: fr.fundingRate ?? 0,
+      fundingTimestamp: fr.fundingDatetime ? new Date(fr.fundingDatetime).getTime() : (fr.timestamp ?? Date.now()),
+      nextFundingTimestamp: fr.nextFundingDatetime ? new Date(fr.nextFundingDatetime).getTime() : undefined,
+      markPrice: fr.markPrice ?? undefined,
+      indexPrice: fr.indexPrice ?? undefined,
+    };
+  }
+
+  async getFundingRateHistory(symbol: string, since?: number, limit: number = 100): Promise<FundingRate[]> {
+    const history = await this.exchange.fetchFundingRateHistory(symbol, since, limit);
+    return history.map(fr => ({
+      symbol: fr.symbol ?? symbol,
+      fundingRate: fr.fundingRate ?? 0,
+      fundingTimestamp: fr.timestamp ?? Date.now(),
+      markPrice: undefined,
+      indexPrice: undefined,
+    }));
   }
 
   // --- Account ---
@@ -334,18 +359,49 @@ function setClient(c: PhemexClient | null): void {
 }
 
 /**
+ * Resolve API credentials from env, respecting testnet/mainnet selection.
+ * When PHEMEX_TESTNET=true, prefers PHEMEX_TESTNET_API_KEY/SECRET,
+ * falling back to PHEMEX_API_KEY/SECRET if testnet-specific vars aren't set.
+ */
+function resolveEnvCredentials(): { apiKey: string; secret: string; testnet: boolean } | null {
+  const testnet = process.env.PHEMEX_TESTNET === 'true';
+  let apiKey: string | undefined;
+  let secret: string | undefined;
+
+  if (testnet) {
+    apiKey = process.env.PHEMEX_TESTNET_API_KEY || process.env.PHEMEX_API_KEY;
+    secret = process.env.PHEMEX_TESTNET_API_SECRET || process.env.PHEMEX_API_SECRET;
+  } else {
+    apiKey = process.env.PHEMEX_API_KEY;
+    secret = process.env.PHEMEX_API_SECRET;
+  }
+
+  if (!apiKey || !secret) return null;
+  return { apiKey, secret, testnet };
+}
+
+/**
  * Auto-connect from env if the singleton was lost (hot reload, serverless cold start).
  * Returns true if connection was restored.
  */
 function tryAutoConnectFromEnv(): boolean {
   if (getClient()) return true;
-  const apiKey = process.env.PHEMEX_API_KEY;
-  const secret = process.env.PHEMEX_API_SECRET;
-  if (!apiKey || !secret) return false;
-  const testnet = process.env.PHEMEX_TESTNET === 'true';
-  setClient(new PhemexClient({ apiKey, secret, testnet, marketType: 'swap' }));
-  console.log('[PhantomX] Auto-reconnected PhemexClient from env credentials');
+  const creds = resolveEnvCredentials();
+  if (!creds) return false;
+  setClient(new PhemexClient({ ...creds, marketType: 'swap' }));
+  const network = creds.testnet ? 'TESTNET' : 'MAINNET';
+  console.log(`[PhantomX] Auto-reconnected PhemexClient from env credentials (${network})`);
   return true;
+}
+
+/** Returns the current network derived from env config. */
+export function getConfiguredNetwork(): 'mainnet' | 'testnet' {
+  return process.env.PHEMEX_TESTNET === 'true' ? 'testnet' : 'mainnet';
+}
+
+/** Returns true if testnet-specific API keys are configured. */
+export function hasTestnetCredentials(): boolean {
+  return !!(process.env.PHEMEX_TESTNET_API_KEY && process.env.PHEMEX_TESTNET_API_SECRET);
 }
 
 export function getPhemexClient(config?: PhemexClientConfig): PhemexClient {

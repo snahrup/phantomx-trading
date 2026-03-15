@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { PageTransition } from '@/components/motion';
-import TradingJournal from '@/components/ai/TradingJournal';
-import PaperTradingDashboard from '@/components/strategy/PaperTradingDashboard';
+import AxonJournalPanel from '@/components/axon/AxonJournalPanel';
+import AxonTradingPipelineView from '@/components/axon/AxonTradingPipelineView';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const TABS = [
@@ -45,9 +45,9 @@ export default function JournalPage() {
           <div className="flex-1 min-h-0 p-4">
             <ErrorBoundary fallback="journal">
               {tab === 'paper' ? (
-                <PaperTradingDashboard />
+                <AxonTradingPipelineView />
               ) : (
-                <TradingJournal />
+                <AxonJournalPanel />
               )}
             </ErrorBoundary>
           </div>

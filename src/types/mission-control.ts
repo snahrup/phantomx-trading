@@ -7,6 +7,7 @@ export interface MissionControlConfig {
   selectedPairs: string[];
   pairFilter: string | null;
   maxConcurrentPositions: 1 | 2 | 3 | 5;
+  profitGoal: number | null;
 }
 
 export const DEFAULT_MISSION_CONFIG: MissionControlConfig = {
@@ -14,6 +15,7 @@ export const DEFAULT_MISSION_CONFIG: MissionControlConfig = {
   selectedPairs: ['BTC/USDT:USDT', 'ETH/USDT:USDT', 'SOL/USDT:USDT'],
   pairFilter: null,
   maxConcurrentPositions: 3,
+  profitGoal: null,
 };
 
 export type AgentRole = 'scanner' | 'strategy' | 'risk' | 'execution' | 'research' | 'user' | 'system';
@@ -25,6 +27,8 @@ export interface FeedMessage {
   agentRole: AgentRole;
   content: string;
   isUser?: boolean;
+  commentType?: 'finding' | 'argument' | 'ruling' | 'recommendation' | 'disagreement_detected';
+  wave?: number;
 }
 
 export interface TradeCloseEvent {
@@ -41,13 +45,6 @@ export interface TradeCloseEvent {
   strategy: string;
   closedAt: Date;
 }
-
-export const RISK_PRESETS: Record<RiskLevel, { positionPct: number; maxDrawdown: number; stopDistance: number }> = {
-  conservative: { positionPct: 5, maxDrawdown: 5, stopDistance: 2 },
-  moderate: { positionPct: 10, maxDrawdown: 10, stopDistance: 1.5 },
-  aggressive: { positionPct: 20, maxDrawdown: 15, stopDistance: 1 },
-  degen: { positionPct: 40, maxDrawdown: 25, stopDistance: 0.5 },
-};
 
 export const AGENT_ROLE_COLORS: Record<AgentRole, string> = {
   scanner: 'text-blue-400',

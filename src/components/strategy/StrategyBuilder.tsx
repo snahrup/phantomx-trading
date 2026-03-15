@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { streamConciergeChat } from '@/lib/axon/concierge-stream';
 import type { StrategyConfig, StrategyGoals, RiskLevel, RiskParameters, Condition, ConditionGroup } from '@/types/trading';
 import {
   Rocket, Plus, X, Sparkles, Shield, Target, Brain,
@@ -108,60 +109,79 @@ export default function StrategyBuilder({ onStartResearch }: StrategyBuilderProp
     setQuickError(null);
     setQuickReasoning(null);
 
+    let accumulated = '';
+
+    const message = [
+      'Generate a complete trading strategy configuration as JSON based on this request:',
+      quickPrompt,
+      '',
+      'Respond with ONLY valid JSON containing: { "config": StrategyConfig, "goals": StrategyGoals, "reasoning": string }',
+      'StrategyConfig fields: name, symbol, timeframe, risk (maxPositionSizePercent, stopLossPercent, takeProfitPercent, maxDrawdownPercent, trailingStopPercent, maxDailyLossPercent, allowLossOfEntireAmount), entryConditions ({ logic: "AND"|"OR", conditions: [{ indicator, operator, target }] }), exitConditions (same shape).',
+      'StrategyGoals fields: minWinRate (0-1 decimal), minProfitFactor, maxDrawdownPercent, minSharpeRatio, duration ("scalp"|"day"|"swing"|"position"), maxOptimizationIterations (3-25), questions (string[]).',
+    ].join('\n');
+
     try {
-      const res = await fetch('/api/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate_strategy', message: quickPrompt }),
-      });
+      await streamConciergeChat(
+        message,
+        {
+          onText: (text) => { accumulated += text; },
+          onToolUse: () => {},
+          onToolResult: () => {},
+          onDone: () => {
+            try {
+              // Extract JSON from the response (may be wrapped in markdown code fences)
+              const jsonMatch = accumulated.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, accumulated];
+              const data = JSON.parse(jsonMatch[1]!.trim());
+              const config = data.config as StrategyConfig;
+              const goals = data.goals as StrategyGoals;
 
-      if (!res.ok) {
-        const err = await res.json();
-        setQuickError(err.error || `API error: ${res.status}`);
-        setQuickLoading(false);
-        return;
-      }
+              // Show what AI decided
+              setQuickReasoning(data.reasoning || 'Strategy generated.');
 
-      const data = await res.json();
-      const config = data.config as StrategyConfig;
-      const goals = data.goals as StrategyGoals;
+              // Populate form fields for visibility
+              setName(config.name || '');
+              if (config.symbol) setSymbol(config.symbol);
+              if (config.timeframe) setTimeframe(config.timeframe);
+              if (config.risk) {
+                setRisk(config.risk);
+                // Determine closest risk level
+                if (config.risk.maxPositionSizePercent >= 15) setRiskLevel('degen');
+                else if (config.risk.maxPositionSizePercent >= 8) setRiskLevel('aggressive');
+                else if (config.risk.maxPositionSizePercent >= 5) setRiskLevel('moderate');
+                else setRiskLevel('conservative');
+              }
+              if (config.entryConditions?.conditions) {
+                setEntryConditions(config.entryConditions.conditions as Condition[]);
+                setEntryLogic(config.entryConditions.logic || 'AND');
+              }
+              if (config.exitConditions?.conditions) {
+                setExitConditions(config.exitConditions.conditions as Condition[]);
+                setExitLogic(config.exitConditions.logic || 'AND');
+              }
+              if (goals.minWinRate) setMinWinRate(Math.round(goals.minWinRate * 100));
+              if (goals.minProfitFactor) setMinProfitFactor(goals.minProfitFactor);
+              if (goals.maxDrawdownPercent) setMaxDrawdown(goals.maxDrawdownPercent);
+              if (goals.minSharpeRatio) setMinSharpe(goals.minSharpeRatio);
+              if (goals.duration) setDuration(goals.duration);
+              if (goals.maxOptimizationIterations) setMaxIterations(goals.maxOptimizationIterations);
+              if (goals.questions) setQuestions(goals.questions);
 
-      // Show what AI decided
-      setQuickReasoning(data.reasoning || 'Strategy generated.');
-
-      // Populate form fields for visibility
-      setName(config.name || '');
-      if (config.symbol) setSymbol(config.symbol);
-      if (config.timeframe) setTimeframe(config.timeframe);
-      if (config.risk) {
-        setRisk(config.risk);
-        // Determine closest risk level
-        if (config.risk.maxPositionSizePercent >= 15) setRiskLevel('degen');
-        else if (config.risk.maxPositionSizePercent >= 8) setRiskLevel('aggressive');
-        else if (config.risk.maxPositionSizePercent >= 5) setRiskLevel('moderate');
-        else setRiskLevel('conservative');
-      }
-      if (config.entryConditions?.conditions) {
-        setEntryConditions(config.entryConditions.conditions as Condition[]);
-        setEntryLogic(config.entryConditions.logic || 'AND');
-      }
-      if (config.exitConditions?.conditions) {
-        setExitConditions(config.exitConditions.conditions as Condition[]);
-        setExitLogic(config.exitConditions.logic || 'AND');
-      }
-      if (goals.minWinRate) setMinWinRate(Math.round(goals.minWinRate * 100));
-      if (goals.minProfitFactor) setMinProfitFactor(goals.minProfitFactor);
-      if (goals.maxDrawdownPercent) setMaxDrawdown(goals.maxDrawdownPercent);
-      if (goals.minSharpeRatio) setMinSharpe(goals.minSharpeRatio);
-      if (goals.duration) setDuration(goals.duration);
-      if (goals.maxOptimizationIterations) setMaxIterations(goals.maxOptimizationIterations);
-      if (goals.questions) setQuestions(goals.questions);
-
-      // Auto-launch research
-      onStartResearch(config, goals);
+              // Auto-launch research
+              onStartResearch(config, goals);
+            } catch {
+              setQuickError('Failed to parse AI response as strategy configuration.');
+            } finally {
+              setQuickLoading(false);
+            }
+          },
+          onError: (err) => {
+            setQuickError(err);
+            setQuickLoading(false);
+          },
+        },
+      );
     } catch (err) {
       setQuickError(String(err));
-    } finally {
       setQuickLoading(false);
     }
   }, [quickPrompt, quickLoading, onStartResearch, setSymbol, setTimeframe]);

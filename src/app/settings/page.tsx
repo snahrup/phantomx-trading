@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useTradingStore } from '@/store/trading-store';
 import { Moon, Sun, Wifi, WifiOff, Key, Shield } from 'lucide-react';
+import DaemonStatus from '@/components/autopilot/DaemonStatus';
 
 export default function SettingsPage() {
   const theme = useTradingStore(s => s.theme);
@@ -119,6 +120,10 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+          </StaggerItem>
+          {/* Axon Daemon */}
+          <StaggerItem>
+            <DaemonStatus />
           </StaggerItem>
         </StaggerList>
       </PageTransition>

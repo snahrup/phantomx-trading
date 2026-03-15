@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Rocket } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Rocket, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useTradingStore } from '@/store/trading-store';
+import { useTradingStore, RISK_PRESETS } from '@/store/trading-store';
+import { useAxonStore } from '@/store/axon-store';
 import { getAxonClient } from '@/lib/axon/client';
 import TokenSelector from './TokenSelector';
 import type { RiskLevel } from '@/types/mission-control';
+import type { AxonPriority } from '@/lib/axon/types';
 
 const RISK_LEVELS: { id: RiskLevel; label: string }[] = [
   { id: 'conservative', label: 'Conservative' },
@@ -18,16 +20,31 @@ const RISK_LEVELS: { id: RiskLevel; label: string }[] = [
 
 const MAX_POSITIONS_OPTIONS = [1, 2, 3, 5] as const;
 
+const RISK_PRIORITY_MAP: Record<RiskLevel, AxonPriority> = {
+  conservative: 'low',
+  moderate: 'medium',
+  aggressive: 'high',
+  degen: 'critical',
+};
+
 export default function LaunchPanel() {
   const [launching, setLaunching] = useState(false);
+  const [launchError, setLaunchError] = useState<string | null>(null);
   const [accountBalance, setAccountBalance] = useState<number | null>(null);
+  const mountedRef = useRef(true);
 
   const config = useTradingStore(s => s.missionControlConfig);
+  const isExecuting = useTradingStore(s => s.isExecuting);
+  const isKilled = useTradingStore(s => s.isKilled);
   const setConfig = useTradingStore(s => s.setMissionControlConfig);
   const setExecuting = useTradingStore(s => s.setExecuting);
   const setKilled = useTradingStore(s => s.setKilled);
+  const setRiskParameters = useTradingStore(s => s.setRiskParameters);
+  const setActiveMissionIssueId = useTradingStore(s => s.setActiveMissionIssueId);
+  const setConnected = useTradingStore(s => s.setConnected);
 
   useEffect(() => {
+    mountedRef.current = true;
     const fetchBalance = async () => {
       try {
         const res = await fetch('/api/phemex', {
@@ -36,31 +53,215 @@ export default function LaunchPanel() {
           body: JSON.stringify({ action: 'account' }),
         });
         const data = await res.json();
-        setAccountBalance(data.balance?.free ?? data.totalWalletBalance ?? null);
-      } catch { /* silent */ }
+        if (!mountedRef.current) return;
+        // API returns { account: { balances, totalUsdValue } }
+        // Find USDT free balance, or fall back to totalUsdValue
+        const usdtBalance = data.account?.balances?.find(
+          (b: { currency: string; free: number }) => b.currency === 'USDT'
+        );
+        const balance = usdtBalance?.free ?? data.account?.totalUsdValue ?? null;
+        setAccountBalance(balance);
+        // API responded — mark connected so DataProvider loads OHLCV/ticker for charts
+        if (balance !== null) {
+          setConnected(true);
+        }
+      } catch {
+        if (!mountedRef.current) return;
+        setAccountBalance(null);
+      }
     };
     fetchBalance();
+    return () => { mountedRef.current = false; };
   }, []);
 
   const handleLaunch = async () => {
+    // Guard: prevent launching if no pairs selected or already active
+    if (config.selectedPairs.length === 0 || isExecuting || isKilled) return;
+
     setLaunching(true);
+    setLaunchError(null);
     try {
+      // Switch trading mode to autonomous so Axon auto-forwards Wave 5 recommendations
+      await fetch('/api/trading', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'set_mode',
+          mode: 'autonomous',
+          reason: 'Autonomous mode activated from Mission Control launch',
+        }),
+      });
+
       const axon = getAxonClient();
-      await axon.wakeAll();
+      const riskPreset = RISK_PRESETS[config.riskLevel];
+
+      // Build short symbol labels for the title (e.g. "BTC, ETH, SOL")
+      const pairLabels = config.selectedPairs.map(p => p.split('/')[0]).join(', ');
+      const riskLabel = config.riskLevel.charAt(0).toUpperCase() + config.riskLevel.slice(1);
+
+      // 1. Create a trading issue on Axon with the full mission config
+      const missionConfig = {
+        riskLevel: config.riskLevel,
+        riskParameters: riskPreset,
+        selectedPairs: config.selectedPairs,
+        maxConcurrentPositions: config.maxConcurrentPositions,
+        profitGoal: config.profitGoal,
+        startingBalance: accountBalance,
+        launchedAt: new Date().toISOString(),
+      };
+
+      const issueResult = await axon.createIssue({
+        title: `Trading Mission: ${pairLabels} — ${riskLabel}`,
+        description: [
+          `Autonomous trading mission launched from Mission Control.`,
+          '',
+          '```json',
+          JSON.stringify(missionConfig, null, 2),
+          '```',
+          '',
+          `**Pairs**: ${config.selectedPairs.join(', ')}`,
+          `**Risk Level**: ${riskLabel}`,
+          `**Max Concurrent Positions**: ${config.maxConcurrentPositions}`,
+          `**Stop Loss**: ${riskPreset.stopLossPercent}%`,
+          `**Take Profit**: ${riskPreset.takeProfitPercent}%`,
+          `**Max Daily Loss**: ${riskPreset.maxDailyLossPercent}%`,
+          `**Max Drawdown**: ${riskPreset.maxDrawdownPercent}%`,
+          config.profitGoal ? `**Profit Goal**: $${config.profitGoal} USDT` : '',
+          accountBalance !== null ? `**Starting Balance**: $${accountBalance.toFixed(2)} USDT` : '',
+        ].filter(Boolean).join('\n'),
+        issue_type: 'trading',
+        priority: RISK_PRIORITY_MAP[config.riskLevel],
+      });
+
+      if (!issueResult.ok) {
+        throw new Error(`Failed to create trading issue: ${issueResult.error}`);
+      }
+
+      if (!mountedRef.current) return;
+
+      const issueId = issueResult.data.id;
+      setActiveMissionIssueId(issueId);
+
+      // Clear old feed from previous mission and inject a launch event
+      const axonStore = useAxonStore.getState();
+      axonStore.clearActivity();
+      axonStore.handleActivity({
+        id: `launch-${Date.now()}`,
+        action: 'mission_launched',
+        timestamp: new Date().toISOString(),
+        detail: {
+          agent_name: 'Mission Control',
+          content: `Trading mission launched: ${pairLabels} — ${riskLabel} mode. ${config.maxConcurrentPositions} max positions.${config.profitGoal ? ` Target: $${config.profitGoal} profit.` : ''} Waking agents...`,
+        },
+      });
+
+      // 2. Update local pipeline config with matching risk parameters
+      const configRes = await fetch('/api/trading', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'config',
+          riskLevel: config.riskLevel,
+          maxOpenPositions: config.maxConcurrentPositions,
+          maxPositionSizePercent: riskPreset.maxPositionSizePercent,
+          stopLossPercent: riskPreset.stopLossPercent,
+          takeProfitPercent: riskPreset.takeProfitPercent,
+          maxDailyLossPercent: riskPreset.maxDailyLossPercent,
+          maxDrawdownPercent: riskPreset.maxDrawdownPercent,
+          trailingStopPercent: riskPreset.trailingStopPercent,
+        }),
+      });
+
+      if (!configRes.ok) {
+        console.warn('Pipeline config update failed:', configRes.status);
+      }
+
+      if (!mountedRef.current) return;
+
+      // Also update the store's risk parameters to stay in sync
+      setRiskParameters(riskPreset);
+
+      // 3. Wake all agents AFTER issue creation so they pick it up
+      try {
+        await axon.wakeAll();
+        if (mountedRef.current) {
+          axonStore.handleActivity({
+            id: `wake-${Date.now()}`,
+            action: 'agents_woken',
+            timestamp: new Date().toISOString(),
+            detail: {
+              agent_name: 'Mission Control',
+              content: `All agents woken. Agents are now assessing the mission config and preparing their research...`,
+            },
+          });
+        }
+      } catch (wakeErr) {
+        console.warn('Agent wake failed (agents may not be online):', wakeErr);
+        if (mountedRef.current) {
+          axonStore.handleActivity({
+            id: `wake-err-${Date.now()}`,
+            action: 'wake_failed',
+            timestamp: new Date().toISOString(),
+            detail: {
+              agent_name: 'Mission Control',
+              content: `Warning: Agent wake call failed. Axon may not be running. Agents will pick up the mission when they come online.`,
+            },
+          });
+        }
+      }
+
+      if (!mountedRef.current) return;
+
+      // Immediately fetch agent statuses and recent activity
+      axonStore.fetchAgents().catch(() => {});
+      axonStore.fetchActivity(50).catch(() => {});
+
       setKilled(false);
       setExecuting(true);
     } catch (err) {
       console.error('Launch failed:', err);
+      if (!mountedRef.current) return;
+      setLaunchError(err instanceof Error ? err.message : 'Launch failed');
     } finally {
-      setLaunching(false);
+      if (mountedRef.current) {
+        setLaunching(false);
+      }
     }
   };
+
+  const canLaunch = !launching && !isExecuting && !isKilled && config.selectedPairs.length > 0;
 
   return (
     <div className="flex items-center justify-center h-full">
       <Card className="w-full max-w-md border-border">
         <CardContent className="p-6 space-y-5">
           <h2 className="text-lg font-bold text-foreground">Launch Autonomous Trading</h2>
+
+          {/* Profit Goal */}
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase text-muted-foreground tracking-wider">Profit Goal (optional)</label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="number"
+                min={0}
+                step={10}
+                placeholder="e.g. 500"
+                value={config.profitGoal ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setConfig({ profitGoal: val === '' ? null : Math.max(0, Number(val)) });
+                }}
+                className="w-full pl-9 pr-14 py-2 bg-muted border border-transparent rounded text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-emerald-500/40"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">USDT</span>
+            </div>
+            {config.profitGoal && accountBalance !== null && (
+              <p className="text-xs text-muted-foreground">
+                {((config.profitGoal / accountBalance) * 100).toFixed(0)}% return on ${accountBalance.toFixed(0)} balance
+              </p>
+            )}
+          </div>
 
           {/* Risk Level */}
           <div className="space-y-1.5">
@@ -118,16 +319,34 @@ export default function LaunchPanel() {
             </span>
           </div>
 
+          {/* Already executing warning */}
+          {isExecuting && (
+            <p className="text-center text-xs text-amber-400">
+              A mission is already running. Use the kill switch to stop it first.
+            </p>
+          )}
+
+          {/* Kill switch active warning */}
+          {isKilled && (
+            <p className="text-center text-xs text-red-400">
+              Kill switch is active. Reset it before launching a new mission.
+            </p>
+          )}
+
           {/* Launch */}
           <Button
             onClick={handleLaunch}
-            disabled={launching || config.selectedPairs.length === 0}
+            disabled={!canLaunch}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3"
             size="lg"
           >
             <Rocket className="w-4 h-4 mr-2" />
             {launching ? 'Starting agents...' : 'START AUTONOMOUS TRADING'}
           </Button>
+
+          {launchError && (
+            <p className="text-center text-xs text-red-400">{launchError}</p>
+          )}
 
           <p className="text-center text-xs text-muted-foreground">
             Kill switch is always active as safety net

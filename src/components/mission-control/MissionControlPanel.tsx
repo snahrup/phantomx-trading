@@ -1,18 +1,26 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTradingStore } from '@/store/trading-store';
+import { useAxonStore } from '@/store/axon-store';
 import StatusBar from './StatusBar';
 import LaunchPanel from './LaunchPanel';
 import AgentFeedPanel from './AgentFeedPanel';
 import MiniChartStrip from './MiniChartStrip';
 import type { TradeCloseEvent } from '@/types/mission-control';
+import { useMissionPolling } from './useMissionPolling';
+import { useAgentChartOverlays } from './useAgentChartOverlays';
 
 // Dynamically import TradingChart to avoid SSR issues with lightweight-charts
 import dynamic from 'next/dynamic';
 const TradingChart = dynamic(() => import('@/components/chart/TradingChart'), { ssr: false });
 
 export default function MissionControlPanel() {
+  // Autonomous-mode polling: positions, account, activity feed, agent statuses
+  useMissionPolling();
+  // Convert agent events into chart annotations, price lines, and overlays
+  useAgentChartOverlays();
+
   const isExecuting = useTradingStore(s => s.isExecuting);
   const isKilled = useTradingStore(s => s.isKilled);
   const isFeedCollapsed = useTradingStore(s => s.isFeedCollapsed);
@@ -20,14 +28,52 @@ export default function MissionControlPanel() {
   const positions = useTradingStore(s => s.positions);
   const setFocused = useTradingStore(s => s.setFocusedPositionSymbol);
   const setSymbol = useTradingStore(s => s.setSymbol);
+  const setExecuting = useTradingStore(s => s.setExecuting);
 
   const [tradeCloseEvents, setTradeCloseEvents] = useState<TradeCloseEvent[]>([]);
   const [closeFlashes, setCloseFlashes] = useState<Record<string, 'win' | 'loss'>>({});
+  const reconciledRef = useRef(false);
 
-  // Auto-focus first position if none focused
+  // Reconcile on mount — check if agents are actually running on Axon.
+  // If we have active/working agents or open positions, resume the live view
+  // instead of showing LaunchPanel again.
+  useEffect(() => {
+    if (reconciledRef.current) return;
+    reconciledRef.current = true;
+
+    const reconcile = async () => {
+      const axon = useAxonStore.getState();
+
+      // Fetch latest agent state from Axon
+      await axon.fetchAgents();
+      await axon.fetchActivity(50);
+
+      const agents = useAxonStore.getState().agents;
+      const hasActiveAgents = agents.some(
+        a => a.status === 'working' || (a.status === 'idle' && (a.heartbeat_interval_s ?? 0) > 0)
+      );
+
+      // If agents are alive and we're not killed, we should be in live view
+      if (hasActiveAgents && !useTradingStore.getState().isKilled) {
+        // Ensure DataProvider loads OHLCV/ticker for the chart
+        useTradingStore.getState().setConnected(true);
+        setExecuting(true);
+      }
+    };
+
+    reconcile().catch(console.error);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-focus first position if none focused, or clear if focused position disappeared
   useEffect(() => {
     if (!focusedSymbol && positions.length > 0) {
       setFocused(positions[0].symbol);
+    } else if (focusedSymbol && positions.length > 0 && !positions.some(p => p.symbol === focusedSymbol)) {
+      // Focused position was closed — switch to first remaining position
+      setFocused(positions[0].symbol);
+    } else if (focusedSymbol && positions.length === 0) {
+      // All positions closed — clear focus
+      setFocused(null);
     }
   }, [focusedSymbol, positions, setFocused]);
 

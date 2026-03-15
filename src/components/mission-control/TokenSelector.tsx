@@ -1,7 +1,7 @@
 // src/components/mission-control/TokenSelector.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -30,22 +30,49 @@ export default function TokenSelector({ selected, onChange, onFilterChange, acti
   const [search, setSearch] = useState('');
   const [symbols, setSymbols] = useState<PhemexSymbol[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen]);
 
   useEffect(() => {
     const fetchSymbols = async () => {
       try {
+        // Use 'markets' action which returns rich data (leverage, base, etc.)
+        // Falls back to 'symbols' (string[]) if markets fails
         const res = await fetch('/api/phemex', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'symbols' }),
+          body: JSON.stringify({ action: 'markets' }),
         });
         const data = await res.json();
-        if (data.symbols) {
-          setSymbols(data.symbols.map((s: any) => ({
-            symbol: s.id || s.symbol,
-            maxLeverage: s.limits?.leverage?.max ?? 50,
-            price: s.last ?? 0,
+        if (data.markets && Array.isArray(data.markets)) {
+          setSymbols(data.markets.map((m: { symbol: string; maxLeverage?: number }) => ({
+            symbol: m.symbol,
+            maxLeverage: m.maxLeverage ?? 50,
+            price: 0, // markets endpoint doesn't include price
           })));
+        } else if (data.symbols) {
+          // Fallback: symbols API returns string[]
+          setSymbols((data.symbols as (string | Record<string, unknown>)[]).map((s) => {
+            if (typeof s === 'string') {
+              return { symbol: s, maxLeverage: 50, price: 0 };
+            }
+            return {
+              symbol: (s.id as string) || (s.symbol as string) || '',
+              maxLeverage: ((s.limits as Record<string, Record<string, number>>)?.leverage?.max) ?? 50,
+              price: (s.last as number) ?? 0,
+            };
+          }));
         }
       } catch {
         // Silently fail — symbols are optional enhancement
@@ -122,7 +149,7 @@ export default function TokenSelector({ selected, onChange, onFilterChange, acti
       </div>
 
       {/* Search */}
-      <div className="relative">
+      <div className="relative" ref={dropdownRef}>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-muted-foreground" />
           <Input

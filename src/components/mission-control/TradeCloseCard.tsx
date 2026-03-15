@@ -33,13 +33,13 @@ export default function TradeCloseCard({ event, onDismiss }: TradeCloseCardProps
       <div className="flex items-center justify-between mb-2">
         <span className={`font-bold text-sm ${pnlColor}`}>{icon} {label}</span>
         <span className={`text-lg font-bold ${pnlColor}`}>
-          {event.pnl >= 0 ? '+' : ''}${event.pnl.toFixed(2)}
+          {event.pnl >= 0 ? '+' : ''}${(Number.isFinite(event.pnl) ? event.pnl : 0).toFixed(2)}
         </span>
       </div>
       <div className="text-xs text-muted-foreground space-y-0.5">
         <div>{event.symbol} {event.direction} {event.leverage}x</div>
         <div>Entry: {event.entryPrice} → Exit: {event.exitPrice}</div>
-        <div>Duration: {event.duration} · R:R: {event.rrAchieved.toFixed(1)}:1</div>
+        <div>Duration: {event.duration} · R:R: {(Number.isFinite(event.rrAchieved) ? event.rrAchieved : 0).toFixed(1)}:1</div>
         <div>Strategy: {event.strategy}</div>
       </div>
     </motion.div>

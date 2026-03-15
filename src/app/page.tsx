@@ -1,23 +1,24 @@
 'use client';
 
 import { useEffect, useCallback, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTradingStore } from '@/store/trading-store';
 import TradingChart from '@/components/chart/TradingChart';
-import AIChatPanel from '@/components/ai/AIChatPanel';
+import ConciergeChatPanel from '@/components/concierge/ConciergeChatPanel';
 import AgentNetworkPanel from '@/components/agents/AgentNetworkPanel';
-import TradingJournal from '@/components/ai/TradingJournal';
+import AxonJournalPanel from '@/components/axon/AxonJournalPanel';
 import ControlPanel from '@/components/trading/ControlPanel';
 import ConnectionSetup from '@/components/trading/ConnectionSetup';
 import SymbolSelector from '@/components/trading/SymbolSelector';
-import GemScanner from '@/components/trading/GemScanner';
+import AxonScannerPanel from '@/components/axon/AxonScannerPanel';
 import PortfolioBar from '@/components/trading/PortfolioBar';
 import AutopilotActivityBar from '@/components/trading/AutopilotActivityBar';
 import TradeAnalytics from '@/components/trading/TradeAnalytics';
-import DashboardAnalytics from '@/components/trading/DashboardAnalytics';
-import IntelligenceView from '@/components/trading/IntelligenceView';
-import { WorkflowDashboard } from '@/components/workflows/WorkflowDashboard';
-import { WorkflowSidebarSummary } from '@/components/workflows/WorkflowSidebarSummary';
+import AgentConsensusView from '@/components/axon/AgentConsensusView';
+import TradeRecommendationPanel from '@/components/axon/TradeRecommendationPanel';
+import AgentTeamPanel from '@/components/agents/AgentTeamPanel';
 import PineScriptModal from '@/components/trading/PineScriptModal';
+import StrategyPlaybook from '@/components/axon/StrategyPlaybook';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,13 +30,13 @@ import {
 } from 'lucide-react';
 
 export default function Dashboard() {
+  const router = useRouter();
   const {
     isConnected, isTestnet,
     sidePanel, setSidePanel,
     sidebarMode, setSidebarMode, sidebarWidth, setSidebarWidth,
     isExecuting, isPaused, isKilled,
     agentStatuses,
-    viewMode, setViewMode,
     selectedSymbol, selectedTimeframe,
   } = useTradingStore();
 
@@ -147,11 +148,11 @@ export default function Dashboard() {
             {/* View Mode Toggle */}
             {isConnected && (
               <div className="flex items-center rounded-lg border border-border overflow-hidden">
-                <ViewModeButton active={viewMode === 'trading'} onClick={() => setViewMode('trading')} icon={<Activity className="w-3 h-3" />} label="Trading" />
+                <ViewModeButton active={true} onClick={() => {}} icon={<Activity className="w-3 h-3" />} label="Trading" />
                 <Separator orientation="vertical" className="h-5" />
-                <ViewModeButton active={viewMode === 'dashboard'} onClick={() => setViewMode('dashboard')} icon={<LayoutDashboard className="w-3 h-3" />} label="Dashboard" />
+                <ViewModeButton active={false} onClick={() => router.push('/trading')} icon={<LayoutDashboard className="w-3 h-3" />} label="Dashboard" />
                 <Separator orientation="vertical" className="h-5" />
-                <ViewModeButton active={viewMode === 'intelligence'} onClick={() => setViewMode('intelligence')} icon={<Lightbulb className="w-3 h-3" />} label="Autopilot" />
+                <ViewModeButton active={false} onClick={() => router.push('/pipeline')} icon={<Lightbulb className="w-3 h-3" />} label="Autopilot" />
               </div>
             )}
             {isConnected && <SymbolSelector />}
@@ -186,6 +187,9 @@ export default function Dashboard() {
               </button>
             )}
 
+            {/* Research Consensus (compact) */}
+            <ErrorBoundary fallback="research"><AgentConsensusView compact /></ErrorBoundary>
+
             {/* Network badge */}
             <Badge
               variant="outline"
@@ -207,42 +211,36 @@ export default function Dashboard() {
 
         {/* Main content area */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Left: Chart / Dashboard / Intelligence */}
+          {/* Left: Chart (trading terminal) */}
           <div className="flex-1 flex flex-col min-w-0">
-            {viewMode === 'intelligence' ? (
-              <ErrorBoundary fallback="chart"><WorkflowDashboard /></ErrorBoundary>
-            ) : viewMode === 'dashboard' ? (
-              <ErrorBoundary fallback="chart"><DashboardAnalytics /></ErrorBoundary>
-            ) : (
-              <>
-                <div className="flex-1 relative">
-                  {isConnected ? (
-                    <ErrorBoundary fallback="chart"><TradingChart /></ErrorBoundary>
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center opacity-30">
-                        <Activity className="w-16 h-16 text-primary mx-auto mb-4" strokeWidth={1} />
-                        <p className="text-sm text-muted-foreground">Connect to Phemex to start trading</p>
-                      </div>
+            <>
+              <div className="flex-1 relative">
+                {isConnected ? (
+                  <ErrorBoundary fallback="chart"><TradingChart /></ErrorBoundary>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center opacity-30">
+                      <Activity className="w-16 h-16 text-primary mx-auto mb-4" strokeWidth={1} />
+                      <p className="text-sm text-muted-foreground">Connect to Phemex to start trading</p>
                     </div>
-                  )}
-                </div>
-                {isConnected && (
-                  <div className="h-8 flex items-center px-4 border-t border-border text-[10px] text-muted-foreground gap-4 flex-shrink-0 bg-card">
-                    <span>Phemex Perpetual</span>
-                    <span className="text-muted-foreground/60">{selectedSymbol}</span>
-                    <span>{selectedTimeframe}</span>
-                    <div className="flex-1" />
-                    <span>Webhook: {isExecuting ? 'Active' : 'Inactive'}</span>
-                    <Separator orientation="vertical" className="h-3" />
-                    <span>Auto-trade: {isExecuting ? (isPaused ? 'Paused' : 'Running') : 'Off'}</span>
                   </div>
                 )}
-                {isConnected && (
-                  <ErrorBoundary fallback="chart"><TradeAnalytics /></ErrorBoundary>
-                )}
-              </>
-            )}
+              </div>
+              {isConnected && (
+                <div className="h-8 flex items-center px-4 border-t border-border text-[10px] text-muted-foreground gap-4 flex-shrink-0 bg-card">
+                  <span>Phemex Perpetual</span>
+                  <span className="text-muted-foreground/60">{selectedSymbol}</span>
+                  <span>{selectedTimeframe}</span>
+                  <div className="flex-1" />
+                  <span>Webhook: {isExecuting ? 'Active' : 'Inactive'}</span>
+                  <Separator orientation="vertical" className="h-3" />
+                  <span>Auto-trade: {isExecuting ? (isPaused ? 'Paused' : 'Running') : 'Off'}</span>
+                </div>
+              )}
+              {isConnected && (
+                <ErrorBoundary fallback="chart"><TradeAnalytics /></ErrorBoundary>
+              )}
+            </>
           </div>
 
           {/* Right: Sidebar — Docked mode */}
@@ -337,7 +335,7 @@ function ViewModeButton({ active, onClick, icon, label }: { active: boolean; onC
 
 type SidebarTabsProps = {
   sidePanel: string;
-  setSidePanel: (panel: 'ai' | 'strategy' | 'risk' | 'settings' | 'journal' | 'agents') => void;
+  setSidePanel: (panel: 'ai' | 'strategy' | 'risk' | 'settings' | 'journal' | 'agents' | 'signals') => void;
   sidebarMode: 'docked' | 'floating' | 'minimized';
   setSidebarMode: (mode: 'docked' | 'floating' | 'minimized') => void;
 };
@@ -346,6 +344,7 @@ function SidebarTabs({ sidePanel, setSidePanel, sidebarMode, setSidebarMode }: S
   const tabs = [
     { key: 'ai' as const, label: 'AI Chat' },
     { key: 'agents' as const, label: 'Intel' },
+    { key: 'signals' as const, label: 'Signals' },
     { key: 'journal' as const, label: 'Journal' },
     { key: 'strategy' as const, label: 'Strategy' },
     { key: 'risk' as const, label: 'Controls' },
@@ -385,12 +384,13 @@ function SidebarTabs({ sidePanel, setSidePanel, sidebarMode, setSidebarMode }: S
 function SidebarContent({ sidePanel }: { sidePanel: string }) {
   return (
     <div className="flex-1 overflow-hidden">
-      {/* AIChatPanel always mounted — keeps SSE connection alive for agent events */}
+      {/* ConciergeChatPanel — Axon concierge streaming chat */}
       <div style={{ display: sidePanel === 'ai' ? undefined : 'none' }} className="h-full">
-        <ErrorBoundary fallback="chat"><AIChatPanel /></ErrorBoundary>
+        <ErrorBoundary fallback="chat"><ConciergeChatPanel /></ErrorBoundary>
       </div>
-      {sidePanel === 'agents' && <ErrorBoundary fallback="chat"><WorkflowSidebarSummary /></ErrorBoundary>}
-      {sidePanel === 'journal' && <ErrorBoundary fallback="chat"><TradingJournal /></ErrorBoundary>}
+      {sidePanel === 'agents' && <ErrorBoundary fallback="chat"><AgentTeamPanel /></ErrorBoundary>}
+      {sidePanel === 'signals' && <ErrorBoundary fallback="chat"><TradeRecommendationPanel /></ErrorBoundary>}
+      {sidePanel === 'journal' && <ErrorBoundary fallback="chat"><AxonJournalPanel /></ErrorBoundary>}
       {sidePanel === 'risk' && <ErrorBoundary fallback="chat"><ControlPanel /></ErrorBoundary>}
       {sidePanel === 'strategy' && <ErrorBoundary fallback="chat"><StrategyPanel /></ErrorBoundary>}
       {sidePanel === 'settings' && <ErrorBoundary fallback="chat"><SettingsPanel /></ErrorBoundary>}
@@ -406,7 +406,7 @@ function StrategyPanel() {
         <span className="text-xs font-semibold text-foreground">Strategy Manager</span>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        <GemScanner />
+        <AxonScannerPanel />
         <div className="flex items-center gap-2 py-1">
           <div className="flex-1 h-px bg-border" />
           <span className="text-[9px] text-muted-foreground uppercase tracking-widest">PineScript</span>
@@ -433,6 +433,14 @@ function StrategyPanel() {
             <p className="text-xs text-muted-foreground mt-2">No strategies yet</p>
           </div>
         )}
+
+        {/* Active Playbook from Paperclip Knowledge */}
+        <div className="flex items-center gap-2 py-1">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-[9px] text-muted-foreground uppercase tracking-widest">Playbook</span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+        <StrategyPlaybook className="max-h-[300px]" />
       </div>
     </div>
   );

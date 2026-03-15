@@ -2,7 +2,7 @@
 
 import AppLayout from '@/components/AppLayout';
 import { PageTransition } from '@/components/motion';
-import GemScanner from '@/components/trading/GemScanner';
+import AxonScannerPanel from '@/components/axon/AxonScannerPanel';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function ScannerPage() {
@@ -13,7 +13,7 @@ export default function ScannerPage() {
     >
       <PageTransition>
         <ErrorBoundary fallback="scanner">
-          <GemScanner />
+          <AxonScannerPanel />
         </ErrorBoundary>
       </PageTransition>
     </AppLayout>

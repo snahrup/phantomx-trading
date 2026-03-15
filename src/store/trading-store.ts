@@ -277,9 +277,13 @@ interface TradingState {
   missionControlConfig: MissionControlConfig;
   focusedPositionSymbol: string | null;
   isFeedCollapsed: boolean;
+  activeMissionIssueId: string | null;
+  positionPriceHistory: Record<string, number[]>;
   setMissionControlConfig: (config: Partial<MissionControlConfig>) => void;
   setFocusedPositionSymbol: (symbol: string | null) => void;
   setIsFeedCollapsed: (collapsed: boolean) => void;
+  setActiveMissionIssueId: (id: string | null) => void;
+  setPositionPriceHistory: (symbol: string, prices: number[]) => void;
 
   // Actions
   setConnection: (apiKey: string, apiSecret: string, testnet: boolean) => void;
@@ -575,11 +579,17 @@ export const useTradingStore = create<TradingState>()(
   missionControlConfig: DEFAULT_MISSION_CONFIG,
   focusedPositionSymbol: null,
   isFeedCollapsed: false,
+  activeMissionIssueId: null,
+  positionPriceHistory: {},
   setMissionControlConfig: (config) => set((state) => ({
     missionControlConfig: { ...state.missionControlConfig, ...config },
   })),
   setFocusedPositionSymbol: (symbol) => set({ focusedPositionSymbol: symbol }),
   setIsFeedCollapsed: (collapsed) => set({ isFeedCollapsed: collapsed }),
+  setActiveMissionIssueId: (id) => set({ activeMissionIssueId: id }),
+  setPositionPriceHistory: (symbol, prices) => set((s) => ({
+    positionPriceHistory: { ...s.positionPriceHistory, [symbol]: prices },
+  })),
 
   // Actions
   setConnection: (apiKey, apiSecret, testnet) => set({ apiKey, apiSecret, isTestnet: testnet }),
@@ -852,7 +862,7 @@ export const useTradingStore = create<TradingState>()(
 }),
     {
       name: 'phantomx-trading-store',
-      version: 15, // v15: Orchestrator workflow toggles
+      version: 17, // v17: Add activeMissionIssueId for Mission Control tracking
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         // NOTE: apiKey/apiSecret intentionally NOT persisted — stored in .env.local
@@ -867,9 +877,15 @@ export const useTradingStore = create<TradingState>()(
         selectedTimeframe: state.selectedTimeframe,
         // Persist AI conversation
         aiMessages: state.aiMessages,
-        // Persist kill switch state (CRITICAL — cannot be circumvented by F5)
+        // Persist autopilot execution state (CRITICAL — survives navigation + F5)
+        isExecuting: state.isExecuting,
+        isPaused: state.isPaused,
         isKilled: state.isKilled,
         killReason: state.killReason,
+        // Persist Mission Control config (risk level, selected pairs, etc.)
+        missionControlConfig: state.missionControlConfig,
+        // activeMissionIssueId is intentionally NOT persisted — it's runtime state
+        // that gets re-derived from Axon during reconciliation on mount
         // Persist chart annotations
         annotations: state.annotations,
         // Persist price lines and drawings
@@ -1010,6 +1026,18 @@ export const useTradingStore = create<TradingState>()(
           if (!s.workflowToggles) s.workflowToggles = { research: true, paper: true, live: true };
           if (!s.orchestratorState) s.orchestratorState = null;
           if (!s.orchestratorEvents) s.orchestratorEvents = [];
+        }
+        // v16: Persist autopilot execution state + mission control config
+        if (version < 16) {
+          const s = persistedState as Record<string, unknown>;
+          if (s.isExecuting === undefined) s.isExecuting = false;
+          if (s.isPaused === undefined) s.isPaused = false;
+          if (!s.missionControlConfig) s.missionControlConfig = {};
+        }
+        // v17: Add activeMissionIssueId for Mission Control tracking
+        if (version < 17) {
+          const s = persistedState as Record<string, unknown>;
+          if (!s.activeMissionIssueId) s.activeMissionIssueId = null;
         }
         return persistedState as TradingState;
       },

@@ -21,23 +21,26 @@ export default function MiniChartCard({
   priceHistory, isFocused, onClick, closeFlash,
 }: MiniChartCardProps) {
   const displayName = symbol.replace('/USDT:USDT', '').replace('/USDT', '');
-  const pnlColor = pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
-  const lineColor = pnl >= 0 ? '#34d399' : '#f87171';
+  const safePnl = Number.isFinite(pnl) ? pnl : 0;
+  const pnlColor = safePnl >= 0 ? 'text-emerald-400' : 'text-red-400';
+  const lineColor = safePnl >= 0 ? '#34d399' : '#f87171';
 
   const sparkline = useMemo(() => {
-    if (!priceHistory.length) return '';
+    if (priceHistory.length < 2) return '';
     const min = Math.min(...priceHistory);
     const max = Math.max(...priceHistory);
     const range = max - min || 1;
     const w = 200;
     const h = 30;
+    const divisor = priceHistory.length - 1;
     return priceHistory
-      .map((p, i) => `${(i / (priceHistory.length - 1)) * w},${h - ((p - min) / range) * h}`)
+      .map((p, i) => `${(i / divisor) * w},${h - ((p - min) / range) * h}`)
       .join(' ');
   }, [priceHistory]);
 
   const entryX = useMemo(() => {
-    if (!priceHistory.length) return null;
+    if (priceHistory.length < 2) return null;
+    if (!entryPrice || entryPrice <= 0) return null;
     const idx = priceHistory.findIndex(p => Math.abs(p - entryPrice) / entryPrice < 0.001);
     if (idx < 0) return null;
     return (idx / (priceHistory.length - 1)) * 200;
@@ -67,7 +70,7 @@ export default function MiniChartCard({
       <div className="flex items-center justify-between mb-0.5">
         <span className="text-xs font-bold text-foreground">{displayName}</span>
         <span className={`text-xs font-medium ${pnlColor}`}>
-          {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+          {safePnl >= 0 ? '+' : ''}${safePnl.toFixed(2)}
         </span>
       </div>
 

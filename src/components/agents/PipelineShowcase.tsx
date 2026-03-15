@@ -13,7 +13,21 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTradingStore } from '@/store/trading-store';
 import type { PipelineAnalystState, PipelineDebateTurn, PipelineJudgeDecision } from '@/store/trading-store';
-import { runPipeline, stopPipeline } from '@/lib/pipeline-runner';
+import { getAxonClient } from '@/lib/axon/client';
+
+// Pipeline actions — create Axon trading issues instead of old direct SDK calls
+async function runPipeline(symbol: string) {
+  await getAxonClient().createIssue({
+    title: `Trading Pipeline: ${symbol}`,
+    description: `Full 5-wave trading analysis for ${symbol}`,
+    issue_type: 'trading',
+    priority: 'high',
+  });
+}
+function stopPipeline() {
+  // Pipeline runs on the Axon backend — stopping requires pausing the agent
+  // For now this is a no-op; the pipeline will complete naturally
+}
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import {

@@ -1,0 +1,182 @@
+'use client';
+
+import { useEffect, useRef, useCallback } from 'react';
+import { useTradingStore } from '@/store/trading-store';
+import { useAxonStore } from '@/store/axon-store';
+
+// ---------------------------------------------------------------------------
+// Polling intervals (ms)
+// ---------------------------------------------------------------------------
+const POSITIONS_INTERVAL = 10_000;
+const ACCOUNT_INTERVAL = 15_000;
+const ACTIVITY_INTERVAL = 8_000;
+const AGENT_STATUS_INTERVAL = 20_000;
+const SPARKLINE_INTERVAL = 15_000;
+const SPARKLINE_STAGGER_MS = 1_000;
+const MAX_SPARKLINE_SYMBOLS = 5;
+
+/**
+ * Mission Control polling hook.
+ *
+ * When autonomous mode is active (isExecuting && !isKilled), starts four
+ * independent polling loops that keep positions, account balance, activity
+ * feed, and agent statuses fresh. All intervals are ref-tracked to avoid
+ * stale closures and are cleaned up on unmount or when polling stops.
+ */
+export function useMissionPolling() {
+  const isExecuting = useTradingStore((s) => s.isExecuting);
+  const isKilled = useTradingStore((s) => s.isKilled);
+
+  const positionsRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const accountRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activityRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const agentsRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sparklineRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sparklineBusyRef = useRef(false);
+
+  const clearAll = useCallback(() => {
+    if (positionsRef.current) { clearInterval(positionsRef.current); positionsRef.current = null; }
+    if (accountRef.current) { clearInterval(accountRef.current); accountRef.current = null; }
+    if (activityRef.current) { clearInterval(activityRef.current); activityRef.current = null; }
+    if (agentsRef.current) { clearInterval(agentsRef.current); agentsRef.current = null; }
+    if (sparklineRef.current) { clearInterval(sparklineRef.current); sparklineRef.current = null; }
+  }, []);
+
+  useEffect(() => {
+    const shouldPoll = isExecuting && !isKilled;
+
+    if (!shouldPoll) {
+      clearAll();
+      return;
+    }
+
+    // --- Fetch helpers (read store at call time to avoid stale closures) ---
+
+    const fetchPositions = async () => {
+      try {
+        const res = await fetch('/api/phemex', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'positions' }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.positions) {
+            useTradingStore.getState().setPositions(data.positions);
+          }
+        }
+      } catch {
+        // Silently swallow — network blip, will retry next interval
+      }
+    };
+
+    const fetchAccount = async () => {
+      try {
+        const res = await fetch('/api/phemex', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'account' }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // API returns { account: { balances, totalUsdValue } }
+          const value = data.account?.totalUsdValue ?? 0;
+          useTradingStore.getState().setAccountValue(value);
+        }
+      } catch {
+        // Silently swallow
+      }
+    };
+
+    const fetchActivity = async () => {
+      try {
+        await useAxonStore.getState().fetchActivity(50);
+      } catch {
+        // Silently swallow
+      }
+    };
+
+    const fetchAgents = async () => {
+      try {
+        await useAxonStore.getState().fetchAgents();
+      } catch {
+        // Silently swallow
+      }
+    };
+
+    const fetchSparklines = async () => {
+      // Guard against overlapping sparkline fetches (sequential with stagger can exceed interval)
+      if (sparklineBusyRef.current) return;
+      sparklineBusyRef.current = true;
+      try {
+        const positions = useTradingStore.getState().positions;
+        if (positions.length === 0) return;
+
+        // Deduplicate symbols to avoid redundant fetches for same-symbol positions
+        const seen = new Set<string>();
+        const symbols: string[] = [];
+        for (const p of positions) {
+          if (!seen.has(p.symbol) && symbols.length < MAX_SPARKLINE_SYMBOLS) {
+            seen.add(p.symbol);
+            symbols.push(p.symbol);
+          }
+        }
+
+        for (let i = 0; i < symbols.length; i++) {
+          const symbol = symbols[i];
+          try {
+            const res = await fetch('/api/phemex', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'ohlcv', symbol, timeframe: '5m', limit: 50 }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.ohlcv && Array.isArray(data.ohlcv)) {
+                // OHLCV comes as objects { timestamp, open, high, low, close, volume }
+                const closes = data.ohlcv.map((c: { close: number } | number[]) =>
+                  Array.isArray(c) ? c[4] : c.close
+                );
+                useTradingStore.getState().setPositionPriceHistory(symbol, closes);
+              }
+            }
+          } catch {
+            // Silently swallow — individual symbol failure shouldn't block others
+          }
+
+          // Stagger requests to avoid Phemex rate limits
+          if (i < symbols.length - 1) {
+            await new Promise(r => setTimeout(r, SPARKLINE_STAGGER_MS));
+          }
+        }
+      } catch {
+        // Silently swallow
+      } finally {
+        sparklineBusyRef.current = false;
+      }
+    };
+
+    // --- Immediate fetch on start ---
+    fetchPositions();
+    fetchAccount();
+    fetchActivity();
+    fetchAgents();
+    fetchSparklines();
+
+    // --- Set up intervals ---
+    positionsRef.current = setInterval(fetchPositions, POSITIONS_INTERVAL);
+    accountRef.current = setInterval(fetchAccount, ACCOUNT_INTERVAL);
+    activityRef.current = setInterval(fetchActivity, ACTIVITY_INTERVAL);
+    agentsRef.current = setInterval(fetchAgents, AGENT_STATUS_INTERVAL);
+    sparklineRef.current = setInterval(fetchSparklines, SPARKLINE_INTERVAL);
+
+    return () => {
+      clearAll();
+    };
+  }, [isExecuting, isKilled, clearAll]);
+
+  // Clean up on unmount (safety net)
+  useEffect(() => {
+    return () => clearAll();
+  }, [clearAll]);
+}

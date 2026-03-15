@@ -2,18 +2,18 @@
 
 import AppLayout from '@/components/AppLayout';
 import { PageTransition } from '@/components/motion';
-import PipelineShowcase from '@/components/agents/PipelineShowcase';
+import AgentTeamPanel from '@/components/agents/AgentTeamPanel';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function AgentsPage() {
   return (
     <AppLayout
       title="Agents"
-      subtitle="5-Wave Trading Intelligence Pipeline"
+      subtitle="Axon Agent Network — Team Management"
     >
       <PageTransition>
         <ErrorBoundary fallback="agents">
-          <PipelineShowcase />
+          <AgentTeamPanel />
         </ErrorBoundary>
       </PageTransition>
     </AppLayout>

@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import AppSidebar from './AppSidebar';
 import LiveAvatar from './LiveAvatar';
+import AxonActivityBar from './autopilot/AxonActivityBar';
 import { motion } from 'framer-motion';
 
 interface AppLayoutProps {
@@ -17,6 +18,7 @@ export default function AppLayout({ children, title, subtitle, actions }: AppLay
     <div className="flex h-screen overflow-hidden bg-background">
       <AppSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
+        <AxonActivityBar />
         <LiveAvatar />
         {/* Page header */}
         {title && (

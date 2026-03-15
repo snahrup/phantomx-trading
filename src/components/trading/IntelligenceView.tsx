@@ -8,7 +8,38 @@ import { useTradingStore } from '@/store/trading-store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { KnowledgeEntry, AgentStatus, AgentEvent, SignalSummary } from '@/types/trading';
-import type { InterventionLog, InterventionSummary } from '@/lib/ai/intervention-logger';
+import { getAxonClient } from '@/lib/axon/client';
+// Intervention types — previously from rogue lib/ai, now stubbed locally.
+// Intervention data comes from Axon activity log if needed in the future.
+interface InterventionOutcome {
+  wasCorrect?: boolean;
+  pnl?: number;
+}
+
+interface InterventionLog {
+  id: string;
+  timestamp: string;
+  pattern: string;
+  action: string;
+  prevented: boolean;
+  outcome?: InterventionOutcome;
+  wasOverridden?: boolean;
+  symbol?: string;
+  patternTag?: string;
+  originalAction?: string;
+  finalAction?: string;
+  confidence?: number;
+}
+interface InterventionSummary {
+  totalInterventions: number;
+  totalPrevented: number;
+  totalOverridden: number;
+  outcomeTracked: number;
+  correctInterventions: number;
+  incorrectInterventions: number;
+  accuracy: number;
+  topPatterns: Array<{ pattern: string; tag: string; count: number; preventedCount: number }>;
+}
 
 // ============================================================================
 // PhantomX — Intelligence View
@@ -65,8 +96,8 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-function timestampAgo(ts: number): string {
-  const diff = Date.now() - ts;
+function timestampAgo(ts: number | string): string {
+  const diff = Date.now() - (typeof ts === 'string' ? new Date(ts).getTime() : ts);
   const mins = Math.floor(diff / 60000);
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
@@ -811,18 +842,57 @@ export default memo(function IntelligenceView() {
   const [isSeeding, setIsSeeding] = useState(false);
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
 
-  // Fetch data
+  // Fetch data — knowledge from /api/knowledge, interventions from Axon activity log
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [kbRes, intRes] = await Promise.all([
-        fetch('/api/knowledge'),
-        fetch('/api/interventions'),
-      ]);
-      const [kb, int] = await Promise.all([kbRes.json(), intRes.json()]);
+      // Knowledge base still served by local API
+      const kbRes = await fetch('/api/knowledge');
+      const kb = await kbRes.json();
       setKbData(kb);
-      setInterventionData(int);
       setKnowledgeCount(kb.count ?? 0);
+
+      // Interventions replaced by Axon activity log
+      const client = getAxonClient();
+      const activityResult = await client.getActivityLog(50);
+      if (activityResult.ok) {
+        const logs: InterventionLog[] = activityResult.data.map((entry) => ({
+          id: entry.id,
+          timestamp: entry.timestamp,
+          pattern: entry.action,
+          action: typeof entry.detail?.action === 'string' ? entry.detail.action : entry.action,
+          prevented: entry.detail?.prevented === true,
+          outcome: typeof entry.detail?.outcome === 'object' && entry.detail.outcome != null
+            ? entry.detail.outcome as InterventionOutcome
+            : undefined,
+        }));
+        const preventedCount = logs.filter((l) => l.prevented).length;
+        const patternMap = new Map<string, { count: number; preventedCount: number }>();
+        for (const log of logs) {
+          const existing = patternMap.get(log.pattern) ?? { count: 0, preventedCount: 0 };
+          existing.count++;
+          if (log.prevented) existing.preventedCount++;
+          patternMap.set(log.pattern, existing);
+        }
+        const topPatterns = Array.from(patternMap.entries())
+          .map(([pattern, data]) => ({ pattern, tag: pattern, ...data }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10);
+
+        setInterventionData({
+          logs,
+          stats: {
+            totalInterventions: logs.length,
+            totalPrevented: preventedCount,
+            totalOverridden: logs.length - preventedCount,
+            outcomeTracked: logs.filter((l) => l.outcome !== undefined).length,
+            correctInterventions: preventedCount,
+            incorrectInterventions: 0,
+            accuracy: logs.length > 0 ? Math.round((preventedCount / logs.length) * 100) : 0,
+            topPatterns,
+          },
+        });
+      }
     } catch (err) {
       console.error('[Intelligence] Data fetch error:', err);
     } finally {
@@ -830,28 +900,25 @@ export default memo(function IntelligenceView() {
     }
   }, [setKnowledgeCount]);
 
-  // Seed demo data -- populates knowledge, interventions, and agent state
+  // Seed demo data — creates a sample trading issue in Axon and refreshes
   const seedDemoData = useCallback(async () => {
     setIsSeeding(true);
     try {
-      const res = await fetch('/api/seed', { method: 'POST' });
-      const data = await res.json();
-      if (data.success && data.agentData) {
-        setAgentStatuses(data.agentData.statuses);
-        setSignalConsensus(data.agentData.consensus);
-        setAgentSignals(data.agentData.signals);
-        for (const evt of data.agentData.events) {
-          addAgentEvent(evt);
-        }
-      }
-      // Re-fetch knowledge + interventions to pick up seeded data
+      const client = getAxonClient();
+      await client.createIssue({
+        title: 'BTC/USDT Demo Research Scan',
+        description: 'Seeded demo trading issue for intelligence pipeline testing.',
+        issue_type: 'trading',
+        priority: 'medium',
+      });
+      // Re-fetch knowledge + activity log to pick up seeded data
       await fetchData();
     } catch (err) {
       console.error('[Intelligence] Seed error:', err);
     } finally {
       setIsSeeding(false);
     }
-  }, [fetchData, setAgentStatuses, setSignalConsensus, setAgentSignals, addAgentEvent]);
+  }, [fetchData]);
 
   // Fetch on mount
   useEffect(() => {

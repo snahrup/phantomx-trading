@@ -3,7 +3,8 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useTradingStore } from '@/store/trading-store';
 import { formatPrice } from '@/lib/format';
-import FloatingChat from '@/components/FloatingChat';
+import { bridgeAxonSSEToStore } from '@/lib/axon';
+import TradeRecommendationListener from '@/components/axon/TradeRecommendationListener';
 
 /**
  * DataProvider — Layout-level data fetching orchestration.
@@ -98,7 +99,9 @@ export default function DataProvider({ children }: { children: React.ReactNode }
         const res = await fetch('/api/phemex', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'ticker', symbol: sym }) });
         const data = await res.json();
         if (data.ticker) useTradingStore.getState().setTicker(data.ticker);
-      } catch {}
+      } catch (err) {
+        console.warn('Ticker polling failed:', err);
+      }
     }, 3000);
     const accountInterval = setInterval(() => fetchAccountDataRef.current(), 10000);
     const ohlcvInterval = setInterval(() => fetchMarketDataRef.current(), 30000);
@@ -209,6 +212,12 @@ export default function DataProvider({ children }: { children: React.ReactNode }
     }
   }, [isConnected, openOrders, positions, selectedSymbol, clearPriceLines, addPriceLine]);
 
+  // Axon SSE bridge — connects agent events to Zustand store
+  useEffect(() => {
+    const cleanup = bridgeAxonSSEToStore();
+    return cleanup;
+  }, []);
+
   // Webhook + execution engine SSE
   useEffect(() => {
     if (!isConnected || !isExecuting) return;
@@ -255,8 +264,8 @@ export default function DataProvider({ children }: { children: React.ReactNode }
 
   return (
     <>
+      <TradeRecommendationListener />
       {children}
-      <FloatingChat />
     </>
   );
 }

@@ -13,11 +13,12 @@ import ResearchPipeline, { type ResearchPipelineHandle } from '@/components/stra
 import OptimizationLoop from '@/components/strategy/OptimizationLoop';
 import { DeployPanel, SupervisorPanel } from '@/components/strategy/DeployPanel';
 import PerformanceReview from '@/components/strategy/PerformanceReview';
+import StrategyPlaybook from '@/components/axon/StrategyPlaybook';
 import type { StrategyConfig, StrategyGoals } from '@/types/trading';
 import {
   FlaskConical, Search, BarChart3, RotateCcw, Rocket, Brain,
 } from 'lucide-react';
-import { consumeSSE } from '@/lib/utils/consume-sse';
+import { getAxonClient } from '@/lib/axon/client';
 
 // ---------------------------------------------------------------------------
 // Strategy Page
@@ -83,44 +84,34 @@ export default function StrategyPage() {
     const livePositions = storeState.positions ?? [];
     const liveOrderBook = storeState.orderBook ?? null;
 
-    // Fire and forget — consume the SSE stream from the multi-agent pipeline
-    consumeSSE('/api/ai', {
-      action: 'deep_research',
-      strategyConfig: config,
-      strategyGoals: goals,
-      symbol: config.symbol,
-      ohlcv: liveOhlcv,
-      ticker: liveTicker,
-      balance: liveBalance,
-      positions: livePositions,
-      orderBook: liveOrderBook,
-      currentPrice: liveTicker?.last ?? 0,
-    }, (event) => {
-      const type = event.type as string;
-
-      // Forward ALL events to the ResearchPipeline component (new multi-agent UI)
-      pipelineHandleRef.current?.handleEvent(event);
-
-      // Handle key lifecycle transitions
-      switch (type) {
-        case 'backtest_complete':
-          if (event.metrics) {
-            setCurrentBacktestResult(event.metrics as Parameters<typeof setCurrentBacktestResult>[0]);
-          }
-          break;
-
-        case 'pipeline_complete':
-        case 'done':
-          setResearchPhase('backtesting');
-          break;
-
-        case 'pipeline_error':
-          console.error('[Strategy] Pipeline error:', event.error);
-          break;
+    // Create a trading issue in Axon — the 5-wave pipeline runs automatically
+    getAxonClient().createIssue({
+      title: `Deep Research: ${config.symbol} ${config.name || 'Strategy'}`,
+      description: JSON.stringify({
+        action: 'deep_research',
+        strategyConfig: config,
+        strategyGoals: goals,
+        symbol: config.symbol,
+        ohlcv: liveOhlcv.slice(0, 100), // Limit payload size
+        ticker: liveTicker,
+        balance: liveBalance,
+        currentPrice: liveTicker?.last ?? 0,
+      }),
+      issue_type: 'trading',
+      priority: 'high',
+    }).then((result) => {
+      if (result.ok) {
+        // Pipeline will progress via heartbeat scheduler
+        // UI updates come through SSE events (agent_status, issue_update)
+        console.log('[Strategy] Trading issue created:', result.data.id);
+        // Move to research phase — user can track via pipeline page
+        setResearchPhase('researching');
+      } else {
+        console.error('[Strategy] Failed to create trading issue:', result.error);
       }
-    }, controller.signal).catch((err) => {
+    }).catch((err) => {
       if ((err as Error).name !== 'AbortError') {
-        console.error('[Strategy] Research stream error:', err);
+        console.error('[Strategy] Research error:', err);
       }
     });
   }, [setActiveStrategy, addStrategy, setStrategyGoals, setResearchPhase,
@@ -144,60 +135,28 @@ export default function StrategyPage() {
 
     setResearchPhase('optimizing');
 
-    consumeSSE('/api/ai', {
-      action: 'optimize_strategy',
-      strategyConfig: config,
-      strategyGoals: goals,
-      // TODO: Pass ohlcv data when available from scanner/chart
-      ohlcv: [],
-    }, (event) => {
-      const type = event.type as string;
-
-      switch (type) {
-        case 'iteration_complete': {
-          const changes = (event.changes || []) as Array<{
-            field: string; oldValue: string | number; newValue: string | number; reasoning: string;
-          }>;
-          addOptimizationIteration({
-            iteration: event.iteration as number,
-            timestamp: Date.now(),
-            strategyConfig: (event.config || config) as StrategyConfig,
-            backtestResult: (event.backtestResult || null) as import('@/types/trading').BacktestResult,
-            changes,
-            metricsVsGoals: (event.metricsVsGoals || []) as Array<{
-              metric: string; value: number; goal: number; met: boolean;
-            }>,
-            decisionRecord: {
-              id: crypto.randomUUID(),
-              timestamp: Date.now(),
-              agent: 'optimization-loop',
-              action: `iteration ${event.iteration}`,
-              reasoning: changes.map(c => c.reasoning).join('; ') || 'No changes',
-              confidence: 0.8,
-              inputs: {},
-              supportingEvidence: changes.map(c => `${c.field}: ${c.oldValue} → ${c.newValue}`),
-              phase: 'optimization' as const,
-            },
-          });
-
-          if (event.converged) {
-            setActiveStrategy((event.config || config) as StrategyConfig);
-            setResearchPhase('ready');
-          }
-          break;
-        }
-
-        case 'done':
-          if (event.finalConfig) {
-            setActiveStrategy(event.finalConfig as StrategyConfig);
-          }
-          setResearchPhase('ready');
-          break;
+    // Create an optimization issue in Axon
+    getAxonClient().createIssue({
+      title: `Optimize Strategy: ${config.symbol} ${config.name || 'Strategy'}`,
+      description: JSON.stringify({
+        action: 'optimize_strategy',
+        strategyConfig: config,
+        strategyGoals: goals,
+      }),
+      issue_type: 'trading',
+      priority: 'high',
+    }).then((result) => {
+      if (result.ok) {
+        console.log('[Strategy] Optimization issue created:', result.data.id);
+        // Pipeline handles optimization via 5-wave debate
+      } else {
+        console.error('[Strategy] Failed to create optimization issue:', result.error);
+        setResearchPhase('backtesting');
       }
-    }, controller.signal).catch((err) => {
+    }).catch((err) => {
       if ((err as Error).name !== 'AbortError') {
-        console.error('[Strategy] Optimization stream error:', err);
-        setResearchPhase('backtesting'); // Fall back
+        console.error('[Strategy] Optimization error:', err);
+        setResearchPhase('backtesting');
       }
     });
   }, [setResearchPhase, setActiveStrategy, addOptimizationIteration]);
@@ -327,7 +286,10 @@ export default function StrategyPage() {
             </TabsContent>
 
             <TabsContent value="review">
-              <PerformanceReview />
+              <div className="space-y-4">
+                <PerformanceReview />
+                <StrategyPlaybook className="max-h-[500px]" />
+              </div>
             </TabsContent>
           </Tabs>
         </ErrorBoundary>

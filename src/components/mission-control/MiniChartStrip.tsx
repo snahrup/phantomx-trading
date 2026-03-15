@@ -12,6 +12,7 @@ export default function MiniChartStrip({ closeFlashes }: MiniChartStripProps) {
   const focusedSymbol = useTradingStore(s => s.focusedPositionSymbol);
   const setFocused = useTradingStore(s => s.setFocusedPositionSymbol);
   const maxPositions = useTradingStore(s => s.missionControlConfig.maxConcurrentPositions);
+  const priceHistoryMap = useTradingStore(s => s.positionPriceHistory);
 
   const emptySlots = Math.max(0, maxPositions - positions.length);
 
@@ -25,7 +26,7 @@ export default function MiniChartStrip({ closeFlashes }: MiniChartStripProps) {
           leverage={pos.leverage ?? 50}
           pnl={pos.unrealizedPnl ?? 0}
           entryPrice={pos.entryPrice ?? 0}
-          priceHistory={(pos as any).priceHistory ?? []}
+          priceHistory={priceHistoryMap[pos.symbol] ?? []}
           isFocused={focusedSymbol === pos.symbol}
           onClick={() => setFocused(pos.symbol)}
           closeFlash={closeFlashes[pos.symbol] ?? null}

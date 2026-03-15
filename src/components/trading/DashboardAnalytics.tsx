@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { useTradingStore } from '@/store/trading-store';
 import { formatUsd } from '@/lib/format';
 import { Card, CardContent } from '@/components/ui/card';
+import KnowledgeHighlights from '@/components/axon/KnowledgeHighlights';
 import type { Trade, EquitySnapshot, AgentStatus, JournalEntry, AutopilotClosedTrade } from '@/types/trading';
 
 // ============================================================================
@@ -614,6 +615,9 @@ export default memo(function DashboardAnalytics() {
           )}
         </div>
       </div>
+
+      {/* --- Knowledge Highlights --- */}
+      <KnowledgeHighlights />
 
       {/* --- Row 3: Charts --- */}
       <div className="grid grid-cols-2 gap-3">

@@ -3,10 +3,8 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getPhemexClient } from '@/lib/phemex/client';
-import { isKillSwitchActive, getKillState } from '@/lib/kill-switch';
-import { query } from '@anthropic-ai/claude-agent-sdk';
-import { ensureOAuthEnv, getClaudeCodePath } from '@/lib/ai/credentials';
+import { getPhemexClient, getConfiguredNetwork, hasTestnetCredentials, resetPhemexClient } from '@/lib/phemex/client';
+import { isKillSwitchActive, isCloseOnlyMode, isFullyKilled, getKillState } from '@/lib/kill-switch';
 import type { OrderSide, OrderType } from '@/types/trading';
 
 export async function POST(req: NextRequest) {
@@ -118,6 +116,36 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Network info — check current network and testnet key availability
+    if (action === 'network') {
+      return NextResponse.json({
+        configured: getConfiguredNetwork(),
+        hasTestnetKeys: hasTestnetCredentials(),
+        hasMainnetKeys: !!(process.env.PHEMEX_API_KEY && process.env.PHEMEX_API_SECRET),
+      });
+    }
+
+    // Switch network at runtime — reinitializes the client
+    if (action === 'switch_network') {
+      const { network } = body;
+      if (!['testnet', 'mainnet'].includes(network)) {
+        return NextResponse.json({ error: 'network must be "testnet" or "mainnet"' }, { status: 400 });
+      }
+      const isTestnet = network === 'testnet';
+      const apiKey = isTestnet
+        ? (process.env.PHEMEX_TESTNET_API_KEY || process.env.PHEMEX_API_KEY)
+        : process.env.PHEMEX_API_KEY;
+      const secret = isTestnet
+        ? (process.env.PHEMEX_TESTNET_API_SECRET || process.env.PHEMEX_API_SECRET)
+        : process.env.PHEMEX_API_SECRET;
+      if (!apiKey || !secret) {
+        return NextResponse.json({ error: `No API credentials available for ${network}` }, { status: 400 });
+      }
+      resetPhemexClient();
+      getPhemexClient({ apiKey, secret, testnet: isTestnet, marketType: body.marketType ?? 'swap' });
+      return NextResponse.json({ success: true, network, message: `Switched to ${network}` });
+    }
+
     const client = getPhemexClient();
 
     switch (action) {
@@ -152,13 +180,23 @@ export async function POST(req: NextRequest) {
       }
 
       case 'create_order': {
-        // CRIT-5: Global kill switch check — no orders when kill is active
+        // CRIT-5: Global kill switch check
         if (isKillSwitchActive()) {
           const ks = getKillState();
-          return NextResponse.json(
-            { error: `Kill switch is active: ${ks.reason}. Reset kill switch before placing orders.` },
-            { status: 403 }
-          );
+          const isReduceOnly = body.params?.reduceOnly === true;
+
+          // close_only mode: allow reduce-only orders (stop-loss, take-profit)
+          if (isCloseOnlyMode() && isReduceOnly) {
+            console.log(`[PhantomX] close_only mode: allowing reduce-only order on ${body.symbol}`);
+          } else {
+            const modeLabel = ks.mode === 'close_only'
+              ? 'Kill switch is in close-only mode — only reduceOnly orders allowed'
+              : `Kill switch is active: ${ks.reason}`;
+            return NextResponse.json(
+              { error: `${modeLabel}. Reset kill switch before placing new orders.`, mode: ks.mode },
+              { status: 403 }
+            );
+          }
         }
         // CRIT-4: Basic validation on order parameters
         if (!body.symbol || typeof body.symbol !== 'string') {
@@ -190,6 +228,9 @@ export async function POST(req: NextRequest) {
       }
 
       case 'cancel_all': {
+        if (!body.symbol) {
+          return NextResponse.json({ error: 'symbol is required for cancel_all (Phemex requires it)' }, { status: 400 });
+        }
         await client.cancelAllOrders(body.symbol);
         return NextResponse.json({ success: true });
       }
@@ -218,6 +259,34 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ markets: marketList });
       }
 
+      case 'funding_rate': {
+        // Use underlying CCXT exchange directly (avoids singleton cache issues)
+        const exchange = client.getExchange();
+        const fr = await exchange.fetchFundingRate(body.symbol);
+        return NextResponse.json({
+          fundingRate: {
+            symbol: fr.symbol ?? body.symbol,
+            fundingRate: fr.fundingRate ?? 0,
+            fundingTimestamp: fr.fundingDatetime ? new Date(fr.fundingDatetime).getTime() : (fr.timestamp ?? Date.now()),
+            nextFundingTimestamp: fr.nextFundingDatetime ? new Date(fr.nextFundingDatetime).getTime() : undefined,
+            markPrice: fr.markPrice ?? null,
+            indexPrice: fr.indexPrice ?? null,
+          },
+        });
+      }
+
+      case 'funding_rate_history': {
+        const exchange = client.getExchange();
+        const history = await exchange.fetchFundingRateHistory(body.symbol, body.since, body.limit);
+        return NextResponse.json({
+          history: history.map((fr) => ({
+            symbol: fr.symbol ?? body.symbol,
+            fundingRate: fr.fundingRate ?? 0,
+            fundingTimestamp: fr.timestamp ?? Date.now(),
+          })),
+        });
+      }
+
       case 'set_leverage': {
         await client.setLeverage(body.symbol, body.leverage);
         return NextResponse.json({ success: true });
@@ -229,104 +298,19 @@ export async function POST(req: NextRequest) {
       }
 
       case 'close_position': {
+        if (!body.symbol) {
+          return NextResponse.json({ error: 'symbol is required' }, { status: 400 });
+        }
+        if (!body.side || !['long', 'short'].includes(body.side)) {
+          return NextResponse.json({ error: 'side must be "long" or "short"' }, { status: 400 });
+        }
+        if (typeof body.size !== 'number' || !isFinite(body.size) || body.size <= 0) {
+          return NextResponse.json({ error: 'size must be a positive finite number' }, { status: 400 });
+        }
         const order = await client.closePosition(
           body.symbol, body.side, body.size, body.type ?? 'market', body.price
         );
         return NextResponse.json({ order, success: true });
-      }
-
-      case 'ai_close': {
-        // Gather market data for AI analysis
-        const [orderbook, aiTicker, recentOhlcv] = await Promise.all([
-          client.getOrderBook(body.symbol, 20),
-          client.getTicker(body.symbol),
-          client.getOHLCV(body.symbol, '5m', 30),
-        ]);
-
-        const { side, size, entryPrice } = body;
-        const uPnl = side === 'long'
-          ? (aiTicker.last - entryPrice) * size
-          : (entryPrice - aiTicker.last) * size;
-
-        // Build prompt for Claude
-        const aiPrompt = `You are an expert crypto trader determining the optimal LIMIT price to close a position.
-
-Position: ${side.toUpperCase()} ${size} contracts on ${body.symbol}
-Entry price: $${entryPrice}
-Current price: $${aiTicker.last}
-Unrealized PnL: $${uPnl.toFixed(2)}
-
-Orderbook (top 10):
-BIDS: ${orderbook.bids.slice(0, 10).map((b: { price: number; amount: number }) => `$${b.price} (${b.amount})`).join(' | ')}
-ASKS: ${orderbook.asks.slice(0, 10).map((a: { price: number; amount: number }) => `$${a.price} (${a.amount})`).join(' | ')}
-
-Recent 5m candles (last 15):
-${recentOhlcv.slice(-15).map((c: { open: number; high: number; low: number; close: number; volume: number }) => `O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume.toFixed(0)}`).join('\n')}
-
-24h stats: High $${aiTicker.high} | Low $${aiTicker.low} | Change ${aiTicker.changePercent24h.toFixed(2)}%
-
-Determine the optimal LIMIT price to close this ${side} position. Consider:
-- Orderbook depth, wall detection, and liquidity clusters
-- Recent price momentum and micro-trend direction
-- Spread analysis — maximize fill probability while minimizing slippage
-- If position is in profit, try to capture a bit more; if in loss, prioritize fast fill
-
-Respond with ONLY a valid JSON object (no markdown, no code fences):
-{"price": <number>, "reasoning": "<one sentence explanation>"}`;
-
-        ensureOAuthEnv();
-        const claudeCodePath = getClaudeCodePath();
-
-        let aiText = '';
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        for await (const message of query({
-          prompt: aiPrompt,
-          options: {
-            pathToClaudeCodeExecutable: claudeCodePath,
-            model: 'claude-opus-4-6',
-            maxTurns: 1,
-            thinking: { type: 'adaptive' },
-            effort: 'max',
-            systemPrompt: 'You are a crypto trading AI. Respond only with the requested JSON.',
-          },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any)) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const msg = message as any;
-          if (msg.type === 'assistant') {
-            const content = msg.message?.content || msg.content;
-            if (Array.isArray(content)) {
-              for (const block of content) {
-                if (block.type === 'text' && block.text) aiText = block.text;
-              }
-            }
-          } else if (msg.type === 'stream_event') {
-            const event = msg.event;
-            if (event?.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
-              aiText += event.delta.text;
-            }
-          }
-        }
-
-        // Parse AI response
-        const jsonMatch = aiText.match(/\{[\s\S]*"price"[\s\S]*\}/);
-        if (!jsonMatch) {
-          return NextResponse.json({ success: false, error: 'AI could not determine optimal price', raw: aiText });
-        }
-        const parsed = JSON.parse(jsonMatch[0]);
-        if (!parsed.price || !isFinite(parsed.price)) {
-          return NextResponse.json({ success: false, error: 'Invalid price from AI', raw: aiText });
-        }
-
-        // Execute the limit close
-        const aiOrder = await client.closePosition(body.symbol, side, size, 'limit', parsed.price);
-
-        return NextResponse.json({
-          success: true,
-          order: aiOrder,
-          aiPrice: parsed.price,
-          aiReasoning: parsed.reasoning,
-        });
       }
 
       default:

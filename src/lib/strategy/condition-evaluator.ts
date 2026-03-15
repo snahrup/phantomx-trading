@@ -5,7 +5,7 @@
 // ============================================================================
 
 import type { OHLCV, Condition, ConditionGroup, IndicatorConfig } from '@/types/trading';
-import { computeSMA, computeEMA, computeBollingerBands, computeVWAP, computeRSI } from '@/lib/chart/indicators';
+import { computeSMA, computeEMA, computeBollingerBands, computeVWAP, computeRSI, computeADX } from '@/lib/chart/indicators';
 
 // Raw indicator values aligned to OHLCV index (NaN for bars before indicator warmup)
 export type IndicatorValues = Record<string, number[]>;
@@ -152,6 +152,48 @@ export function computeIndicators(ohlcv: OHLCV[], indicators: IndicatorConfig[])
         values[`${key}_LINE`] = macdLine;
         values[`${key}_SIGNAL`] = signalLine;
         values[`${key}_HIST`] = histogram;
+        break;
+      }
+      case 'ADX': {
+        const adxData = computeADX(ohlcv, period);
+        const adxArr = new Array(len).fill(NaN);
+        const diPlusArr = new Array(len).fill(NaN);
+        const diMinusArr = new Array(len).fill(NaN);
+        // ADX data is aligned by time; map back to OHLCV indices
+        const timeToIdx = new Map<string, number>();
+        for (let i = 0; i < len; i++) {
+          timeToIdx.set(String(ohlcv[i].timestamp / 1000), i);
+        }
+        for (const p of adxData.adx) {
+          const idx = timeToIdx.get(String(p.time));
+          if (idx !== undefined) adxArr[idx] = p.value;
+        }
+        for (const p of adxData.diPlus) {
+          const idx = timeToIdx.get(String(p.time));
+          if (idx !== undefined) diPlusArr[idx] = p.value;
+        }
+        for (const p of adxData.diMinus) {
+          const idx = timeToIdx.get(String(p.time));
+          if (idx !== undefined) diMinusArr[idx] = p.value;
+        }
+        values[key] = adxArr;
+        values[`${key}_DI_PLUS`] = diPlusArr;
+        values[`${key}_DI_MINUS`] = diMinusArr;
+        break;
+      }
+      case 'VOLUME_SMA': {
+        // SMA of volume (not price) for volume confirmation
+        const volArr = new Array(len).fill(NaN);
+        if (len >= period) {
+          let sum = 0;
+          for (let i = 0; i < period; i++) sum += ohlcv[i].volume;
+          volArr[period - 1] = sum / period;
+          for (let i = period; i < len; i++) {
+            sum += ohlcv[i].volume - ohlcv[i - period].volume;
+            volArr[i] = sum / period;
+          }
+        }
+        values[key] = volArr;
         break;
       }
       default:

@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import ClientErrorBoundary from "@/components/ClientErrorBoundary";
 import ThemeProvider from "@/components/ThemeProvider";
 import DataProvider from "@/components/DataProvider";
+import AxonDaemonStatus from "@/components/axon/AxonDaemonStatus";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -39,6 +41,8 @@ export default function RootLayout({
               <ClientErrorBoundary>
                 {children}
               </ClientErrorBoundary>
+              <AxonDaemonStatus />
+              <Toaster position="top-right" />
             </DataProvider>
           </TooltipProvider>
         </ThemeProvider>

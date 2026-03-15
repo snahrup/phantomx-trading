@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Activity, Copy, ExternalLink, Zap } from 'lucide-react';
 import { useTradingStore } from '@/store/trading-store';
 import { generateSMACrossoverStrategy } from '@/lib/strategy/pinescript-generator';
+import { streamConciergeChat } from '@/lib/axon/concierge-stream';
 import {
   Dialog,
   DialogContent,
@@ -42,23 +43,27 @@ export default function PineScriptModal() {
     try {
       const baseScript = generateSMACrossoverStrategy(selectedSymbol, riskParameters);
 
-      const response = await fetch('/api/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'generate_pinescript',
-          symbol: selectedSymbol,
-          thesis: `Here is a base PineScript v5 strategy generated from my risk parameters:\n\n${baseScript}\n\nMy thesis: ${thesis}\n\nRefine this strategy to incorporate my thesis while preserving the kill switch logic, risk parameters, position sizing, and alert JSON format. Modify indicators and entry/exit conditions to match my thesis.`,
-          risk: riskParameters,
-          balance: accountValue,
-          ohlcv: ohlcv.slice(-50),
-        }),
-      });
+      const prompt = `Generate a PineScript v5 strategy for ${selectedSymbol}.\n\nHere is a base PineScript v5 strategy generated from my risk parameters:\n\n${baseScript}\n\nMy thesis: ${thesis}\n\nRisk parameters: ${JSON.stringify(riskParameters)}\nAccount balance: ${accountValue}\nRecent OHLCV (last 50 candles): ${JSON.stringify(ohlcv.slice(-50))}\n\nRefine this strategy to incorporate my thesis while preserving the kill switch logic, risk parameters, position sizing, and alert JSON format. Modify indicators and entry/exit conditions to match my thesis.\n\nRespond with ONLY the complete PineScript v5 code. No markdown fences, no explanation — just the raw PineScript code.`;
 
-      const data = await response.json();
-      if (data.pineScript) {
-        setGeneratedPineScript(data.pineScript);
-      }
+      let accumulated = '';
+
+      await streamConciergeChat(
+        prompt,
+        {
+          onText: (text) => { accumulated += text; },
+          onToolUse: () => {},
+          onToolResult: () => {},
+          onDone: () => {
+            const cleaned = accumulated.replace(/```pinescript\s*/g, '').replace(/```pine\s*/g, '').replace(/```\s*/g, '').trim();
+            if (cleaned) {
+              setGeneratedPineScript(cleaned);
+            }
+          },
+          onError: (error) => {
+            console.error('Strategy generation error:', error);
+          },
+        },
+      );
     } catch (err) {
       console.error('Strategy generation error:', err);
     } finally {
