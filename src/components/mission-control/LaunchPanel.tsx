@@ -92,6 +92,21 @@ export default function LaunchPanel() {
         }),
       });
 
+      // Start the mission orchestrator — continuous task recycler that keeps
+      // agents scanning, researching, debating, and executing non-stop
+      await fetch('/api/trading', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'start_orchestrator',
+          selectedPairs: config.selectedPairs,
+          riskLevel: config.riskLevel,
+          maxConcurrentPositions: config.maxConcurrentPositions,
+          profitGoal: config.profitGoal,
+          startingBalance: accountBalance,
+        }),
+      });
+
       const axon = getAxonClient();
       const riskPreset = RISK_PRESETS[config.riskLevel];
 

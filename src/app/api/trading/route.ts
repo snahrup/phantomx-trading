@@ -26,6 +26,8 @@ import { getPhemexClient } from '@/lib/phemex/client';
 import type { Position } from '@/types/trading';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { getOrchestrator } from '@/lib/mission/orchestrator';
+import type { MissionConfig } from '@/lib/mission/orchestrator';
 
 const TRADING_MODE_PATH = join(process.cwd(), 'knowledge', 'trading-mode.json');
 
@@ -264,6 +266,36 @@ export async function POST(req: Request) {
       }
 
       // ---------------------------------------------------------------
+      // Mission Orchestrator — autonomous task recycler
+      // ---------------------------------------------------------------
+      case 'start_orchestrator': {
+        const orchestrator = getOrchestrator();
+        if (orchestrator.isRunning()) {
+          return NextResponse.json({ error: 'Orchestrator already running', status: orchestrator.getStatus() }, { status: 409 });
+        }
+        const missionConfig: MissionConfig = {
+          selectedPairs: body.selectedPairs ?? [],
+          riskLevel: body.riskLevel ?? 'aggressive',
+          maxConcurrentPositions: body.maxConcurrentPositions ?? 3,
+          profitGoal: body.profitGoal ?? null,
+          startingBalance: body.startingBalance ?? null,
+        };
+        orchestrator.start(missionConfig);
+        return NextResponse.json({ started: true, status: orchestrator.getStatus() });
+      }
+
+      case 'stop_orchestrator': {
+        const orchestrator = getOrchestrator();
+        orchestrator.stop();
+        return NextResponse.json({ stopped: true, status: orchestrator.getStatus() });
+      }
+
+      case 'orchestrator_status': {
+        const orchestrator = getOrchestrator();
+        return NextResponse.json(orchestrator.getStatus());
+      }
+
+      // ---------------------------------------------------------------
       // Trading mode (autonomous vs manual) — controls Axon auto-execution
       // ---------------------------------------------------------------
       case 'set_mode': {
@@ -294,7 +326,7 @@ export async function POST(req: Request) {
 
       default:
         return NextResponse.json(
-          { error: `Unknown action: ${action}. Available: submit_signal, process, positions, signals, portfolio, kill_switch, config, close, history, strategy_stats, whipsaw, set_mode` },
+          { error: `Unknown action: ${action}. Available: submit_signal, process, positions, signals, portfolio, kill_switch, config, close, history, strategy_stats, whipsaw, set_mode, start_orchestrator, stop_orchestrator, orchestrator_status` },
           { status: 400 },
         );
     }

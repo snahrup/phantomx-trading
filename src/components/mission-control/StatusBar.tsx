@@ -129,7 +129,18 @@ export default function StatusBar() {
         }
       }
 
-      // 5. Revert trading mode to manual so Axon stops auto-executing
+      // 5. Stop the mission orchestrator (task recycler)
+      try {
+        await fetch('/api/trading', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'stop_orchestrator' }),
+        });
+      } catch (orchErr) {
+        console.warn('Orchestrator stop failed:', orchErr);
+      }
+
+      // 6. Revert trading mode to manual so Axon stops auto-executing
       try {
         await fetch('/api/trading', {
           method: 'POST',
