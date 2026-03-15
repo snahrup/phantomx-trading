@@ -167,34 +167,66 @@ export async function POST(req: Request) {
     // Generate idempotency key from recommendation identity
     const clientOrderId = `px-${rec.issueId.slice(0, 8)}-${Date.now()}`;
 
-    // Place primary market order
+    // Place primary entry order — prefer LIMIT for maker fee savings.
+    // Maker fee on Phemex is -0.025% (rebate) vs 0.075% taker.
+    // Use postOnly to guarantee maker placement; fall back to regular limit
+    // if postOnly is rejected (price already at/past entry). Last resort: market.
     let orderId: string | undefined;
     let fillPrice: number | undefined;
     let fees: number | undefined;
+    let entryOrderType = 'limit';
 
     try {
-      const order = await client.createOrder(rec.symbol, 'market', side, size, undefined, { clientOrderId });
-      orderId = order.id;
-      fillPrice = order.price ?? rec.entryPrice;
-      fees = order.fee?.cost;
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
+      // Attempt 1: Post-only limit order (guaranteed maker fee / rebate)
+      try {
+        const order = await client.createOrder(rec.symbol, 'limit', side, size, rec.entryPrice, {
+          clientOrderId,
+          postOnly: true,
+        });
+        orderId = order.id;
+        fillPrice = order.price ?? rec.entryPrice;
+        fees = order.fee?.cost;
+        entryOrderType = 'limit-postOnly';
+      } catch (postOnlyErr) {
+        // PostOnly rejected — price already at/past entry. Use regular limit.
+        const order = await client.createOrder(rec.symbol, 'limit', side, size, rec.entryPrice, {
+          clientOrderId: `${clientOrderId}-lim`,
+        });
+        orderId = order.id;
+        fillPrice = order.price ?? rec.entryPrice;
+        fees = order.fee?.cost;
+        entryOrderType = 'limit';
+      }
+    } catch (limitErr) {
+      // Limit order also failed — last resort: market order for immediate fill
+      try {
+        const order = await client.createOrder(rec.symbol, 'market', side, size, undefined, {
+          clientOrderId: `${clientOrderId}-mkt`,
+        });
+        orderId = order.id;
+        fillPrice = order.price ?? rec.entryPrice;
+        fees = order.fee?.cost;
+        entryOrderType = 'market-fallback';
+        console.warn(`[execute-recommendation] Limit orders failed, fell back to market for ${rec.symbol}`);
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
 
-      // Post failure comment to Axon
-      await axon.addComment(
-        rec.issueId,
-        `**EXECUTION FAILED** on PhantomX\n\n` +
-          `Error: ${errMsg}\n` +
-          `Symbol: ${rec.symbol} ${rec.direction}\n` +
-          `Attempted size: ${size.toFixed(6)} @ market\n\n` +
-          `_Order was not placed. Manual intervention may be required._`,
-        { comment_type: 'ruling', wave: 5 },
-      );
+        // Post failure comment to Axon
+        await axon.addComment(
+          rec.issueId,
+          `**EXECUTION FAILED** on PhantomX\n\n` +
+            `Error: ${errMsg}\n` +
+            `Symbol: ${rec.symbol} ${rec.direction}\n` +
+            `Attempted size: ${size.toFixed(6)} @ $${usdFmt.format(rec.entryPrice)} limit (then market fallback)\n\n` +
+            `_All order types failed. Manual intervention may be required._`,
+          { comment_type: 'ruling', wave: 5 },
+        );
 
-      return NextResponse.json(
-        { success: false, error: errMsg },
-        { status: 500 },
-      );
+        return NextResponse.json(
+          { success: false, error: errMsg },
+          { status: 500 },
+        );
+      }
     }
 
     // Place stop-loss order — CRITICAL: if this fails, close the position immediately.
@@ -291,7 +323,7 @@ export async function POST(req: Request) {
       rec.issueId,
       `**TRADE EXECUTED** via PhantomX\n\n` +
         `Symbol: ${rec.symbol} ${rec.direction}\n` +
-        `Entry: $${usdFmt.format(fillPrice ?? rec.entryPrice)} (requested $${usdFmt.format(rec.entryPrice)})\n` +
+        `Entry: $${usdFmt.format(fillPrice ?? rec.entryPrice)} (requested $${usdFmt.format(rec.entryPrice)}) [${entryOrderType}]\n` +
         `Slippage: ${slippagePct.toFixed(3)}%\n` +
         `Size: ${size.toFixed(6)} (${usdFmt.format(rec.positionSizeNotional)} USDT notional)\n` +
         `Leverage: ${rec.leverage}x\n` +
@@ -314,6 +346,7 @@ export async function POST(req: Request) {
       success: true,
       orderId,
       fillPrice,
+      entryOrderType,
       slippage,
       slippagePct,
       stopOrderId,
