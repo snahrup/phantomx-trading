@@ -161,6 +161,15 @@ export async function POST(req: Request) {
       // ---------------------------------------------------------------
       case 'signals': {
         const { status, limit } = body;
+        if (status) {
+          const validStatuses = ['pending', 'approved', 'rejected', 'executed', 'closed', 'expired'];
+          if (!validStatuses.includes(status)) {
+            return NextResponse.json(
+              { error: `Invalid status "${status}". Must be one of: ${validStatuses.join(', ')}` },
+              { status: 400 },
+            );
+          }
+        }
         const signals = status
           ? tradingSignalBus.getByStatus(status, limit ?? 50)
           : tradingSignalBus.getRecent(limit ?? 100);
@@ -234,6 +243,19 @@ export async function POST(req: Request) {
           if (updates.mode === 'live') {
             return NextResponse.json({ error: 'Live mode must be enabled via board approval' }, { status: 403 });
           }
+          // Whitelist allowed config keys based on PipelineConfig type
+          const allowedKeys = [
+            'mode', 'minConfidence', 'maxOpenPositions', 'maxDailyLossPercent',
+            'maxExposurePercent', 'defaultLeverage', 'positionSizePercent',
+            'signalTtlMs', 'requireStopLoss', 'minHoldTimeMs',
+          ];
+          const unknownKeys = Object.keys(updates).filter((k: string) => !allowedKeys.includes(k));
+          if (unknownKeys.length > 0) {
+            return NextResponse.json(
+              { error: `Unknown config keys: ${unknownKeys.join(', ')}. Allowed: ${allowedKeys.join(', ')}` },
+              { status: 400 },
+            );
+          }
           const updated = pipeline.updateConfig(updates);
           return NextResponse.json({ config: updated });
         }
@@ -292,6 +314,15 @@ export async function POST(req: Request) {
         if (orchestrator.isRunning()) {
           return NextResponse.json({ error: 'Orchestrator already running', status: orchestrator.getStatus() }, { status: 409 });
         }
+        if (body.riskLevel) {
+          const validRiskLevels = ['conservative', 'moderate', 'aggressive', 'degen'];
+          if (!validRiskLevels.includes(body.riskLevel)) {
+            return NextResponse.json(
+              { error: `Invalid riskLevel "${body.riskLevel}". Must be one of: ${validRiskLevels.join(', ')}` },
+              { status: 400 },
+            );
+          }
+        }
         const missionConfig: MissionConfig = {
           selectedPairs: body.selectedPairs ?? [],
           riskLevel: body.riskLevel ?? 'aggressive',
@@ -307,7 +338,7 @@ export async function POST(req: Request) {
 
       case 'stop_orchestrator': {
         const orchestrator = getOrchestrator();
-        orchestrator.stop();
+        await orchestrator.stop();
         return NextResponse.json({ stopped: true, status: orchestrator.getStatus() });
       }
 

@@ -327,6 +327,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ orders: closedOrders });
       }
 
+      // NOTE: Kill switch is intentionally NOT checked here. Per the design in
+      // kill-switch.ts, even "killed" mode allows direct close_position so that
+      // operators can always exit positions regardless of kill switch state.
+      // Only create_order is gated by the kill switch (with close_only allowing reduceOnly).
       case 'close_position': {
         if (!body.symbol) {
           return NextResponse.json({ error: 'symbol is required' }, { status: 400 });

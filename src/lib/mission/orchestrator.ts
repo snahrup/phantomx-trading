@@ -18,7 +18,7 @@
 // State machine per symbol:
 //   idle → analyzing → monitoring ↔ pipeline → cooldown → monitoring
 //
-// The orchestrator runs server-side as a singleton with setInterval.
+// The orchestrator runs server-side as a singleton with self-scheduling setTimeout.
 // Start it from LaunchPanel, stop it from the kill switch.
 // ============================================================================
 
@@ -122,7 +122,7 @@ const PIPELINE_AGENT_KEYWORDS = ['head of trading', 'trading lead', 'trading'];
 
 class MissionOrchestrator {
   private running = false;
-  private intervalId: ReturnType<typeof setInterval> | null = null;
+  private tickTimer: ReturnType<typeof setTimeout> | null = null;
   private config: MissionConfig | null = null;
   private symbolStates = new Map<string, SymbolState>();
   private startedAt: string | null = null;
@@ -138,14 +138,16 @@ class MissionOrchestrator {
   // -------------------------------------------------------------------------
 
   start(config: MissionConfig): void {
-    // Defensive: clear any leaked interval from a previous instance or hot reload
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    // Defensive: clear any leaked timer from a previous instance or hot reload
+    if (this.tickTimer) {
+      clearTimeout(this.tickTimer);
+      this.tickTimer = null;
     }
     if (this.running) {
       console.warn('[orchestrator] Already running — stopping first to restart cleanly');
-      this.stop();
+      this.running = false;
+      // Fire-and-forget cancel — symbolStates.clear() below will reset everything
+      this.cancelActiveIssues().catch(() => {});
     }
 
     this.config = config;
@@ -179,21 +181,21 @@ class MissionOrchestrator {
 
     // Resolve agent IDs from Axon before first tick
     this.resolveAgentIds().then(() => {
-      this.tick().catch(console.error);
-      this.intervalId = setInterval(() => this.tick().catch(console.error), TICK_INTERVAL_MS);
+      this.scheduleNextTick(/* immediate */ true);
     }).catch((err) => {
       console.error('[orchestrator] Failed to resolve agent IDs — starting anyway:', err);
-      this.tick().catch(console.error);
-      this.intervalId = setInterval(() => this.tick().catch(console.error), TICK_INTERVAL_MS);
+      this.scheduleNextTick(/* immediate */ true);
     });
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
     this.running = false;
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    if (this.tickTimer) {
+      clearTimeout(this.tickTimer);
+      this.tickTimer = null;
     }
+    // Cancel any active issues in Axon so agents don't keep working on stale tasks
+    await this.cancelActiveIssues();
     console.log(`[orchestrator] Stopped after ${this.tickCount} ticks`);
   }
 
@@ -205,9 +207,9 @@ class MissionOrchestrator {
   pause(): void {
     if (!this.running) return;
     this.running = false;
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    if (this.tickTimer) {
+      clearTimeout(this.tickTimer);
+      this.tickTimer = null;
     }
     console.log(`[orchestrator] Paused (preserving state for ${this.symbolStates.size} symbols)`);
   }
@@ -232,8 +234,7 @@ class MissionOrchestrator {
     }
 
     console.log(`[orchestrator] Resumed — continuing with ${this.symbolStates.size} symbols`);
-    this.tick().catch(console.error);
-    this.intervalId = setInterval(() => this.tick().catch(console.error), TICK_INTERVAL_MS);
+    this.scheduleNextTick(/* immediate */ true);
   }
 
   isRunning(): boolean {
@@ -267,6 +268,72 @@ class MissionOrchestrator {
   }
 
   // -------------------------------------------------------------------------
+  // Self-scheduling tick loop (prevents overlap when ticks run long)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Schedule the next tick using setTimeout. When `immediate` is true the tick
+   * fires on the next event-loop turn (used for the very first tick after
+   * start/resume). Otherwise it waits TICK_INTERVAL_MS.
+   *
+   * After each tick completes (success or failure) we schedule the next one,
+   * guaranteeing that two ticks never run concurrently — unlike setInterval
+   * which would fire a new tick even if the previous one was still awaiting
+   * async work.
+   */
+  private scheduleNextTick(immediate = false): void {
+    if (!this.running) return;
+
+    this.tickTimer = setTimeout(async () => {
+      try {
+        await this.tick();
+      } catch (err) {
+        console.error('[orchestrator] Unhandled tick error:', err);
+      }
+      // Schedule the next tick only after the current one finishes
+      this.scheduleNextTick();
+    }, immediate ? 0 : TICK_INTERVAL_MS);
+  }
+
+  // -------------------------------------------------------------------------
+  // Cancel active issues on stop (CONCERN-2)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Iterate all symbol states and cancel any issues that are still active in
+   * Axon. Called during stop() so agents don't keep working on stale tasks
+   * after the orchestrator shuts down.
+   */
+  private async cancelActiveIssues(): Promise<void> {
+    const axon = getAxonClient();
+    const cancellations: Promise<void>[] = [];
+
+    for (const state of this.symbolStates.values()) {
+      if (!state.activeIssueId) continue;
+      const issueId = state.activeIssueId;
+      state.activeIssueId = null;
+
+      cancellations.push(
+        axon.updateIssue(issueId, { status: 'cancelled' })
+          .then((res) => {
+            if (res.ok) {
+              console.log(`[orchestrator] Cancelled active issue ${issueId} for ${state.symbol}`);
+            } else {
+              console.warn(`[orchestrator] Failed to cancel issue ${issueId} for ${state.symbol}:`, (res as { error: string }).error);
+            }
+          })
+          .catch((err) => {
+            console.warn(`[orchestrator] Error cancelling issue ${issueId} for ${state.symbol}:`, err);
+          }),
+      );
+    }
+
+    if (cancellations.length > 0) {
+      await Promise.allSettled(cancellations);
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Core tick — runs every TICK_INTERVAL_MS
   // -------------------------------------------------------------------------
 
@@ -280,14 +347,14 @@ class MissionOrchestrator {
     // Safety: check if mode was reverted to manual externally
     if (this.isModeManual()) {
       console.log('[orchestrator] Trading mode reverted to manual — stopping');
-      this.stop();
+      await this.stop();
       return;
     }
 
     // Safety: check if kill switch was activated
     if (isKillSwitchActive()) {
       console.log('[orchestrator] Kill switch active — stopping');
-      this.stop();
+      await this.stop();
       return;
     }
 

@@ -204,7 +204,10 @@ export async function POST(req: Request) {
           clientOrderId: `${clientOrderId}-mkt`,
         });
         orderId = order.id;
-        fillPrice = order.price ?? rec.entryPrice;
+        // Market orders: use cost/filled for true avg fill price (ccxt returns price=undefined for markets)
+        fillPrice = (order.cost && order.filled && order.filled > 0)
+          ? order.cost / order.filled
+          : (order.price ?? rec.entryPrice);
         fees = order.fee?.cost;
         entryOrderType = 'market-fallback';
         console.warn(`[execute-recommendation] Limit orders failed, fell back to market for ${rec.symbol}`);
@@ -228,6 +231,9 @@ export async function POST(req: Request) {
         );
       }
     }
+
+    // Rate limit delay — Phemex rate limits hard on rapid sequential calls
+    await new Promise((r) => setTimeout(r, 2000));
 
     // Place stop-loss order — CRITICAL: if this fails, close the position immediately.
     // An open leveraged position with no stop-loss is the single most dangerous state.
@@ -284,6 +290,9 @@ export async function POST(req: Request) {
       }
     }
 
+    // Rate limit delay before take-profit orders
+    await new Promise((r) => setTimeout(r, 2000));
+
     // Place take-profit orders — track failures
     const tpOrderIds: string[] = [];
     let tpFailCount = 0;
@@ -293,6 +302,8 @@ export async function POST(req: Request) {
       if (tpSize <= 0) continue;
 
       try {
+        // Rate limit between successive TP orders
+        if (tpOrderIds.length > 0) await new Promise((r) => setTimeout(r, 2000));
         const tpOrder = await client.createOrder(
           rec.symbol,
           'limit',

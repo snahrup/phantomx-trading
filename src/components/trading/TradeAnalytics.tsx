@@ -442,25 +442,15 @@ export default memo(function TradeAnalytics() {
                                     'Market'
                                   )}
                                 </Button>
-                                {/* AI Close */}
+                                {/* AI Close — disabled until ai_close action is implemented in phemex route */}
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleAiClose(pos)}
-                                  disabled={aiClosingPositionId === pos.id}
-                                  className="h-6 px-2 py-1 text-[9px] font-medium bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
-                                  title="AI-optimized limit close"
+                                  disabled
+                                  className="h-6 px-2 py-1 text-[9px] font-medium bg-muted/50 border-muted text-muted-foreground cursor-not-allowed opacity-50"
+                                  title="Coming soon"
                                 >
-                                  {aiClosingPositionId === pos.id ? (
-                                    <span className="flex items-center gap-1">
-                                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="animate-spin">
-                                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                                      </svg>
-                                      AI...
-                                    </span>
-                                  ) : (
-                                    'AI Limit'
-                                  )}
+                                  AI Limit
                                 </Button>
                               </div>
                               {/* AI Close result */}
