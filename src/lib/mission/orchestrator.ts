@@ -836,33 +836,58 @@ class MissionOrchestrator {
     return null;
   }
 
-  /** Check monitoring issue result for trigger hit */
+  /** Check monitoring issue result for trigger hit.
+   *  Prefers structured JSON in comments (e.g. {"trigger": true, ...}),
+   *  falls back to text heuristics for backwards compatibility.
+   */
   private async checkMonitoringResult(issueId: string): Promise<boolean> {
     const axon = getAxonClient();
     const comments = await axon.getIssueComments(issueId);
     if (!comments.ok) return false;
 
+    // --- Pass 1: Look for structured JSON in any comment ---
+    // Agents may embed JSON blocks like: ```json\n{"trigger": true}\n```
+    // or inline objects: {"trigger": false, "reason": "..."}
+    for (const comment of comments.data) {
+      const jsonBlocks = comment.content.match(/```json\s*([\s\S]*?)```/gi) ?? [];
+      const inlineJson = comment.content.match(/\{[^{}]*"trigger"\s*:\s*(true|false)[^{}]*\}/gi) ?? [];
+      const candidates = [...jsonBlocks, ...inlineJson];
+
+      for (const raw of candidates) {
+        try {
+          // Strip markdown code fences if present
+          const cleaned = raw.replace(/```json\s*/i, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleaned);
+          if (typeof parsed.trigger === 'boolean') {
+            console.log(`[orchestrator] Structured trigger response for ${issueId}: trigger=${parsed.trigger}${parsed.reason ? `, reason: ${parsed.reason}` : ''}`);
+            return parsed.trigger;
+          }
+        } catch {
+          // Not valid JSON — continue to next candidate
+        }
+      }
+    }
+
+    // --- Pass 2: Text heuristic fallback (for agents that don't emit JSON) ---
     const allText = comments.data.map(c => c.content).join('\n').toUpperCase();
 
-    // Explicit trigger hit
+    // Explicit keywords (highest priority)
     if (allText.includes('TRIGGER_HIT') || allText.includes('TRIGGER HIT')) {
       return true;
     }
-
-    // Explicit no trigger
     if (allText.includes('NO_TRIGGER') || allText.includes('NO TRIGGER') || allText.includes('NO_HIT')) {
       return false;
     }
 
-    // Fallback heuristics (less reliable)
+    // Pattern matching (lower priority)
+    const negativePatterns = ['NO ENTRY', 'NOT MET', 'CONDITIONS NOT', 'NO SETUP'];
+    if (negativePatterns.some(p => allText.includes(p))) return false;
+
     const positivePatterns = ['ENTRY SIGNAL', 'EXECUTE NOW', 'TRIGGER FIRED', 'CONDITIONS MET'];
-    const negativePatterns = ['NO ENTRY', 'NOT MET', 'CONDITIONS NOT', 'WAIT', 'NO SETUP'];
+    if (positivePatterns.some(p => allText.includes(p))) return true;
 
-    const hasNegative = negativePatterns.some(p => allText.includes(p));
-    if (hasNegative) return false;
-
-    const hasPositive = positivePatterns.some(p => allText.includes(p));
-    return hasPositive;
+    // Default to false — safer than a false positive
+    return false;
   }
 
   /** Fetch an issue, returning null if it doesn't exist */

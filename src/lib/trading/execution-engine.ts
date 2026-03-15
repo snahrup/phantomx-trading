@@ -14,7 +14,7 @@ import type {
   PipelineConfig,
 } from '@/types/trading';
 import { db } from '@/lib/db';
-import { isKillSwitchActive, isCloseOnlyMode } from '@/lib/kill-switch';
+import { isKillSwitchActive, isCloseOnlyMode, RISK_THRESHOLDS } from '@/lib/kill-switch';
 
 // ---------------------------------------------------------------------------
 // Schema migration — adds execution_log table if missing
@@ -139,13 +139,40 @@ function buildAttribution(signal: TradingSignal): Pick<ExecutionRecord, 'strateg
   };
 }
 
+function computePositionSize(
+  signal: TradingSignal,
+  config: PipelineConfig,
+  equity: number,
+): { sizeUsdt: number; size: number } {
+  // Risk-normalized sizing: notional = riskPerTrade / stopDistance
+  // This ensures each trade risks the same dollar amount regardless of stop width.
+  const stopDistance = Math.abs(signal.entry - signal.stop) / signal.entry;
+
+  if (stopDistance <= 0 || !isFinite(stopDistance)) {
+    // Fallback to flat % if stop distance is invalid (should never happen — signal bus validates)
+    const sizeUsdt = equity * (config.positionSizePercent / 100);
+    return { sizeUsdt, size: sizeUsdt / signal.entry };
+  }
+
+  const riskPerTrade = equity * RISK_THRESHOLDS.MAX_RISK_PER_TRADE; // 2% of equity
+  let sizeUsdt = riskPerTrade / stopDistance;
+
+  // Cap at max exposure per position (positionSizePercent acts as ceiling, not target)
+  const maxUsdt = equity * (config.positionSizePercent / 100);
+  if (sizeUsdt > maxUsdt) sizeUsdt = maxUsdt;
+
+  // Absolute floor — don't place dust orders
+  if (sizeUsdt < 1) sizeUsdt = 1;
+
+  return { sizeUsdt, size: sizeUsdt / signal.entry };
+}
+
 function executePaper(
   signal: TradingSignal,
   config: PipelineConfig,
   equity: number,
 ): ExecutionRecord {
-  const sizeUsdt = equity * (config.positionSizePercent / 100);
-  const size = sizeUsdt / signal.entry;
+  const { sizeUsdt, size } = computePositionSize(signal, config, equity);
   const fillPrice = signal.entry; // paper = perfect fill
   const leverage = Math.min(config.defaultLeverage, 100); // Clamp to Phemex max
 
@@ -228,8 +255,7 @@ async function executeLive(
     };
   }
 
-  const sizeUsdt = equity * (config.positionSizePercent / 100);
-  const size = sizeUsdt / signal.entry;
+  const { sizeUsdt, size } = computePositionSize(signal, config, equity);
   const side = signal.direction === 'long' ? 'buy' : 'sell';
 
   try {

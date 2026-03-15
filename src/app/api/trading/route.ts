@@ -162,7 +162,7 @@ export async function POST(req: Request) {
       case 'signals': {
         const { status, limit } = body;
         if (status) {
-          const validStatuses = ['pending', 'approved', 'rejected', 'executed', 'closed', 'expired'];
+          const validStatuses = ['pending', 'approved', 'rejected', 'failed', 'executed', 'closed', 'expired'];
           if (!validStatuses.includes(status)) {
             return NextResponse.json(
               { error: `Invalid status "${status}". Must be one of: ${validStatuses.join(', ')}` },

@@ -112,14 +112,15 @@ export const pipeline = {
           tradingSignalBus.updateStatus(signal.id, 'executed', { executionId: record.id });
           executed++;
         } else {
-          tradingSignalBus.updateStatus(signal.id, 'rejected', {
+          // 'failed' = approved by risk gate but exchange/execution error (distinct from 'rejected' = risk gate denied)
+          tradingSignalBus.updateStatus(signal.id, 'failed', {
             rejectionReason: record.error ?? 'Execution failed',
           });
           errors.push(`${signal.asset}: ${record.error ?? 'unknown failure'}`);
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        tradingSignalBus.updateStatus(signal.id, 'rejected', { rejectionReason: msg });
+        tradingSignalBus.updateStatus(signal.id, 'failed', { rejectionReason: msg });
         errors.push(`${signal.asset}: ${msg}`);
       }
     }

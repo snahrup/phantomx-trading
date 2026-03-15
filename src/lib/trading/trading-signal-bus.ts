@@ -240,7 +240,7 @@ export const tradingSignalBus = {
       .all() as { status: TradingSignalStatus; cnt: number }[];
 
     const counts: Record<TradingSignalStatus, number> = {
-      pending: 0, approved: 0, rejected: 0, executed: 0, closed: 0, expired: 0,
+      pending: 0, approved: 0, rejected: 0, failed: 0, executed: 0, closed: 0, expired: 0,
     };
     for (const row of rows) {
       counts[row.status] = row.cnt;

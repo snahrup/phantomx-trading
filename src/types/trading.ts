@@ -597,7 +597,7 @@ export interface SignalSummary {
 // Trading Pipeline — Execution Signal Types
 // ---------------------------------------------------------------------------
 
-export type TradingSignalStatus = 'pending' | 'approved' | 'rejected' | 'executed' | 'closed' | 'expired';
+export type TradingSignalStatus = 'pending' | 'approved' | 'rejected' | 'failed' | 'executed' | 'closed' | 'expired';
 export type TradeDirection = 'long' | 'short';
 
 export interface TradingSignal {
