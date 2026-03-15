@@ -49,7 +49,7 @@ export default function AppLayout({ children, title, subtitle, actions }: AppLay
           </motion.div>
         )}
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto px-6 pb-6">
+        <main className={`flex-1 px-6 pb-6 ${title ? 'overflow-y-auto' : 'overflow-hidden'}`}>
           {children}
         </main>
       </div>

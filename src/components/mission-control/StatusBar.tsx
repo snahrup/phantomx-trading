@@ -157,6 +157,10 @@ export default function StatusBar() {
 
       if (!mountedRef.current) return;
 
+      // Clear the activity feed immediately on kill so the UI doesn't show stale data
+      useAxonStore.getState().clearActivity();
+      useTradingStore.getState().setMissionStartedAt(null);
+
       setKilled(true);
       setExecuting(false);
       setPausedStore(false);
@@ -272,6 +276,10 @@ export default function StatusBar() {
               variant="outline"
               size="sm"
               onClick={() => {
+                // Clear activity feed and reset mission timestamp so the next
+                // launch starts with a blank slate
+                useAxonStore.getState().clearActivity();
+                useTradingStore.getState().setMissionStartedAt(null);
                 setKilled(false);
                 setExecuting(false);
               }}

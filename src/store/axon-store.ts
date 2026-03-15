@@ -263,19 +263,35 @@ export const useAxonStore = create<AxonState>()((set, get) => ({
         };
       });
 
+      // Filter out activity from before the current mission started
+      // (prevents old session data from polluting the feed)
+      // Dynamic import to avoid circular dependency (trading-store imports axon-store)
+      const tradingStoreModule = await import('@/store/trading-store');
+      const { missionStartedAt, isExecuting } = tradingStoreModule.useTradingStore.getState();
+      const missionTs = missionStartedAt ? new Date(missionStartedAt).getTime() : 0;
+
+      // No active mission = don't load old events. Feed should be blank between missions.
+      if (missionTs === 0 && !isExecuting) {
+        return;
+      }
+
+      const filtered = missionTs > 0
+        ? parsed.filter((a) => new Date(a.timestamp).getTime() >= missionTs)
+        : parsed;
+
       // Merge: REST data is authoritative, but preserve any recent SSE-only
       // events (they may not be in the DB yet). This prevents the flash-
       // disappear effect where SSE events show, poll overwrites them away,
       // then they reappear on the next poll.
-      const restIds = new Set(parsed.map((a) => a.id));
+      const restIds = new Set(filtered.map((a) => a.id));
       const existing = get().agentEvents;
       const sseOnly = existing.filter(
         (e) => !restIds.has(e.id) && !e.id.startsWith('hb-') && !e.id.startsWith('act-'),
       );
       // For synthetic IDs (hb-*, act-*) from SSE, keep them only if they're
       // newer than the oldest REST event (they haven't been indexed yet).
-      const oldestRestTs = parsed.length > 0
-        ? Math.min(...parsed.map((a) => new Date(a.timestamp).getTime()))
+      const oldestRestTs = filtered.length > 0
+        ? Math.min(...filtered.map((a) => new Date(a.timestamp).getTime()))
         : 0;
       const recentSynthetic = existing.filter(
         (e) =>
@@ -283,7 +299,7 @@ export const useAxonStore = create<AxonState>()((set, get) => ({
           new Date(e.timestamp).getTime() > oldestRestTs,
       );
       const merged = cap(
-        [...parsed, ...sseOnly, ...recentSynthetic].sort(
+        [...filtered, ...sseOnly, ...recentSynthetic].sort(
           (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
         ),
         100,

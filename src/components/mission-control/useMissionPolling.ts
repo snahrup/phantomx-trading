@@ -11,6 +11,7 @@ const POSITIONS_INTERVAL = 10_000;
 const ACCOUNT_INTERVAL = 15_000;
 const ACTIVITY_INTERVAL = 8_000;
 const AGENT_STATUS_INTERVAL = 20_000;
+const ORCHESTRATOR_INTERVAL = 10_000;
 const SPARKLINE_INTERVAL = 15_000;
 const SPARKLINE_STAGGER_MS = 1_000;
 const MAX_SPARKLINE_SYMBOLS = 5;
@@ -31,6 +32,7 @@ export function useMissionPolling() {
   const accountRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activityRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const agentsRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const orchestratorRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sparklineRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sparklineBusyRef = useRef(false);
 
@@ -39,6 +41,7 @@ export function useMissionPolling() {
     if (accountRef.current) { clearInterval(accountRef.current); accountRef.current = null; }
     if (activityRef.current) { clearInterval(activityRef.current); activityRef.current = null; }
     if (agentsRef.current) { clearInterval(agentsRef.current); agentsRef.current = null; }
+    if (orchestratorRef.current) { clearInterval(orchestratorRef.current); orchestratorRef.current = null; }
     if (sparklineRef.current) { clearInterval(sparklineRef.current); sparklineRef.current = null; }
   }, []);
 
@@ -104,15 +107,56 @@ export function useMissionPolling() {
       }
     };
 
+    const fetchOrchestratorStatus = async () => {
+      try {
+        const res = await fetch('/api/trading', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'orchestrator_status' }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.symbols) return;
+
+        // Extract symbols with active phases (scanning, pipeline, monitoring)
+        const activeSymbols: { symbol: string; phase: string }[] = [];
+        for (const [sym, state] of Object.entries(data.symbols as Record<string, { phase: string }>)) {
+          if (state.phase !== 'idle' && state.phase !== 'cooldown') {
+            activeSymbols.push({ symbol: sym, phase: state.phase });
+          }
+        }
+
+        const store = useTradingStore.getState();
+        store.setAgentActiveSymbols(activeSymbols);
+
+        // Auto-switch chart to the most interesting agent-active symbol
+        // Priority: pipeline > scanning > monitoring
+        // Only auto-switch if user hasn't manually focused a position
+        if (activeSymbols.length > 0 && store.positions.length === 0) {
+          const pipelineSym = activeSymbols.find(s => s.phase === 'pipeline');
+          const scanningSym = activeSymbols.find(s => s.phase === 'scanning');
+          const best = pipelineSym ?? scanningSym ?? activeSymbols[0];
+
+          if (best && store.focusedPositionSymbol !== best.symbol) {
+            store.setFocusedPositionSymbol(best.symbol);
+            store.setSymbol(best.symbol);
+          }
+        }
+      } catch {
+        // Silently swallow
+      }
+    };
+
     const fetchSparklines = async () => {
       // Guard against overlapping sparkline fetches (sequential with stagger can exceed interval)
       if (sparklineBusyRef.current) return;
       sparklineBusyRef.current = true;
       try {
-        const positions = useTradingStore.getState().positions;
-        if (positions.length === 0) return;
+        const store = useTradingStore.getState();
+        const positions = store.positions;
+        const agentActive = store.agentActiveSymbols;
 
-        // Deduplicate symbols to avoid redundant fetches for same-symbol positions
+        // Deduplicate symbols — positions first, then agent-active symbols
         const seen = new Set<string>();
         const symbols: string[] = [];
         for (const p of positions) {
@@ -121,6 +165,14 @@ export function useMissionPolling() {
             symbols.push(p.symbol);
           }
         }
+        // Add agent-active symbols that don't overlap with positions
+        for (const s of agentActive) {
+          if (!seen.has(s.symbol) && symbols.length < MAX_SPARKLINE_SYMBOLS) {
+            seen.add(s.symbol);
+            symbols.push(s.symbol);
+          }
+        }
+        if (symbols.length === 0) return;
 
         for (let i = 0; i < symbols.length; i++) {
           const symbol = symbols[i];
@@ -161,6 +213,7 @@ export function useMissionPolling() {
     fetchAccount();
     fetchActivity();
     fetchAgents();
+    fetchOrchestratorStatus();
     fetchSparklines();
 
     // --- Set up intervals ---
@@ -168,6 +221,7 @@ export function useMissionPolling() {
     accountRef.current = setInterval(fetchAccount, ACCOUNT_INTERVAL);
     activityRef.current = setInterval(fetchActivity, ACTIVITY_INTERVAL);
     agentsRef.current = setInterval(fetchAgents, AGENT_STATUS_INTERVAL);
+    orchestratorRef.current = setInterval(fetchOrchestratorStatus, ORCHESTRATOR_INTERVAL);
     sparklineRef.current = setInterval(fetchSparklines, SPARKLINE_INTERVAL);
 
     return () => {

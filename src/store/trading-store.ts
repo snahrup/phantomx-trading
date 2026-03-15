@@ -278,12 +278,17 @@ interface TradingState {
   focusedPositionSymbol: string | null;
   isFeedCollapsed: boolean;
   activeMissionIssueId: string | null;
+  missionStartedAt: string | null;
   positionPriceHistory: Record<string, number[]>;
+  /** Symbols agents are actively scanning or in pipeline — from orchestrator status */
+  agentActiveSymbols: { symbol: string; phase: string }[];
   setMissionControlConfig: (config: Partial<MissionControlConfig>) => void;
   setFocusedPositionSymbol: (symbol: string | null) => void;
   setIsFeedCollapsed: (collapsed: boolean) => void;
   setActiveMissionIssueId: (id: string | null) => void;
+  setMissionStartedAt: (ts: string | null) => void;
   setPositionPriceHistory: (symbol: string, prices: number[]) => void;
+  setAgentActiveSymbols: (symbols: { symbol: string; phase: string }[]) => void;
 
   // Actions
   setConnection: (apiKey: string, apiSecret: string, testnet: boolean) => void;
@@ -580,13 +585,17 @@ export const useTradingStore = create<TradingState>()(
   focusedPositionSymbol: null,
   isFeedCollapsed: false,
   activeMissionIssueId: null,
+  missionStartedAt: null,
   positionPriceHistory: {},
+  agentActiveSymbols: [],
   setMissionControlConfig: (config) => set((state) => ({
     missionControlConfig: { ...state.missionControlConfig, ...config },
   })),
   setFocusedPositionSymbol: (symbol) => set({ focusedPositionSymbol: symbol }),
   setIsFeedCollapsed: (collapsed) => set({ isFeedCollapsed: collapsed }),
   setActiveMissionIssueId: (id) => set({ activeMissionIssueId: id }),
+  setMissionStartedAt: (ts) => set({ missionStartedAt: ts }),
+  setAgentActiveSymbols: (symbols) => set({ agentActiveSymbols: symbols }),
   setPositionPriceHistory: (symbol, prices) => set((s) => ({
     positionPriceHistory: { ...s.positionPriceHistory, [symbol]: prices },
   })),

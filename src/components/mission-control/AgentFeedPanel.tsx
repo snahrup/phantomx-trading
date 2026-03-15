@@ -179,10 +179,18 @@ export default function AgentFeedPanel({ tradeCloseEvents, onDismissClose }: Age
     };
   }, [activeMissionIssueId, agentNameMap]);
 
+  // Actions that are just lifecycle noise — suppress from the feed
+  const SUPPRESSED_ACTIONS = new Set([
+    'heartbeat_started', 'heartbeat_failed', 'heartbeat_skipped',
+    'agent_paused', 'agent_resumed', 'wake_all',
+  ]);
+
   // Convert axon activity to feed messages
   useEffect(() => {
     const nameMap = agentNameMap();
-    const messages: FeedMessage[] = activity.map((a: any) => {
+    const messages: FeedMessage[] = activity
+      .filter((a: any) => !SUPPRESSED_ACTIONS.has(a.action))
+      .map((a: any) => {
       // Extract agent name from detail (parsed detail_json), then fall back
       // to agent_id lookup so we always show a real name instead of "System".
       const detail = a.detail || {};

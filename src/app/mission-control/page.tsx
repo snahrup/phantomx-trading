@@ -7,10 +7,7 @@ import MissionControlPanel from '@/components/mission-control/MissionControlPane
 
 export default function MissionControlPage() {
   return (
-    <AppLayout
-      title="Mission Control"
-      subtitle="Autonomous trading command center"
-    >
+    <AppLayout>
       <PageTransition className="h-full">
         <ErrorBoundary fallback="mission-control">
           <MissionControlPanel />

@@ -54,6 +54,7 @@ export default function LaunchPanel() {
   const setKilled = useTradingStore(s => s.setKilled);
   const setRiskParameters = useTradingStore(s => s.setRiskParameters);
   const setActiveMissionIssueId = useTradingStore(s => s.setActiveMissionIssueId);
+  const setMissionStartedAt = useTradingStore(s => s.setMissionStartedAt);
   const setConnected = useTradingStore(s => s.setConnected);
 
   useEffect(() => {
@@ -93,6 +94,13 @@ export default function LaunchPanel() {
 
     setLaunching(true);
     setLaunchError(null);
+
+    // Set mission timestamp FIRST — before any async work — so the polling
+    // hook's fetchActivity() filter immediately ignores old events.
+    const missionTs = new Date().toISOString();
+    setMissionStartedAt(missionTs);
+    useAxonStore.getState().clearActivity();
+
     try {
       // Switch trading mode to autonomous so Axon auto-forwards Wave 5 recommendations
       await fetch('/api/trading', {
@@ -172,9 +180,8 @@ export default function LaunchPanel() {
       const issueId = issueResult.data.id;
       setActiveMissionIssueId(issueId);
 
-      // Clear old feed from previous mission and inject a launch event
+      // Inject a launch event into the (already cleared) feed
       const axonStore = useAxonStore.getState();
-      axonStore.clearActivity();
       axonStore.handleActivity({
         id: `launch-${Date.now()}`,
         action: 'mission_launched',
@@ -211,8 +218,42 @@ export default function LaunchPanel() {
       // Also update the store's risk parameters to stay in sync
       setRiskParameters(riskPreset);
 
-      // 3. Wake all agents AFTER issue creation so they pick it up
+      // 3. Activate agent heartbeats + wake them AFTER issue creation so they pick it up
       try {
+        // Fetch current agents so we can set heartbeat intervals on the key ones
+        const agentsResult = await axon.listAgents();
+        if (agentsResult.ok) {
+          const HEARTBEAT_ROLES: Record<string, number> = {
+            'head of trading': 45,
+            'head of research': 45,
+            'market research analyst': 60,
+            'risk officer': 90,
+            'execution trader': 60,
+            'strategy architect': 90,
+            'meta-strategist': 120,
+            'scanner monitor': 60,
+            'sentiment analyst': 90,
+            'on-chain analyst': 90,
+            'microstructure analyst': 90,
+            'portfolio manager': 120,
+            'trade analyst': 60,
+          };
+
+          // Set heartbeat intervals for all matching agents (in parallel)
+          const updates = agentsResult.data
+            .filter((a: { name: string }) => {
+              const lower = a.name.toLowerCase();
+              return Object.keys(HEARTBEAT_ROLES).some(role => lower.includes(role));
+            })
+            .map((a: { id: string; name: string }) => {
+              const lower = a.name.toLowerCase();
+              const matchedRole = Object.keys(HEARTBEAT_ROLES).find(role => lower.includes(role));
+              const interval = matchedRole ? HEARTBEAT_ROLES[matchedRole] : 60;
+              return axon.updateAgent(a.id, { heartbeat_interval_s: interval }).catch(() => {});
+            });
+          await Promise.all(updates);
+        }
+
         await axon.wakeAll();
         if (mountedRef.current) {
           axonStore.handleActivity({
@@ -221,7 +262,7 @@ export default function LaunchPanel() {
             timestamp: new Date().toISOString(),
             detail: {
               agent_name: 'Mission Control',
-              content: `All agents woken. Agents are now assessing the mission config and preparing their research...`,
+              content: `All agents woken with heartbeat intervals. Agents are now assessing the mission config and preparing their research...`,
             },
           });
         }
@@ -262,8 +303,8 @@ export default function LaunchPanel() {
   const canLaunch = !launching && !isExecuting && !isKilled && config.selectedPairs.length > 0;
 
   return (
-    <div className="flex items-center justify-center h-full">
-      <Card className="w-full max-w-md border-border">
+    <div className="flex items-center justify-center h-full overflow-y-auto py-4">
+      <Card className="w-full max-w-md border-border my-auto">
         <CardContent className="p-6 space-y-5">
           <h2 className="text-lg font-bold text-foreground">Launch Autonomous Trading</h2>
 

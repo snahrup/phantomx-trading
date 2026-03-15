@@ -145,6 +145,12 @@ export class AxonClient {
     return this.get(`/agents/${agentId}/summary`);
   }
 
+  /** Update agent fields (status, config, heartbeat_interval_s). */
+  updateAgent(agentId: string, updates: { status?: string; config?: Record<string, unknown>; heartbeat_interval_s?: number }): Promise<AxonResult<AxonAgent>> {
+    // Agent PATCH is NOT company-scoped — route is /api/agents/{id}
+    return this.patch(`/agents/${agentId}`, updates);
+  }
+
   getAgentPersona(agentId: string): Promise<AxonResult<AxonAgentPersona>> {
     return this.get(`/agents/${agentId}/persona`);
   }

@@ -29,6 +29,7 @@ export default function MissionControlPanel() {
   const setFocused = useTradingStore(s => s.setFocusedPositionSymbol);
   const setSymbol = useTradingStore(s => s.setSymbol);
   const setExecuting = useTradingStore(s => s.setExecuting);
+  const agentActiveSymbols = useTradingStore(s => s.agentActiveSymbols);
 
   const [tradeCloseEvents, setTradeCloseEvents] = useState<TradeCloseEvent[]>([]);
   const [closeFlashes, setCloseFlashes] = useState<Record<string, 'win' | 'loss'>>({});
@@ -96,6 +97,7 @@ export default function MissionControlPanel() {
   }
 
   const focusedPosition = positions.find(p => p.symbol === focusedSymbol);
+  const agentActive = agentActiveSymbols.find(s => s.symbol === focusedSymbol);
 
   return (
     <div className="flex flex-col gap-2 h-full">
@@ -106,24 +108,36 @@ export default function MissionControlPanel() {
       <div className="flex gap-2 flex-1 min-h-0">
         {/* Chart Area */}
         <div className="flex-[2] flex flex-col bg-card border border-border rounded-lg p-3 min-w-0">
-          {/* Chart Header */}
-          {focusedSymbol && focusedPosition && (
+          {/* Chart Header — position or agent-active symbol */}
+          {focusedSymbol && (
             <div className="flex items-center justify-between mb-2 text-sm">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-foreground">
                   {focusedSymbol.replace('/USDT:USDT', '').replace('/USDT', '')}/USDT
                 </span>
-                <span className={`text-xs font-medium ${
-                  focusedPosition.side === 'long' ? 'text-emerald-400' : 'text-red-400'
-                }`}>
-                  {focusedPosition.side.toUpperCase()} {focusedPosition.leverage}x
-                </span>
-                <span className={`text-xs ${
-                  (focusedPosition.unrealizedPnl ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'
-                }`}>
-                  {(focusedPosition.unrealizedPnl ?? 0) >= 0 ? '+' : ''}
-                  ${(focusedPosition.unrealizedPnl ?? 0).toFixed(2)}
-                </span>
+                {focusedPosition ? (
+                  <>
+                    <span className={`text-xs font-medium ${
+                      focusedPosition.side === 'long' ? 'text-emerald-400' : 'text-red-400'
+                    }`}>
+                      {focusedPosition.side.toUpperCase()} {focusedPosition.leverage}x
+                    </span>
+                    <span className={`text-xs ${
+                      (focusedPosition.unrealizedPnl ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'
+                    }`}>
+                      {(focusedPosition.unrealizedPnl ?? 0) >= 0 ? '+' : ''}
+                      ${(focusedPosition.unrealizedPnl ?? 0).toFixed(2)}
+                    </span>
+                  </>
+                ) : agentActive ? (
+                  <span className={`text-xs font-mono px-1.5 py-0.5 rounded border ${
+                    agentActive.phase === 'pipeline'
+                      ? 'text-amber-400 border-amber-500/30 animate-pulse'
+                      : 'text-blue-400 border-blue-500/30'
+                  }`}>
+                    {agentActive.phase === 'pipeline' ? 'PIPELINE' : 'SCANNING'}
+                  </span>
+                ) : null}
               </div>
             </div>
           )}
