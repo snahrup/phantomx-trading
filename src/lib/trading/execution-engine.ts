@@ -147,6 +147,7 @@ function executePaper(
   const sizeUsdt = equity * (config.positionSizePercent / 100);
   const size = sizeUsdt / signal.entry;
   const fillPrice = signal.entry; // paper = perfect fill
+  const leverage = Math.min(config.defaultLeverage, 100); // Clamp to Phemex max
 
   return {
     id: crypto.randomUUID(),
@@ -160,7 +161,7 @@ function executePaper(
     sizeUsdt,
     stopLoss: signal.stop,
     takeProfit: signal.targets[0] ?? undefined,
-    leverage: config.defaultLeverage,
+    leverage,
     status: 'filled',
     slippage: 0,
     createdAt: Date.now(),
@@ -183,6 +184,7 @@ async function executeLive(
   try { client = getPhemexClient(); } catch { /* not configured */ }
 
   const attribution = buildAttribution(signal);
+  const leverage = Math.min(config.defaultLeverage, 100); // Clamp to Phemex max
 
   if (!client) {
     return {
@@ -195,7 +197,7 @@ async function executeLive(
       size: 0,
       sizeUsdt: 0,
       stopLoss: signal.stop,
-      leverage: config.defaultLeverage,
+      leverage,
       status: 'failed',
       error: 'PhemexClient not connected',
       createdAt: Date.now(),
@@ -216,7 +218,7 @@ async function executeLive(
       size: 0,
       sizeUsdt: 0,
       stopLoss: signal.stop,
-      leverage: config.defaultLeverage,
+      leverage,
       status: 'failed',
       error: isCloseOnlyMode()
         ? 'Kill switch in close-only mode — no new entries'
@@ -235,9 +237,10 @@ async function executeLive(
     const fillPrice = order.price ?? signal.entry;
     const slippage = Math.abs(fillPrice - signal.entry);
 
-    // Place stop-loss order
+    // Place stop-loss order (2s delay — Phemex rate-limits rapid sequential calls)
     const stopSide = signal.direction === 'long' ? 'sell' : 'buy';
     try {
+      await new Promise(r => setTimeout(r, 2000));
       await client.createOrder(signal.asset, 'stop', stopSide, size, signal.stop, {
         stopPrice: signal.stop,
         reduceOnly: true,
@@ -246,9 +249,10 @@ async function executeLive(
       console.error('[ExecutionEngine] Stop-loss placement failed:', slErr);
     }
 
-    // Place take-profit if targets exist
+    // Place take-profit if targets exist (2s delay for rate limiting)
     if (signal.targets[0]) {
       try {
+        await new Promise(r => setTimeout(r, 2000));
         await client.createOrder(signal.asset, 'limit', stopSide, size, signal.targets[0], {
           reduceOnly: true,
         });
@@ -269,7 +273,7 @@ async function executeLive(
       sizeUsdt,
       stopLoss: signal.stop,
       takeProfit: signal.targets[0] ?? undefined,
-      leverage: config.defaultLeverage,
+      leverage,
       status: 'filled',
       slippage,
       orderId: order.id,
@@ -288,7 +292,7 @@ async function executeLive(
       size,
       sizeUsdt,
       stopLoss: signal.stop,
-      leverage: config.defaultLeverage,
+      leverage,
       status: 'failed',
       error: err instanceof Error ? err.message : String(err),
       createdAt: Date.now(),

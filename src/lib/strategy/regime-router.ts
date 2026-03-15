@@ -32,7 +32,7 @@ const STRATEGY_REGIME_MAP: StrategyRegimeMapping[] = [
     strategyName: 'EMA Ribbon Trend Following v2.0',
     regimes: ['trending_up', 'trending_down'],
     additionalConditions: [
-      { type: 'adx_above', threshold: 25, description: 'ADX > 25 confirms trend strength' },
+      { type: 'adx_above', threshold: 30, description: 'ADX > 30 confirms trend strength' },
     ],
   },
   {
@@ -57,7 +57,7 @@ const STRATEGY_REGIME_MAP: StrategyRegimeMapping[] = [
     strategyName: 'Liquidity Sweep Reversal v1.0',
     regimes: ['ranging', 'volatile'],
     additionalConditions: [
-      { type: 'adx_below', threshold: 25, description: 'ADX < 25 = not strongly trending (range-bound)' },
+      { type: 'adx_below', threshold: 20, description: 'ADX < 20 = ranging / not trending (matches regime classifier)' },
     ],
   },
 ];

@@ -98,6 +98,42 @@ export const tradingSignalBus = {
   /** Submit a new trading signal. Returns the signal ID. */
   submit(signal: Omit<TradingSignal, 'id' | 'status' | 'createdAt' | 'updatedAt'>): string {
     ready();
+
+    // --- Entry / Stop / Target relationship validation ---
+    if (!signal.stop || signal.stop <= 0) {
+      throw new Error('Signal rejected: stop price must be a positive number');
+    }
+    if (!signal.targets || signal.targets.length === 0) {
+      throw new Error('Signal rejected: at least one target price is required');
+    }
+    if (signal.direction === 'long') {
+      if (signal.stop >= signal.entry) {
+        throw new Error(
+          `Signal rejected: long stop (${signal.stop}) must be below entry (${signal.entry})`,
+        );
+      }
+      for (const t of signal.targets) {
+        if (t <= signal.entry) {
+          throw new Error(
+            `Signal rejected: long target (${t}) must be above entry (${signal.entry})`,
+          );
+        }
+      }
+    } else if (signal.direction === 'short') {
+      if (signal.stop <= signal.entry) {
+        throw new Error(
+          `Signal rejected: short stop (${signal.stop}) must be above entry (${signal.entry})`,
+        );
+      }
+      for (const t of signal.targets) {
+        if (t >= signal.entry) {
+          throw new Error(
+            `Signal rejected: short target (${t}) must be below entry (${signal.entry})`,
+          );
+        }
+      }
+    }
+
     const id = crypto.randomUUID();
     const now = Date.now();
     db.raw.prepare(`

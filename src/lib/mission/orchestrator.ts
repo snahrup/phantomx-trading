@@ -215,10 +215,22 @@ class MissionOrchestrator {
   /**
    * Resume the orchestrator after a pause — restarts the tick interval using
    * the existing config and preserved symbol state. Does NOT re-analyze.
+   * Clears stale activeIssueIds that accumulated during pause.
    */
   resume(): void {
     if (this.running || !this.config) return;
     this.running = true;
+
+    // Clear stale active issues that sat unprocessed during pause.
+    // The agents may have finished or timed out while we weren't ticking.
+    // Clearing the IDs lets the next tick re-evaluate from current phase.
+    for (const state of this.symbolStates.values()) {
+      if (state.activeIssueId) {
+        console.log(`[orchestrator] Clearing stale issue ${state.activeIssueId} for ${state.symbol} (was paused)`);
+        state.activeIssueId = null;
+      }
+    }
+
     console.log(`[orchestrator] Resumed — continuing with ${this.symbolStates.size} symbols`);
     this.tick().catch(console.error);
     this.intervalId = setInterval(() => this.tick().catch(console.error), TICK_INTERVAL_MS);
@@ -320,21 +332,27 @@ class MissionOrchestrator {
             }
 
             if (issue.status === 'done' || issue.status === 'cancelled') {
-              // Analysis done — extract trigger conditions from comments
-              const triggers = await this.extractTriggerConditions(state.activeIssueId);
+              // Analysis done — extract trigger conditions from comments.
+              // IMPORTANT: Capture issueId and do all state mutations atomically
+              // to prevent orphaned state if extractTriggerConditions throws.
+              const issueId = state.activeIssueId;
+              let triggers: TriggerConditions | null = null;
+              try {
+                triggers = await this.extractTriggerConditions(issueId);
+              } catch (extractErr) {
+                console.warn(`[orchestrator] ${symbol} trigger extraction failed:`, extractErr);
+              }
+
+              // Atomic state transition — all mutations together
               state.activeIssueId = null;
               state.lastAnalysisAt = now;
               state.analysisCount++;
+              state.triggerConditions = triggers;
+              state.phase = 'monitoring';
 
               if (triggers) {
-                state.triggerConditions = triggers;
-                state.phase = 'monitoring';
                 console.log(`[orchestrator] ${symbol} analysis complete → monitoring (${triggers.direction}, ${triggers.confidence} confidence)`);
               } else {
-                // Agent didn't produce structured triggers — still move to monitoring
-                // with a generic "check for opportunities" prompt
-                state.triggerConditions = null;
-                state.phase = 'monitoring';
                 console.log(`[orchestrator] ${symbol} analysis complete → monitoring (no structured triggers)`);
               }
             } else if (this.isStale(issue, now, ANALYSIS_STALE_TIMEOUT_MS)) {
@@ -404,12 +422,24 @@ class MissionOrchestrator {
             }
             const pipelineResult = await axon.getPipelineStatus(state.activeIssueId);
             if (!pipelineResult.ok) {
+              // getPipelineStatus can fail for network reasons — check the issue directly
               const issue = await this.fetchIssue(state.activeIssueId);
-              if (!issue || issue.status === 'done' || issue.status === 'cancelled') {
+              if (!issue) {
+                // Issue doesn't exist at all — orphaned, return to monitoring
+                state.activeIssueId = null;
+                state.phase = 'monitoring';
+                console.warn(`[orchestrator] ${symbol} pipeline issue vanished — returning to monitoring`);
+              } else if (issue.status === 'done') {
+                state.tradeCount++;
+                state.activeIssueId = null;
+                state.phase = 'cooldown';
+                state.lastTradeAt = now;
+              } else if (issue.status === 'cancelled') {
                 state.activeIssueId = null;
                 state.phase = 'cooldown';
                 state.lastTradeAt = now;
               }
+              // else: issue is still in_progress — keep waiting (don't assume done)
               break;
             }
 
@@ -448,9 +478,19 @@ class MissionOrchestrator {
           }
         }
       } catch (err) {
-        console.error(`[orchestrator] CATCH error processing ${symbol} (phase was ${state.phase}):`, err);
-        // Don't crash — keep in current phase but clear active issue
+        console.error(`[orchestrator] CATCH error processing ${symbol} (phase=${state.phase}, issue=${state.activeIssueId}):`, err);
+        // Clear active issue so we don't get stuck polling a broken reference,
+        // but move to a safe phase depending on context:
         state.activeIssueId = null;
+        if (state.phase === 'analyzing') {
+          // Failed during analysis — retry from idle
+          state.phase = 'idle';
+        } else if (state.phase === 'pipeline') {
+          // Failed during pipeline — cool down then re-monitor
+          state.phase = 'cooldown';
+          state.lastTradeAt = Date.now();
+        }
+        // monitoring/cooldown/idle: stay in current phase (safe)
       }
     }
   }
@@ -460,6 +500,8 @@ class MissionOrchestrator {
   // -------------------------------------------------------------------------
 
   private async createDeepAnalysisIssue(symbol: string, state: SymbolState): Promise<void> {
+    // Re-check kill switch before creating new work (don't wait for next tick)
+    if (isKillSwitchActive()) return;
     const axon = getAxonClient();
     const base = symbol.split('/')[0];
     const config = this.config!;
@@ -536,6 +578,8 @@ class MissionOrchestrator {
   // -------------------------------------------------------------------------
 
   private async createMonitoringIssue(symbol: string, state: SymbolState): Promise<void> {
+    // Re-check kill switch before creating new work (don't wait for next tick)
+    if (isKillSwitchActive()) return;
     const axon = getAxonClient();
     const base = symbol.split('/')[0];
     const triggers = state.triggerConditions;
@@ -592,7 +636,9 @@ class MissionOrchestrator {
         axon.wakeupAgent(this.scanAgentId).catch(() => {});
       }
     } else {
-      console.error(`[orchestrator] Failed to create monitor for ${base}:`, result.error);
+      // Backoff: set lastMonitorAt to prevent immediate retry spam on Axon failure
+      state.lastMonitorAt = Date.now();
+      console.error(`[orchestrator] Failed to create monitor for ${base} (will retry after interval):`, result.error);
     }
   }
 
@@ -601,6 +647,8 @@ class MissionOrchestrator {
   // -------------------------------------------------------------------------
 
   private async createTradingIssue(symbol: string, state: SymbolState): Promise<void> {
+    // Re-check kill switch before creating trading work (most critical check)
+    if (isKillSwitchActive()) return;
     const axon = getAxonClient();
     const base = symbol.split('/')[0];
     const config = this.config!;
@@ -641,9 +689,10 @@ class MissionOrchestrator {
         axon.wakeupAgent(this.pipelineAgentId).catch(() => {});
       }
     } else {
-      console.error(`[orchestrator] Failed to create pipeline for ${base}:`, result.error);
-      state.phase = 'cooldown';
-      state.lastTradeAt = Date.now();
+      // Don't go to cooldown on creation failure — no trade happened.
+      // Return to monitoring so the trigger can be re-evaluated next cycle.
+      console.error(`[orchestrator] Failed to create pipeline for ${base} — returning to monitoring:`, result.error);
+      state.phase = 'monitoring';
     }
   }
 
@@ -761,8 +810,10 @@ class MissionOrchestrator {
       const modePath = join(process.cwd(), 'knowledge', 'trading-mode.json');
       const data = JSON.parse(readFileSync(modePath, 'utf-8'));
       return data.mode === 'manual';
-    } catch {
-      return true; // If can't read, assume manual (safe default)
+    } catch (err) {
+      // Log the error so it's visible — silent stops are hard to debug
+      console.error('[orchestrator] Failed to read trading-mode.json — defaulting to manual (safe stop):', err);
+      return true;
     }
   }
 }

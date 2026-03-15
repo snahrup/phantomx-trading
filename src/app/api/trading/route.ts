@@ -337,7 +337,14 @@ export async function POST(req: Request) {
             : 'Reverted to manual mode'),
         };
 
-        writeFileSync(TRADING_MODE_PATH, JSON.stringify(updated, null, 2));
+        try {
+          writeFileSync(TRADING_MODE_PATH, JSON.stringify(updated, null, 2));
+        } catch (writeErr) {
+          return NextResponse.json(
+            { error: `Failed to write trading mode: ${writeErr instanceof Error ? writeErr.message : 'Unknown write error'}` },
+            { status: 500 },
+          );
+        }
         return NextResponse.json({ mode: newMode, updated: true });
       }
 
