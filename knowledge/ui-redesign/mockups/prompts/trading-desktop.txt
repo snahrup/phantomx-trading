@@ -1,0 +1,85 @@
+Generate a high-fidelity UI mockup of a "Trading" page at 1920x1080 resolution. This is part of an AI company orchestration dashboard for "Phantom Trading Co." — a crypto trading platform using Phemex exchange.
+
+VISUAL STYLE:
+- Warm cream background #FAF9F6, terracotta accent #C2572A, warm near-black text #2D2A26
+- Clean sans-serif font (Inter), 12px radius cards, subtle warm shadows
+- Nearly invisible borders #E8E5E0, generous whitespace
+- Anthropic Claude-inspired: open, fluid, warm, no harsh lines
+
+LAYOUT:
+- Left sidebar (240px, warm gray #F5F2ED): "Trading" nav item active
+- Top status bar with prominent: "MODE: MANUAL" amber badge and "KILL SWITCH: ● ARMED" green indicator
+
+MAIN CONTENT:
+
+TOP BAR (page-level):
+- "Trading" in 28px semibold
+- Right side: "MODE: MANUAL" large amber badge, [🛑 Kill Switch] prominent red-outlined button with green "ARMED" indicator
+
+MAIN AREA (two columns, 70/30 split):
+
+LEFT (70%): Chart Area
+- Symbol selector: [BTCUSDT ▾] dropdown with current price "$68,247.50" and 24h change "+2.4%" in green
+- Timeframe buttons: [15m] [1H] [4H (active, terracotta)] [1D] [1W]
+- Large candlestick chart area (lightweight-charts style):
+  - Warm cream chart background
+  - Green candles for up, terracotta #C2572A for down candles
+  - Subtle grid lines in #E8E5E0
+  - Volume bars at bottom in muted colors
+  - Current price line with label
+  - Chart takes up ~400px height
+
+RIGHT (30%): Risk Meters Panel
+- Card with heading "Risk Status" in 15px semibold
+- 4 vertical risk meters, each with:
+
+  1. "Position Utilization"
+     - Horizontal bar: 75% filled with terracotta, amber warning zone
+     - "$15,000 / $20,000 max"
+     - Label color: amber (approaching limit)
+
+  2. "Daily P&L"
+     - Horizontal bar: 35% filled with sage green (positive territory)
+     - "-$350 / -$1,000 limit"
+     - Label: "Within limits" in green
+
+  3. "Max Leverage"
+     - Display: "50x" large text
+     - Subtitle: "Max allowed: 50x"
+     - Full bar, amber indicator
+
+  4. "Total Exposure"
+     - Horizontal bar: 55% filled with terracotta
+     - "$27,500 / $50,000"
+     - Label: green, within limits
+
+MIDDLE SECTION: All Positions Table
+- Heading: "Active Positions" with count badge "(3)"
+- Clean table with NO traditional borders, just spacing and alternating subtle backgrounds:
+  - Headers in 13px medium muted text: Symbol | Side | Size | Entry Price | Mark Price | Unrl P&L | ROE% | Margin | Liq Price | Actions
+  - Row 1: BTCUSDT | LONG (green badge) | 0.05 BTC | $67,420.00 | $68,247.50 | +$312.50 (green) | +4.63% (green) | $674.20 | $65,100 | [Close] ghost button
+  - Row 2: ETHUSDT | SHORT (red badge) | 2.0 ETH | $3,850.00 | $3,873.60 | -$47.20 (red) | -1.23% (red) | $154.00 | $4,020 | [Close] ghost button
+  - Row 3: SOLUSDT | LONG (green badge) | 50 SOL | $148.20 | $149.98 | +$89.00 (green) | +1.20% (green) | $148.20 | $142.50 | [Close] ghost button
+- Summary row: "Total Unrealized P&L: +$354.30" in green, bold
+
+BOTTOM SECTION: Recent Trades
+- Heading: "Trade History"
+- Timeline format (vertical dots):
+  - "● 14:23 BTCUSDT LONG opened at $67,420 — 0.05 BTC — by Execution Trader" (green dot)
+  - "● 12:15 ETHUSDT SHORT opened at $3,850 — 2.0 ETH — by Execution Trader" (red dot)
+  - "● 09:45 SOLUSDT LONG opened at $148.20 — 50 SOL — by Strategy Architect" (green dot)
+  - "● 08:30 BTCUSDT SHORT closed at $66,890 — P&L: +$265.00 — by Execution Trader" (blue dot, closed)
+  - Each entry in 13px body text, timestamps in muted
+
+BOTTOM-RIGHT: Funding Rates mini-widget
+- Small card: "Next Funding"
+- "BTCUSDT: -0.0012% in 2h 15m"
+- "ETHUSDT: +0.0045% in 2h 15m" (amber, high)
+- "SOLUSDT: -0.0008% in 2h 15m"
+
+OVERALL FEEL:
+- Professional trading dashboard but warm and readable, not the typical dark Bloomberg terminal
+- The warm cream + terracotta gives it a unique identity vs every other trading UI
+- Risk meters provide immediate safety context
+- Information-dense but organized — a trader can scan everything in seconds
+- Kill switch is prominent and accessible — safety first

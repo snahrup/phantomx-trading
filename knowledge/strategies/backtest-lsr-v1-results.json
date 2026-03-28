@@ -1,0 +1,109 @@
+{
+  "strategy": "LSR v1.0",
+  "backtestDate": "2026-03-08T00:39:52.719714+00:00",
+  "backtesterVersion": "1.0",
+  "dataRange": "2025-12-14 to 2026-03-07",
+  "candles": 500,
+  "leverage": 50,
+  "initialCapital": 200.0,
+  "finalEquity": 203.95,
+  "totalPnl": 3.95,
+  "totalPnlPct": 2.0,
+  "buyHoldPct": -24.1,
+  "totalTrades": 8,
+  "winRate": 0.25,
+  "avgRR": 2.12,
+  "profitFactor": 0.71,
+  "maxDrawdownPct": 5.9,
+  "sharpeRatio": -2.51,
+  "trades": [
+    {
+      "entry_idx": 48,
+      "exit_idx": 60,
+      "side": "short",
+      "entry": 88014.1,
+      "exit": 87520,
+      "pnl": 0.914794806442736,
+      "pnl_pct": 0.457397403221368,
+      "result": "time_exit",
+      "hold_candles": 12
+    },
+    {
+      "entry_idx": 66,
+      "exit_idx": 68,
+      "side": "short",
+      "entry": 88112.3,
+      "exit": 88112.3,
+      "pnl": 0.0,
+      "pnl_pct": 0.0,
+      "result": "stop",
+      "hold_candles": 2
+    },
+    {
+      "entry_idx": 71,
+      "exit_idx": 83,
+      "side": "short",
+      "entry": 87101.5,
+      "exit": 87799.5,
+      "pnl": -1.421106535135165,
+      "pnl_pct": -0.6934490326882736,
+      "result": "time_exit",
+      "hold_candles": 12
+    },
+    {
+      "entry_idx": 170,
+      "exit_idx": 174,
+      "side": "short",
+      "entry": 91769.3,
+      "exit": 91769.3,
+      "pnl": 0.0,
+      "pnl_pct": 0.0,
+      "result": "stop",
+      "hold_candles": 4
+    },
+    {
+      "entry_idx": 274,
+      "exit_idx": 276,
+      "side": "short",
+      "entry": 87797.9,
+      "exit": 86051,
+      "pnl": 9.115443678222187,
+      "pnl_pct": 4.305141992734906,
+      "result": "tp2",
+      "hold_candles": 2
+    },
+    {
+      "entry_idx": 413,
+      "exit_idx": 416,
+      "side": "long",
+      "entry": 68575.5,
+      "exit": 67815.0171,
+      "pnl": -4.333953350580146,
+      "pnl_pct": -2.0,
+      "result": "stop",
+      "hold_candles": 3
+    },
+    {
+      "entry_idx": 462,
+      "exit_idx": 463,
+      "side": "long",
+      "entry": 65926.6,
+      "exit": 65610.324,
+      "pnl": -4.247274283568544,
+      "pnl_pct": -2.0,
+      "result": "stop",
+      "hold_candles": 1
+    },
+    {
+      "entry_idx": 472,
+      "exit_idx": 473,
+      "side": "long",
+      "entry": 66998.4,
+      "exit": 66250.0836,
+      "pnl": -4.162328797897173,
+      "pnl_pct": -2.0,
+      "result": "stop",
+      "hold_candles": 1
+    }
+  ]
+}

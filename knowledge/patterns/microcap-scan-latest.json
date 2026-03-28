@@ -1,0 +1,638 @@
+{
+  "scanTime": "2026-03-08T14:37:27Z",
+  "totalScanned": 60,
+  "errors": 0,
+  "efrCandidates": [
+    {
+      "name": "IP",
+      "symbol": "IP/USDT:USDT",
+      "rsi": 33.48845125052215,
+      "rsi_rising": true,
+      "efr_score": 4,
+      "efr_trigger": false,
+      "ema55_dist": -9.040857074921279,
+      "regime": "EFR_SETUP"
+    },
+    {
+      "name": "SPELL",
+      "symbol": "SPELL/USDT:USDT",
+      "rsi": 44.80627464431073,
+      "rsi_rising": true,
+      "efr_score": 4,
+      "efr_trigger": false,
+      "ema55_dist": -1.6723786183168265,
+      "regime": "RANGING"
+    },
+    {
+      "name": "TRUMP",
+      "symbol": "TRUMP/USDT:USDT",
+      "rsi": 24.9847546578642,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -7.031806830415011,
+      "regime": "TRENDING"
+    },
+    {
+      "name": "CAT",
+      "symbol": "1000CAT/USDT:USDT",
+      "rsi": 27.367223609998092,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -6.532235326830832,
+      "regime": "TRENDING"
+    },
+    {
+      "name": "TURBO",
+      "symbol": "TURBO/USDT:USDT",
+      "rsi": 29.178197288063657,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -7.169629584089751,
+      "regime": "TRENDING"
+    },
+    {
+      "name": "LAYER",
+      "symbol": "LAYER/USDT:USDT",
+      "rsi": 30.760754436972846,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -5.8866397690692285,
+      "regime": "EFR_SETUP"
+    },
+    {
+      "name": "PEPE",
+      "symbol": "1000PEPE/USDT:USDT",
+      "rsi": 32.104352731104555,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -7.785714138400592,
+      "regime": "EFR_SETUP"
+    },
+    {
+      "name": "RED",
+      "symbol": "RED/USDT:USDT",
+      "rsi": 32.209094358176515,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -10.495473885582276,
+      "regime": "TRENDING"
+    },
+    {
+      "name": "SWARMS",
+      "symbol": "SWARMS/USDT:USDT",
+      "rsi": 33.24303531757248,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -5.442726180830766,
+      "regime": "TRENDING"
+    },
+    {
+      "name": "SHELL",
+      "symbol": "SHELL/USDT:USDT",
+      "rsi": 33.459224035199796,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -4.319941894596056,
+      "regime": "TRENDING"
+    },
+    {
+      "name": "DRIFT",
+      "symbol": "DRIFT/USDT:USDT",
+      "rsi": 33.61884651753219,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -4.474726878178914,
+      "regime": "EFR_SETUP"
+    },
+    {
+      "name": "BONK",
+      "symbol": "1000BONK/USDT:USDT",
+      "rsi": 33.98401935332653,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -5.101946792795647,
+      "regime": "EFR_SETUP"
+    },
+    {
+      "name": "MEW",
+      "symbol": "MEW/USDT:USDT",
+      "rsi": 34.601344249449724,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -5.0014899533298465,
+      "regime": "EFR_SETUP"
+    },
+    {
+      "name": "FARTCOIN",
+      "symbol": "FARTCOIN/USDT:USDT",
+      "rsi": 34.85826238778206,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -7.8260605215600885,
+      "regime": "EFR_SETUP"
+    },
+    {
+      "name": "ACT",
+      "symbol": "ACT/USDT:USDT",
+      "rsi": 37.87327457688543,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -5.667317278012425,
+      "regime": "TRENDING"
+    },
+    {
+      "name": "ACH",
+      "symbol": "ACH/USDT:USDT",
+      "rsi": 42.702657085682276,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -1.1160905076173797,
+      "regime": "RANGING"
+    },
+    {
+      "name": "PEOPLE",
+      "symbol": "PEOPLE/USDT:USDT",
+      "rsi": 42.815159079485525,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": 0.5832765471021759,
+      "regime": "RANGING"
+    },
+    {
+      "name": "GOAT",
+      "symbol": "GOAT/USDT:USDT",
+      "rsi": 44.66182650287878,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -2.258238660381447,
+      "regime": "RANGING"
+    },
+    {
+      "name": "MUBARAK",
+      "symbol": "MUBARAK/USDT:USDT",
+      "rsi": 45.86758904352802,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -1.773867277809044,
+      "regime": "RANGING"
+    },
+    {
+      "name": "MAGIC",
+      "symbol": "MAGIC/USDT:USDT",
+      "rsi": 46.993230454573656,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": -1.9633170369885908,
+      "regime": "RANGING"
+    },
+    {
+      "name": "POPCAT",
+      "symbol": "POPCAT/USDT:USDT",
+      "rsi": 47.489490172780535,
+      "rsi_rising": true,
+      "efr_score": 3,
+      "efr_trigger": false,
+      "ema55_dist": 0.2016217360077129,
+      "regime": "RANGING"
+    },
+    {
+      "name": "CHEEMS",
+      "symbol": "1000CHEEMS/USDT:USDT",
+      "rsi": 26.520446828186337,
+      "rsi_rising": false,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -5.863495900270004,
+      "regime": "EXTREME_FEAR"
+    },
+    {
+      "name": "MEME",
+      "symbol": "MEME/USDT:USDT",
+      "rsi": 27.93398683508505,
+      "rsi_rising": false,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -7.341503644783249,
+      "regime": "EXTREME_FEAR"
+    },
+    {
+      "name": "CHILLGUY",
+      "symbol": "CHILLGUY/USDT:USDT",
+      "rsi": 33.25385298895152,
+      "rsi_rising": false,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -5.297843850681944,
+      "regime": "TRANSITION"
+    },
+    {
+      "name": "GRIFFAIN",
+      "symbol": "GRIFFAIN/USDT:USDT",
+      "rsi": 35.28332041984574,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -6.071104337678731,
+      "regime": "TRANSITION"
+    },
+    {
+      "name": "SHIB",
+      "symbol": "1000SHIB/USDT:USDT",
+      "rsi": 35.57363918336671,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -4.391522591556205,
+      "regime": "RANGING"
+    },
+    {
+      "name": "SPX",
+      "symbol": "SPX/USDT:USDT",
+      "rsi": 35.59829637537237,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -5.181957681321816,
+      "regime": "TRANSITION"
+    },
+    {
+      "name": "HIGH",
+      "symbol": "HIGH/USDT:USDT",
+      "rsi": 36.121905831791935,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -2.6451617059978827,
+      "regime": "TRANSITION"
+    },
+    {
+      "name": "MOG",
+      "symbol": "1000000MOG/USDT:USDT",
+      "rsi": 36.16721428420289,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -6.086440639367555,
+      "regime": "TRENDING"
+    },
+    {
+      "name": "BOME",
+      "symbol": "BOME/USDT:USDT",
+      "rsi": 36.34033824591114,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -3.435675768138665,
+      "regime": "TRANSITION"
+    },
+    {
+      "name": "ANIME",
+      "symbol": "ANIME/USDT:USDT",
+      "rsi": 36.40328450872936,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -4.159414684989169,
+      "regime": "RANGING"
+    },
+    {
+      "name": "PNUT",
+      "symbol": "PNUT/USDT:USDT",
+      "rsi": 36.713132039676935,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -3.588166166803471,
+      "regime": "RANGING"
+    },
+    {
+      "name": "BABYDOGE",
+      "symbol": "1000000BABYDOGE/USDT:USDT",
+      "rsi": 36.76049411149877,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -3.068763896826866,
+      "regime": "TRENDING"
+    },
+    {
+      "name": "TRU",
+      "symbol": "TRU/USDT:USDT",
+      "rsi": 37.489144525367045,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -3.860941030149511,
+      "regime": "TRENDING"
+    },
+    {
+      "name": "MTL",
+      "symbol": "MTL/USDT:USDT",
+      "rsi": 37.49207399183124,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -3.1012072200769265,
+      "regime": "TRANSITION"
+    },
+    {
+      "name": "ZEREBRO",
+      "symbol": "ZEREBRO/USDT:USDT",
+      "rsi": 37.97254887355723,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -3.398767610537423,
+      "regime": "TRANSITION"
+    },
+    {
+      "name": "LQTY",
+      "symbol": "LQTY/USDT:USDT",
+      "rsi": 38.43584118054855,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -2.867003829067134,
+      "regime": "TRANSITION"
+    },
+    {
+      "name": "BIGTIME",
+      "symbol": "BIGTIME/USDT:USDT",
+      "rsi": 39.21950217451857,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -3.7258047207471376,
+      "regime": "RANGING"
+    },
+    {
+      "name": "MOODENG",
+      "symbol": "MOODENG/USDT:USDT",
+      "rsi": 39.495286880357405,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -5.117280393404055,
+      "regime": "RANGING"
+    },
+    {
+      "name": "EPIC",
+      "symbol": "EPIC/USDT:USDT",
+      "rsi": 40.28982850959984,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -5.109744358071625,
+      "regime": "RANGING"
+    },
+    {
+      "name": "AIXBT",
+      "symbol": "AIXBT/USDT:USDT",
+      "rsi": 40.64087482779722,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": 0.7132968942399155,
+      "regime": "TRANSITION"
+    },
+    {
+      "name": "FLOKI",
+      "symbol": "1000FLOKI/USDT:USDT",
+      "rsi": 41.20135216233813,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -2.700386687244362,
+      "regime": "RANGING"
+    },
+    {
+      "name": "FORM",
+      "symbol": "FORM/USDT:USDT",
+      "rsi": 41.22725526831366,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": 3.7529670450788863,
+      "regime": "TRANSITION"
+    },
+    {
+      "name": "SUPER",
+      "symbol": "SUPER/USDT:USDT",
+      "rsi": 41.43584682926987,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -1.7756174765067987,
+      "regime": "TRANSITION"
+    },
+    {
+      "name": "SKL",
+      "symbol": "SKL/USDT:USDT",
+      "rsi": 42.2197332822379,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -1.8182451207488033,
+      "regime": "RANGING"
+    },
+    {
+      "name": "JASMY",
+      "symbol": "JASMY/USDT:USDT",
+      "rsi": 44.305094879219766,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -0.2947520203158909,
+      "regime": "RANGING"
+    },
+    {
+      "name": "HOOK",
+      "symbol": "HOOK/USDT:USDT",
+      "rsi": 45.70929439905718,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": -5.800730549157178,
+      "regime": "TRENDING"
+    },
+    {
+      "name": "KAITO",
+      "symbol": "KAITO/USDT:USDT",
+      "rsi": 56.29504470751601,
+      "rsi_rising": true,
+      "efr_score": 2,
+      "efr_trigger": false,
+      "ema55_dist": 4.70733884622003,
+      "regime": "TRENDING"
+    }
+  ],
+  "extremeFear": [
+    {
+      "name": "TRUMP",
+      "rsi": 24.9847546578642,
+      "rsi_rising": true
+    },
+    {
+      "name": "CAT",
+      "rsi": 27.367223609998092,
+      "rsi_rising": true
+    },
+    {
+      "name": "TURBO",
+      "rsi": 29.178197288063657,
+      "rsi_rising": true
+    },
+    {
+      "name": "CHEEMS",
+      "rsi": 26.520446828186337,
+      "rsi_rising": false
+    },
+    {
+      "name": "MEME",
+      "rsi": 27.93398683508505,
+      "rsi_rising": false
+    }
+  ],
+  "frcCandidates": [
+    {
+      "name": "PEOPLE",
+      "symbol": "PEOPLE/USDT:USDT",
+      "ema55_dist": 0.5832765471021759
+    },
+    {
+      "name": "POPCAT",
+      "symbol": "POPCAT/USDT:USDT",
+      "ema55_dist": 0.2016217360077129
+    },
+    {
+      "name": "AIXBT",
+      "symbol": "AIXBT/USDT:USDT",
+      "ema55_dist": 0.7132968942399155
+    },
+    {
+      "name": "FORM",
+      "symbol": "FORM/USDT:USDT",
+      "ema55_dist": 3.7529670450788863
+    },
+    {
+      "name": "KAITO",
+      "symbol": "KAITO/USDT:USDT",
+      "ema55_dist": 4.70733884622003
+    },
+    {
+      "name": "RSR",
+      "symbol": "RSR/USDT:USDT",
+      "ema55_dist": 2.7317697772515612
+    },
+    {
+      "name": "AGLD",
+      "symbol": "AGLD/USDT:USDT",
+      "ema55_dist": 5.483729465559454
+    },
+    {
+      "name": "BAN",
+      "symbol": "BAN/USDT:USDT",
+      "ema55_dist": 0.5927480650353948
+    }
+  ],
+  "trending": [
+    {
+      "name": "TRUMP",
+      "adx": 34.096440845941565,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "CAT",
+      "adx": 34.03148131992387,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "TURBO",
+      "adx": 26.414073947198656,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "RED",
+      "adx": 31.76315268027849,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "SWARMS",
+      "adx": 29.61991821585787,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "SHELL",
+      "adx": 32.03238539599273,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "ACT",
+      "adx": 34.969090741089325,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "MOG",
+      "adx": 26.749213511645326,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "BABYDOGE",
+      "adx": 27.50059872568726,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "TRU",
+      "adx": 25.205383345042463,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "HOOK",
+      "adx": 25.017553397902766,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "KAITO",
+      "adx": 25.959375183821287,
+      "ribbon": "BULL"
+    },
+    {
+      "name": "GUN",
+      "adx": 39.56194858567387,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "AGLD",
+      "adx": 41.826659048089134,
+      "ribbon": "BULL"
+    },
+    {
+      "name": "PIPPIN",
+      "adx": 33.09568341338903,
+      "ribbon": "BEAR"
+    },
+    {
+      "name": "ANKR",
+      "adx": 28.825911436009385,
+      "ribbon": "BULL"
+    }
+  ]
+}

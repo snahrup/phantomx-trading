@@ -1,0 +1,10 @@
+
+  ★ Nexus Gateway running on http://localhost:3800
+  ├── Health:   /api/health
+  ├── Sessions: /api/sessions
+  ├── Tasks:    /api/tasks
+  ├── Memory:   /api/memory
+  ├── Activity: /api/activity
+  ├── Convos:   /api/conversations/*
+  └── Events:   /api/events (SSE)
+

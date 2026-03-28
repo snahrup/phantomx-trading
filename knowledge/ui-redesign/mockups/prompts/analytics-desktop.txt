@@ -1,0 +1,68 @@
+Generate a high-fidelity UI mockup of an "Analytics" page at 1920x1080 resolution. This is part of an AI company orchestration dashboard for "Phantom Trading Co." — a crypto trading platform.
+
+VISUAL STYLE:
+- Warm cream background #FAF9F6, terracotta accent #C2572A, warm near-black text #2D2A26
+- Clean sans-serif font (Inter), 12px radius cards, subtle warm shadows
+- Nearly invisible borders #E8E5E0, generous whitespace
+- Anthropic Claude-inspired: open, fluid, warm, no harsh lines
+
+LAYOUT:
+- Left sidebar (240px, warm gray #F5F2ED): "Analytics" nav item active
+- Top status bar: company name, mode, agent count
+
+MAIN CONTENT:
+
+HEADER:
+- "Analytics" in 28px semibold
+- Right side: date range preset buttons [7D] [30D (active, terracotta)] [90D] [YTD] [All] [Custom]
+
+TOP SECTION: Cumulative P&L Chart (full width, 350px height)
+- Large area chart showing cumulative P&L over 30 days
+- Terracotta (#C2572A) fill with 20% opacity, solid terracotta line
+- X-axis: dates (Feb 6 through Mar 7)
+- Y-axis: dollar values ($0 to $2,500)
+- Chart shows gradual upward trend with some dips
+- Current value label: "+$2,147.30" in 22px semibold green
+- "30-day return: +10.7%" subtitle in green
+- Warm cream chart background, subtle grid lines #E8E5E0
+
+MIDDLE SECTION (two columns, 50/50):
+
+LEFT: "Strategy Performance" card
+- Table with columns: Strategy | Trades | Win Rate | Avg Win | Avg Loss | Expectancy | Total P&L
+- Row 1: "EMA Ribbon Trend" | 10 | 70% | +$185 | -$92 | +$101.90 | +$1,019
+- Row 2: "Liquidity Sweep" | 6 | 67% | +$220 | -$145 | +$98.17 | +$589
+- Row 3: "BTC Weekend Fade" | 7 | 29% | +$310 | -$120 | -$1.43 | -$10
+- Row 4: "Manual Trades" | 12 | 58% | +$95 | -$65 | +$27.70 | +$332
+- Win rate shown as colored: green >60%, amber 40-60%, red <40%
+- Expectancy: green if positive, red if negative
+- Total P&L colored accordingly
+- Clean spacing, no borders, alternating subtle backgrounds
+
+RIGHT: "Agent Performance" card
+- Table with columns: Agent | Heartbeats | Success Rate | Avg Duration | Cost | Cost/Run
+- Row 1: CEO | 142 | 94.4% | 1m 12s | $410.00 | $2.89
+- Row 2: Strategy Architect | 98 | 91.8% | 2m 05s | $215.00 | $2.19
+- Row 3: Scanner Monitor | 312 | 88.1% | 0m 35s | $180.00 | $0.58
+- Row 4: Founding Engineer | 87 | 97.7% | 1m 45s | $180.00 | $2.07
+- Row 5: Execution Trader | 64 | 95.3% | 0m 55s | $155.00 | $2.42
+- Row 6: Market Research | 76 | 93.4% | 1m 30s | $110.00 | $1.45
+- Success rate colored: green >90%, amber 80-90%, red <80%
+
+BOTTOM SECTION: "Trading Journal" card (full width)
+- Heading: "Lessons & Learnings" with folder icon
+- Grid of 2 columns:
+  Left column entries:
+  - 📄 "Never fight the 4H trend" — "Lost $340 on BTCUSDT counter-trend short. The 4H EMA ribbon was clearly bullish." — Mar 3, 2026
+  - 📄 "SOL funding rates spike before dumps" — "Observed 3x consecutive instances of SOL funding >0.05% preceding 5%+ drops." — Mar 5, 2026
+  Right column entries:
+  - 📄 "BTC weekend fades work best Sat 20:00-Sun 04:00 UTC" — "Win rate improves from 29% to 55% when filtered to this window." — Mar 6, 2026
+  - 📄 "Position size matters more than entry" — "All losing streaks correlated with >3% equity positions. Keep to 1-2%." — Mar 4, 2026
+- Each learning card: subtle warm background, left border in terracotta, 8px radius
+
+OVERALL FEEL:
+- Data-rich but clean — every chart and table tells a story
+- The P&L chart is the hero element, showing the company's trajectory
+- Strategy and agent performance side by side for quick comparison
+- Trading journal adds qualitative context to quantitative data
+- Warm, professional analytics dashboard — not a cold data dump

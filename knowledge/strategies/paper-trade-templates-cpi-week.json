@@ -1,0 +1,289 @@
+{
+  "$schema": "paper-trade-templates-v1",
+  "title": "CPI Week Paper Trade Templates — March 11-12, 2026",
+  "created": "2026-03-08T15:00:00Z",
+  "createdBy": "head-of-trading",
+  "equity": 154.93,
+  "recoveryMultiplier": 0.5,
+  "leverage": 50,
+  "tradingMode": "paper",
+  "note": "Pre-calculated templates ready for CPI catalyst. Prices are reference snapshots from March 8 ~15:00 UTC. Entry prices will need adjustment at signal time. Position sizing is fixed based on current equity.",
+
+  "templates": [
+    {
+      "id": "paper-001-op-efr",
+      "priority": 1,
+      "pair": "OP/USDT:USDT",
+      "strategyId": "strat-efr-v1.1",
+      "strategyName": "Extreme Fear Reversal v1.1",
+      "direction": "long",
+      "tier": "small-cap",
+      "status": "READY — 3/5 EFR conditions met (highest in universe)",
+      "remainingConditions": ["MACD histogram cross above 0", "Bollinger Band lower touch"],
+
+      "referencePrice": 0.1152,
+      "snapshotTime": "2026-03-08T15:00:00Z",
+      "indicators": {
+        "rsi14": 33.9,
+        "rsiDirection": "rising",
+        "adx": 28.9,
+        "ema55Distance": "-3.2%",
+        "fundingPredicted": "no significant edge",
+        "fg": 12
+      },
+
+      "execution": {
+        "entryType": "limit",
+        "entryRule": "0.2% below 4H close at trigger candle",
+        "entryEstimate": 0.1150,
+        "stopLoss": 0.1127,
+        "stopDistancePercent": 2.0,
+        "tp1": 0.1196,
+        "tp1DistancePercent": 4.0,
+        "tp1Action": "close 50%, move stop to breakeven",
+        "tp2Rule": "trail remainder at 2.5 ATR",
+        "maxHoldHours": 48
+      },
+
+      "sizing": {
+        "riskPercent": 0.0075,
+        "riskAmount": 0.58,
+        "notional": 29.00,
+        "margin": 0.58,
+        "units": 252,
+        "marginUtilizationPercent": 0.37
+      },
+
+      "triggerChecklist": [
+        "RSI(14) < 35 AND rising — YES (33.9 rising)",
+        "MACD histogram negative but improving — PARTIAL",
+        "EMA(8) crosses above EMA(21) — NOT YET",
+        "Bollinger Band lower touch (within 2%) — NOT YET",
+        "F&G < 20 — YES (12)"
+      ],
+
+      "signalTemplate": {
+        "signalId": "paper-op-efr-cpi-001",
+        "source": "scanner-monitor",
+        "pair": "OP/USDT:USDT",
+        "direction": "long",
+        "confidence": 72,
+        "strategyId": "strat-efr-v1.1",
+        "strategyName": "Extreme Fear Reversal v1.1",
+        "regime": "volatile",
+        "regimeSource": "api",
+        "timeframe": "4h",
+        "tier": "small-cap"
+      }
+    },
+
+    {
+      "id": "paper-002-inj-efr",
+      "priority": 2,
+      "pair": "INJ/USDT:USDT",
+      "strategyId": "strat-efr-v1.1",
+      "strategyName": "Extreme Fear Reversal v1.1",
+      "direction": "long",
+      "tier": "small-cap",
+      "status": "WATCH — RSI 35.7 exiting EFR zone. Window closing.",
+      "remainingConditions": ["RSI must dip back below 35 OR re-enter on next leg down", "MACD cross", "EMA cross"],
+
+      "referencePrice": 2.825,
+      "snapshotTime": "2026-03-08T15:00:00Z",
+      "indicators": {
+        "rsi14": 35.7,
+        "rsiDirection": "rising",
+        "adx": 19.7,
+        "ema55Distance": "-5.8%",
+        "fundingPredicted": "-29% ann",
+        "fundingSettled": "6 consecutive negative (-29% ann settled)",
+        "fg": 12
+      },
+
+      "execution": {
+        "entryType": "limit",
+        "entryRule": "0.2% below 4H close at trigger candle",
+        "entryEstimate": 2.819,
+        "stopLoss": 2.763,
+        "stopDistancePercent": 2.0,
+        "tp1": 2.932,
+        "tp1DistancePercent": 4.0,
+        "tp1Action": "close 50%, move stop to breakeven",
+        "tp2Rule": "trail remainder at 2.5 ATR",
+        "maxHoldHours": 48
+      },
+
+      "sizing": {
+        "riskPercent": 0.0075,
+        "riskAmount": 0.58,
+        "notional": 29.00,
+        "margin": 0.58,
+        "units": 10.3,
+        "marginUtilizationPercent": 0.37
+      },
+
+      "triggerChecklist": [
+        "RSI(14) < 35 AND rising — NO (35.7, exiting zone)",
+        "MACD histogram improving — YES (but still negative)",
+        "EMA(8) crosses above EMA(21) — NOT YET",
+        "F&G < 20 — YES (12)",
+        "NOTE: INJ may re-enter EFR zone if CPI causes second leg down"
+      ]
+    },
+
+    {
+      "id": "paper-003-wif-efr",
+      "priority": 3,
+      "pair": "WIF/USDT:USDT",
+      "strategyId": "strat-efr-v1.1",
+      "strategyName": "Extreme Fear Reversal v1.1",
+      "direction": "long",
+      "tier": "small-cap",
+      "status": "DO NOT ENTER — active capitulation. Highest conviction WHEN reversal comes.",
+      "remainingConditions": ["ALL — RSI must stop falling, begin rising, then meet all 5 conditions"],
+
+      "referencePrice": 0.178,
+      "snapshotTime": "2026-03-08T15:00:00Z",
+      "indicators": {
+        "rsi14": 13.1,
+        "rsiDirection": "falling",
+        "ema55Distance": "-9.2%",
+        "fundingPredicted": "-96% ann",
+        "fundingNote": "Shorts paying massively but price still falling. Maximum squeeze fuel.",
+        "fg": 12
+      },
+
+      "execution": {
+        "entryType": "limit",
+        "entryRule": "0.2% below 4H close at trigger candle (ONLY after RSI reverses)",
+        "entryEstimate": 0.1776,
+        "stopLoss": 0.1740,
+        "stopDistancePercent": 2.0,
+        "tp1": 0.1847,
+        "tp1DistancePercent": 4.0,
+        "tp1Action": "close 50%, move stop to breakeven",
+        "tp2Rule": "trail remainder at 2.5 ATR",
+        "maxHoldHours": 48,
+        "specialNote": "DO NOT ENTER until RSI prints first rising candle. Capitulation can go deeper."
+      },
+
+      "sizing": {
+        "riskPercent": 0.0075,
+        "riskAmount": 0.58,
+        "notional": 29.00,
+        "margin": 0.58,
+        "units": 163,
+        "marginUtilizationPercent": 0.37
+      },
+
+      "triggerChecklist": [
+        "RSI(14) RISING — NO (13.1, still FALLING)",
+        "RSI(14) < 35 — YES (deeply)",
+        "MACD histogram improving — NOT YET",
+        "EMA(8) approaching EMA(21) — NOT YET",
+        "Bollinger Band touch — UNKNOWN (need fresh BB calc)",
+        "WAIT FOR: First RSI rising candle = earliest possible setup signal"
+      ]
+    },
+
+    {
+      "id": "paper-004-near-frc",
+      "priority": 4,
+      "pair": "NEAR/USDT:USDT",
+      "strategyId": "strat-frc-v1.0",
+      "strategyName": "Funding Rate Carry v1.0",
+      "direction": "long",
+      "tier": "mid-cap",
+      "status": "BLOCKED — price gate PASSED but funding gate BLOCKED (0/3 settled negatives)",
+      "remainingConditions": ["3 consecutive settled negative funding rates (currently 0/3)", "RSI < 65"],
+
+      "referencePrice": 1.234,
+      "snapshotTime": "2026-03-08T15:00:00Z",
+      "indicators": {
+        "rsi14": 39,
+        "rsiDirection": "rising",
+        "ema55": 1.221,
+        "ema55Gate": "PASSED (price $1.234 > EMA55 $1.221)",
+        "fundingPredicted": "-0.036%/8h (-39% ann)",
+        "fundingSettled": "+0.010%/8h (+11% ann) — ALL 10 settled periods POSITIVE",
+        "consecutiveNegativeSettled": 0,
+        "earliestFrcTrigger": "After 08:00 UTC March 9 IF next 3 settlements go negative (unlikely given history)"
+      },
+
+      "execution": {
+        "entryType": "limit",
+        "entryRule": "Limit at current bid (passive fill)",
+        "entryEstimate": 1.234,
+        "stopLoss": 1.222,
+        "stopDistancePercent": 1.0,
+        "tp1": 1.253,
+        "tp1DistancePercent": 1.5,
+        "tp1Action": "close 50%, trail remainder at 1.5 ATR",
+        "tp2Rule": "trail at 1.5 ATR",
+        "maxHoldDays": 7,
+        "monitorRule": "Check funding every 8h — exit if positive 2x consecutive"
+      },
+
+      "sizing": {
+        "riskPercent": 0.01,
+        "riskAmount": 0.77,
+        "notional": 77.00,
+        "margin": 1.54,
+        "units": 62.4,
+        "marginUtilizationPercent": 0.99
+      },
+
+      "triggerChecklist": [
+        "Price > EMA(55) — YES ($1.234 > $1.221)",
+        "3 consecutive settled negative rates — NO (0/3, all positive)",
+        "Annualized settled < -5% — NO (currently +11% ann settled)",
+        "RSI < 65 — YES (39)",
+        "CRITICAL: Use SETTLED rates only. Predicted -39% ann is informational only."
+      ]
+    }
+  ],
+
+  "cpiScenarios": {
+    "bullishCPI": {
+      "description": "CPI comes in below expectations (disinflation). Risk-on rally.",
+      "probability": "35%",
+      "expectedAction": [
+        "BTC rally toward $70K+ — EMA Ribbon v2.1 may trigger if ribbon aligns",
+        "Alt squeeze — WIF, INJ, OP reversal accelerates. EFR triggers likely on multiple pairs.",
+        "Funding rates spike more negative as shorts get squeezed — FRC opportunities expand"
+      ],
+      "priorityTrades": ["paper-001-op-efr", "paper-003-wif-efr"],
+      "note": "Highest-conviction scenario for paper trades. Multiple simultaneous signals possible."
+    },
+    "neutralCPI": {
+      "description": "CPI in line with expectations. Minimal reaction.",
+      "probability": "40%",
+      "expectedAction": [
+        "Continued ranging. No immediate triggers.",
+        "Alt capitulation may continue or stabilize.",
+        "Focus shifts to next catalyst (FOMC, earnings)"
+      ],
+      "priorityTrades": [],
+      "note": "Patience continues. No forced trades."
+    },
+    "bearishCPI": {
+      "description": "CPI above expectations (sticky inflation). Risk-off selloff.",
+      "probability": "25%",
+      "expectedAction": [
+        "BTC drops toward $64-65K support. Kill conditions not breached.",
+        "Alts accelerate downward. WIF/INJ deepen capitulation.",
+        "DO NOT chase shorts — our strategies are contrarian long, not momentum short.",
+        "EFR setups DEEPEN but don't trigger (RSI falls further)"
+      ],
+      "priorityTrades": [],
+      "note": "Watchlist only. Deeper fear = higher-conviction entries LATER."
+    }
+  },
+
+  "constraints": {
+    "maxSimultaneousPaperTrades": 2,
+    "rule": "At recovery equity ($154.93), max 2 concurrent positions. 1 major/mid + 1 small, or 2 smalls from different sectors.",
+    "paperTradesNeeded": "9 more (1/10 target). CPI week could provide 2-4 if bullish.",
+    "marginBudget": "Total available margin ~$154.93. Templates above use max $2.12 combined margin (1.4% utilization). Conservative."
+  }
+}

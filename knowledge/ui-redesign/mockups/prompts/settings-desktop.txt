@@ -1,0 +1,64 @@
+Generate a high-fidelity UI mockup of a "Settings" page at 1920x1080 resolution, showing the "Risk Management" tab. This is part of an AI company orchestration dashboard for "Phantom Trading Co."
+
+VISUAL STYLE:
+- Warm cream background #FAF9F6, terracotta accent #C2572A, warm near-black text #2D2A26
+- Clean sans-serif font (Inter), 12px radius cards, subtle warm shadows
+- Nearly invisible borders #E8E5E0, generous whitespace
+- Anthropic Claude-inspired: open, fluid, warm, no harsh lines
+
+LAYOUT:
+- Left sidebar (240px, warm gray #F5F2ED): "Settings" nav item active
+- Top status bar
+
+MAIN CONTENT:
+
+HEADER:
+- "Settings" in 28px semibold
+
+TAB BAR (horizontal tabs):
+- [Company] [Risk Management (active, terracotta underline)] [Trading] [Integrations]
+- Active tab has terracotta bottom border and slightly bolder text
+
+RISK MANAGEMENT TAB CONTENT:
+
+Section 1: "Position Limits" card (white, 12px radius, subtle shadow)
+- Form fields, each on its own row with label on left, input on right:
+  - "Max position size (% of equity):" — input showing "5" with "%" suffix, 8px radius input
+  - "Max total exposure:" — input showing "$50,000" with dollar formatting
+  - "Max leverage per position:" — input showing "50" with "x" suffix
+  - "Max concurrent positions:" — input showing "8"
+- Each input: subtle border #E8E5E0, 8px radius, terracotta focus ring on the active one
+- Labels in 14px medium #5C5752
+- Values in 14px regular #2D2A26
+
+Section 2: "Loss Limits" card
+- "Daily loss limit (kill switch trigger):" — input showing "-$1,000" in red text
+- "Weekly loss limit:" — input showing "-$3,000"
+- "Max drawdown before auto-pause:" — input showing "15" with "%" suffix
+- Small info text below daily loss: "When daily losses exceed this threshold, the kill switch activates automatically and all positions are closed." in 12px muted text
+
+Section 3: "Funding Rate Limits" card
+- "Max funding rate cost per 8h:" — input showing "0.03" with "%" suffix
+- "Auto-close on negative funding exceeding:" — input showing "0.05" with "%" suffix
+- Info text: "Positions with funding rates exceeding this threshold will be flagged for review." in 12px muted
+
+Section 4: "Current Risk Status" card (read-only display)
+- Live status indicators:
+  - "Kill Switch: ● ARMED" — green dot and text
+  - "Current Exposure: $27,500 / $50,000 (55%)" — terracotta progress bar
+  - "Daily P&L: -$350 / -$1,000 (35%)" — green progress bar (within limits)
+  - "Open Positions: 3 / 8" — text display
+  - "Highest Leverage: 50x on BTCUSDT" — amber warning text
+- This section has a slightly different warm background (warm gray #F3F1ED) to distinguish it as read-only
+
+BOTTOM:
+- [Save Changes] terracotta primary button, right-aligned
+- [Reset to Defaults] ghost button next to it
+- "Last saved: 2 hours ago" muted text
+
+OVERALL FEEL:
+- Clean settings form — not overwhelming, well-organized into logical sections
+- The "Current Risk Status" section bridges configuration and live state
+- Form inputs are clean with clear labels
+- Warm, professional settings page — not a boring admin panel
+- The risk management focus makes this feel like a serious trading platform

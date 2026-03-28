@@ -126,8 +126,8 @@ export default function AgentFeedPanel({ tradeCloseEvents, onDismissClose }: Age
   const activeMissionIssueId = useTradingStore(s => s.activeMissionIssueId);
   const focusedSymbol = useTradingStore(s => s.focusedPositionSymbol);
 
-  const activity = useAxonStore(s => s.agentEvents);
-  const agents = useAxonStore(s => s.agents);
+  const activity = useAxonStore(s => s.agentEvents ?? []);
+  const agents = useAxonStore(s => s.agents ?? []);
   const reconnecting = useAxonStore(s => s.reconnecting);
   const fetchActivity = useAxonStore(s => s.fetchActivity);
 

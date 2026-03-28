@@ -26,7 +26,8 @@ const QUICK_FILTERS = [
   { id: 'trending', label: 'Trending', color: 'text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10' },
 ];
 
-export default function TokenSelector({ selected, onChange, onFilterChange, activeFilter }: TokenSelectorProps) {
+export default function TokenSelector({ selected: rawSelected, onChange, onFilterChange, activeFilter }: TokenSelectorProps) {
+  const selected = rawSelected ?? [];
   const [search, setSearch] = useState('');
   const [symbols, setSymbols] = useState<PhemexSymbol[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);

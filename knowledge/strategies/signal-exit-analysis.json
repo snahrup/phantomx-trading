@@ -1,0 +1,100 @@
+{
+  "analysisDate": "2026-03-07T19:33:54.007642",
+  "purpose": "Signal exit parameter sensitivity for EMA Ribbon v2.0",
+  "candles": 500,
+  "variants": [
+    {
+      "variant": "baseline",
+      "trades": 9,
+      "wins": 5,
+      "losses": 4,
+      "win_rate": 0.5555555555555556,
+      "total_pnl": 9.142725354581492,
+      "total_pnl_pct": 4.571362677290746,
+      "avg_win": 4.478197457845802,
+      "avg_loss": 3.3120654836618795,
+      "avg_rr": 1.3520860260572583,
+      "avg_r_multiple": 0.5591927936885847,
+      "profit_factor": 1.6901075325715729,
+      "max_dd": 3.179814594249634,
+      "sharpe": 1.5613971287662596,
+      "avg_hold_candles": 5.0
+    },
+    {
+      "variant": "tighten_only",
+      "trades": 9,
+      "wins": 7,
+      "losses": 2,
+      "win_rate": 0.7777777777777778,
+      "total_pnl": 14.879585726365976,
+      "total_pnl_pct": 7.439792863182988,
+      "avg_win": 3.281960692627929,
+      "avg_loss": 4.047069561014763,
+      "avg_rr": 0.810947438176726,
+      "avg_r_multiple": 0.7086157258106401,
+      "profit_factor": 2.8383160336185407,
+      "max_dd": 2.087237113472341,
+      "sharpe": 2.6794542962469237,
+      "avg_hold_candles": 5.222222222222222
+    },
+    {
+      "variant": "min_r",
+      "trades": 9,
+      "wins": 5,
+      "losses": 4,
+      "win_rate": 0.5555555555555556,
+      "total_pnl": 9.142725354581492,
+      "total_pnl_pct": 4.571362677290746,
+      "avg_win": 4.478197457845802,
+      "avg_loss": 3.3120654836618795,
+      "avg_rr": 1.3520860260572583,
+      "avg_r_multiple": 0.5591927936885847,
+      "profit_factor": 1.6901075325715729,
+      "max_dd": 3.179814594249634,
+      "sharpe": 1.5613971287662596,
+      "avg_hold_candles": 5.0
+    },
+    {
+      "variant": "no_signal",
+      "trades": 9,
+      "wins": 5,
+      "losses": 4,
+      "win_rate": 0.5555555555555556,
+      "total_pnl": 5.753419499107818,
+      "total_pnl_pct": 2.876709749553909,
+      "avg_win": 4.441083281555966,
+      "avg_loss": 4.112999227168003,
+      "avg_rr": 1.0797675944650893,
+      "avg_r_multiple": 0.4699286906539841,
+      "profit_factor": 1.3497094930813616,
+      "max_dd": 4.1135417439373985,
+      "sharpe": 0.9551149437560913,
+      "avg_hold_candles": 5.666666666666667
+    }
+  ],
+  "exitReasonBreakdown": {
+    "baseline": {
+      "stop_loss": 2,
+      "take_profit": 4,
+      "time_exit": 1,
+      "signal_exit": 2
+    },
+    "tighten_only": {
+      "stop_loss": 4,
+      "take_profit": 4,
+      "time_exit": 1
+    },
+    "min_r": {
+      "stop_loss": 2,
+      "take_profit": 4,
+      "time_exit": 1,
+      "signal_exit": 2
+    },
+    "no_signal": {
+      "stop_loss": 4,
+      "take_profit": 4,
+      "time_exit": 1
+    }
+  },
+  "recommendation": "tighten_only"
+}

@@ -1,0 +1,55 @@
+{
+  "description": "MANDATORY scan list — Scanner MUST analyze ALL of these EVERY heartbeat. Board directive from Steve.",
+  "lastUpdated": "2026-03-08",
+  "priority": "CRITICAL",
+  "instructions": "Scan these symbols FIRST before any other analysis. Do NOT skip any. Do NOT cherry-pick 'top candidates'. Scan ALL of them.",
+  "priority_micro_caps": {
+    "description": "Steve's focus — these MUST be scanned every single heartbeat, no exceptions",
+    "symbols": [
+      "GUN/USDT:USDT", "PHA/USDT:USDT", "FLOW/USDT:USDT", "HOOK/USDT:USDT",
+      "ACH/USDT:USDT", "JASMY/USDT:USDT", "MAGIC/USDT:USDT", "SPELL/USDT:USDT",
+      "TURBO/USDT:USDT", "POPCAT/USDT:USDT", "MEW/USDT:USDT", "BOME/USDT:USDT",
+      "PNUT/USDT:USDT", "ACT/USDT:USDT", "GOAT/USDT:USDT", "MOODENG/USDT:USDT",
+      "FARTCOIN/USDT:USDT", "AIXBT/USDT:USDT", "TRUMP/USDT:USDT", "ANIME/USDT:USDT",
+      "MUBARAK/USDT:USDT", "PARTI/USDT:USDT", "STO/USDT:USDT", "PIPPIN/USDT:USDT",
+      "GRIFFAIN/USDT:USDT", "ZEREBRO/USDT:USDT", "SWARMS/USDT:USDT", "COOKIE/USDT:USDT",
+      "1000PEPE/USDT:USDT", "1000FLOKI/USDT:USDT", "1000BONK/USDT:USDT",
+      "1000SHIB/USDT:USDT", "SPX/USDT:USDT", "DRIFT/USDT:USDT", "BAN/USDT:USDT",
+      "RED/USDT:USDT", "KAITO/USDT:USDT", "FORM/USDT:USDT", "EPIC/USDT:USDT",
+      "LAYER/USDT:USDT", "IP/USDT:USDT", "SHELL/USDT:USDT", "GPS/USDT:USDT",
+      "RSR/USDT:USDT", "MTL/USDT:USDT", "SKL/USDT:USDT", "AGLD/USDT:USDT",
+      "ANKR/USDT:USDT", "PEOPLE/USDT:USDT", "HIGH/USDT:USDT", "LQTY/USDT:USDT",
+      "TRU/USDT:USDT", "SUPER/USDT:USDT", "BIGTIME/USDT:USDT", "MEME/USDT:USDT",
+      "CHILLGUY/USDT:USDT", "1000CAT/USDT:USDT", "1000CHEEMS/USDT:USDT",
+      "1000WHY/USDT:USDT", "1000000BABYDOGE/USDT:USDT", "1000000MOG/USDT:USDT"
+    ]
+  },
+  "mid_caps": {
+    "description": "Mid-cap alts — scan after micro-caps",
+    "symbols": [
+      "WIF/USDT:USDT", "DYDX/USDT:USDT", "GMX/USDT:USDT", "RUNE/USDT:USDT",
+      "LDO/USDT:USDT", "CRV/USDT:USDT", "COMP/USDT:USDT", "GALA/USDT:USDT",
+      "SAND/USDT:USDT", "MANA/USDT:USDT", "AXS/USDT:USDT", "THETA/USDT:USDT",
+      "GRT/USDT:USDT", "AR/USDT:USDT", "PYTH/USDT:USDT", "TIA/USDT:USDT",
+      "ORDI/USDT:USDT", "MASK/USDT:USDT", "BLUR/USDT:USDT", "ENJ/USDT:USDT",
+      "SUSHI/USDT:USDT", "KAS/USDT:USDT", "STRK/USDT:USDT", "ETHFI/USDT:USDT",
+      "ENA/USDT:USDT", "WLD/USDT:USDT", "BEAM/USDT:USDT", "EIGEN/USDT:USDT",
+      "GRASS/USDT:USDT", "HYPE/USDT:USDT", "VIRTUAL/USDT:USDT", "PENGU/USDT:USDT",
+      "BERA/USDT:USDT", "SONIC/USDT:USDT"
+    ]
+  },
+  "large_caps": {
+    "description": "Large caps — scan last, these are already well-covered",
+    "symbols": [
+      "BTC/USDT:USDT", "ETH/USDT:USDT", "XRP/USDT:USDT", "SOL/USDT:USDT",
+      "BNB/USDT:USDT", "ADA/USDT:USDT", "DOGE/USDT:USDT", "LINK/USDT:USDT",
+      "DOT/USDT:USDT", "AVAX/USDT:USDT", "TON/USDT:USDT", "TRX/USDT:USDT",
+      "NEAR/USDT:USDT", "UNI/USDT:USDT", "ATOM/USDT:USDT", "LTC/USDT:USDT",
+      "BCH/USDT:USDT", "HBAR/USDT:USDT", "SUI/USDT:USDT", "FIL/USDT:USDT",
+      "ICP/USDT:USDT", "AAVE/USDT:USDT", "ARB/USDT:USDT", "OP/USDT:USDT",
+      "INJ/USDT:USDT", "STX/USDT:USDT", "RENDER/USDT:USDT", "FET/USDT:USDT",
+      "SEI/USDT:USDT", "APT/USDT:USDT", "TAO/USDT:USDT", "ONDO/USDT:USDT",
+      "JUP/USDT:USDT"
+    ]
+  }
+}

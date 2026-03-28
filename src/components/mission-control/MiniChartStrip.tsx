@@ -20,13 +20,13 @@ interface MiniChartStripProps {
 }
 
 export default function MiniChartStrip({ closeFlashes }: MiniChartStripProps) {
-  const positions = useTradingStore(s => s.positions);
+  const positions = useTradingStore(s => s.positions ?? []);
   const focusedSymbol = useTradingStore(s => s.focusedPositionSymbol);
   const setFocused = useTradingStore(s => s.setFocusedPositionSymbol);
   const setSymbol = useTradingStore(s => s.setSymbol);
-  const maxPositions = useTradingStore(s => s.missionControlConfig.maxConcurrentPositions);
-  const priceHistoryMap = useTradingStore(s => s.positionPriceHistory);
-  const agentActiveSymbols = useTradingStore(s => s.agentActiveSymbols);
+  const maxPositions = useTradingStore(s => s.missionControlConfig?.maxConcurrentPositions ?? 3);
+  const priceHistoryMap = useTradingStore(s => s.positionPriceHistory ?? {});
+  const agentActiveSymbols = useTradingStore(s => s.agentActiveSymbols ?? []);
 
   // Show positions first, then fill remaining slots with agent-active symbols
   const positionSymbols = new Set(positions.map(p => p.symbol));

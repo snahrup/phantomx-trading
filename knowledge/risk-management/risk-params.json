@@ -1,0 +1,249 @@
+{
+  "$schema": "PhantomX Risk Parameters v1.0",
+  "version": "1.0.0",
+  "lastUpdated": "2026-03-07T23:00:00.000Z",
+  "updatedBy": "Risk Officer (e93fc648)",
+  "context": {
+    "accountType": "perpetual_futures",
+    "exchange": "Phemex",
+    "maxPlatformLeverage": 50,
+    "marginMode": "cross",
+    "baseCurrency": "USDT",
+    "note": "At 50x leverage, a 2% adverse price move = 100% position loss. These parameters are calibrated to survive sustained adverse runs while allowing aggressive but controlled trading."
+  },
+  "positionSizing": {
+    "maxRiskPerTrade": {
+      "value": 0.02,
+      "unit": "fraction_of_equity",
+      "description": "Maximum 2% of total equity at risk per trade. This is the dollar amount lost if stop-loss is hit.",
+      "rationale": "At 50x leverage with 56% win rate, 2% risk per trade survives a 10-trade losing streak with 81.7% of equity intact. 1% preferred during recovery periods."
+    },
+    "maxPositionSize": {
+      "value": 0.1,
+      "unit": "fraction_of_equity",
+      "description": "Maximum notional value of any single position as fraction of equity.",
+      "rationale": "Hard ceiling. Even with 50x leverage available, no single position should exceed 10% of equity in notional value. This limits liquidation impact."
+    },
+    "maxPositionSizeRecovery": {
+      "value": 0.05,
+      "unit": "fraction_of_equity",
+      "description": "During drawdown recovery (>5% from peak), max position size drops to 5%.",
+      "rationale": "Feb 13 incident: 31x leverage revenge trade on $131 account. Recovery periods demand smaller sizing."
+    },
+    "kellyFramework": {
+      "winRate": 0.56,
+      "avgWinR": 2.1,
+      "avgLossR": 1,
+      "fullKelly": 0.168,
+      "appliedKelly": 0.084,
+      "volatilityAdjustment": "multiply by (20 / currentATR%) to reduce in high-vol",
+      "effectiveMax": 0.052,
+      "description": "Half-Kelly with ATR adjustment. Yields ~5.2% effective max in normal conditions."
+    }
+  },
+  "exposureLimits": {
+    "maxTotalExposure": {
+      "value": 3,
+      "unit": "multiple_of_equity",
+      "description": "Total notional across all positions must not exceed 3x equity.",
+      "rationale": "FLOW position on March 7 was 16x equity — catastrophic. 3x total exposure allows multiple 50x-leverage micro-positions without portfolio-level overexposure."
+    },
+    "maxSimultaneousPositions": {
+      "value": 3,
+      "description": "Maximum 3 open positions at any time."
+    },
+    "maxCorrelatedPositions": {
+      "value": 2,
+      "description": "Maximum 2 positions in correlated assets (e.g., BTC + ETH both long). Correlation threshold: >0.7 on 30-day rolling basis.",
+      "rationale": "Correlated positions multiply drawdown risk. Two correlated 50x positions can cascade-liquidate together."
+    },
+    "maxLeveragePerPosition": {
+      "value": 50,
+      "unit": "x",
+      "description": "Platform max. Effective leverage is controlled by position size limits, not leverage setting.",
+      "note": "A 2% equity position at 50x leverage risks only 2% of equity on a 2% adverse move. The position SIZE controls risk, not the leverage number."
+    }
+  },
+  "marginLimits": {
+    "maxMarginUtilization": {
+      "value": 0.7,
+      "unit": "fraction",
+      "description": "Maximum 70% of available margin may be used.",
+      "alertThreshold": 0.5,
+      "rationale": "March 7 margin utilization was 93.8% — one adverse tick from cascade liquidation. 70% cap preserves buffer for volatility."
+    },
+    "minFreeMarginFloor": {
+      "value": 20,
+      "unit": "USDT",
+      "description": "Absolute minimum free margin. Below this, no new positions allowed.",
+      "rationale": "On March 7, free margin was $5.61 on $260 equity. Insufficient buffer for any market movement."
+    }
+  },
+  "stopLossRules": {
+    "mandatory": true,
+    "description": "Every position MUST have a stop-loss set at entry or within 30 seconds of fill.",
+    "maxStopDistance": {
+      "at50x": {
+        "value": 0.018,
+        "unit": "fraction_from_entry",
+        "description": "At 50x, stop-loss must be within 1.8% of entry price. This limits loss to ~90% of margin at worst.",
+        "rationale": "At 50x, liquidation occurs at ~2% adverse move. Stop must fire BEFORE liquidation."
+      },
+      "recommended": {
+        "value": 0.008,
+        "unit": "fraction_from_entry",
+        "description": "Recommended 0.8% stop at 50x. Limits loss per position to ~40% of margin used.",
+        "rationale": "Combined with 2% equity risk cap, this sizes positions correctly: position_size = (equity * 0.02) / (0.008 * 50)"
+      }
+    },
+    "noStopViolation": {
+      "action": "ALERT_AND_BLOCK",
+      "description": "If a position exists without a stop-loss for >60 seconds, alert Risk Officer and block new orders until resolved.",
+      "rationale": "March 7: FLOW position had ZERO stop-loss with $4,192 notional on $260 equity. Liquidation price was within 5% of mark — and 24h low had already breached it."
+    }
+  },
+  "lossLimits": {
+    "perTrade": {
+      "maxLoss": 0.02,
+      "unit": "fraction_of_equity",
+      "description": "No single trade may lose more than 2% of equity.",
+      "enforcement": "stop-loss placement"
+    },
+    "daily": {
+      "maxLoss": 0.05,
+      "unit": "fraction_of_equity",
+      "action": "PAUSE_4H",
+      "description": "5% daily loss triggers 4-hour mandatory pause. All pending orders cancelled. No new positions.",
+      "rationale": "Feb 13 kill switch fired at 21.22% — 4x over this limit. Earlier trigger prevents emotional spiral.",
+      "cooldownHours": 4,
+      "postCooldownSizeReduction": 0.5
+    },
+    "weekly": {
+      "maxLoss": 0.1,
+      "unit": "fraction_of_equity",
+      "action": "PAUSE_UNTIL_MONDAY",
+      "description": "10% weekly loss halts all trading until the following Monday 00:00 UTC.",
+      "rationale": "Weekly limit prevents multi-day tilt from compounding losses."
+    },
+    "killSwitch": {
+      "maxDrawdown": 0.15,
+      "unit": "fraction_from_peak_equity",
+      "action": "CLOSE_ALL_AND_HALT",
+      "description": "15% drawdown from peak equity: close ALL positions, activate kill switch, alert CEO and board.",
+      "rationale": "Feb 13 triggered at 21.22% — 6% past this limit. Tighter trigger preserves more capital for recovery.",
+      "recoveryRequirements": [
+        "48-hour minimum cooling period",
+        "Written post-mortem documenting cause",
+        "CEO approval to resume",
+        "Resume at 50% position sizing for first 5 winning trades"
+      ]
+    },
+    "accountFloor": {
+      "value": 50,
+      "unit": "USDT",
+      "action": "PERMANENT_HALT",
+      "description": "If total equity drops below $50, permanent halt until manual CEO intervention and capital injection.",
+      "rationale": "Below $50, position sizes become too small for meaningful recovery. Capital preservation mode."
+    }
+  },
+  "postKillSwitchRules": {
+    "mandatoryCooldown": {
+      "hours": 48,
+      "description": "NO trading for 48 hours after any kill switch activation. No exceptions.",
+      "rationale": "Feb 13: kill switch fired, then IMMEDIATE revenge trade with 31x leverage on GMT. Mandatory cooldown prevents this."
+    },
+    "orderBlock": {
+      "description": "Kill switch must technically prevent ALL order creation. Not advisory — enforced at the order submission layer.",
+      "implementation": "src/lib/kill-switch.ts checks on all order paths"
+    },
+    "recoveryScaling": {
+      "description": "After kill switch reset, position sizes scale back gradually over 5 winning trades.",
+      "schedule": [
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        1
+      ],
+      "kellyMultiplier": 0.5,
+      "rationale": "Prevents immediate return to full size after a major drawdown event."
+    }
+  },
+  "fundingRateLimits": {
+    "maxAnnualizedCost": {
+      "value": 0.05,
+      "unit": "fraction_of_position_notional",
+      "description": "If annualized funding rate cost exceeds 5% of position notional, close or reduce the position.",
+      "alertThreshold": 0.03
+    },
+    "description": "Funding rates on perpetual futures are a carry cost. Negative funding (shorts paying longs) is beneficial for longs. Positive funding is a cost for longs."
+  },
+  "drawdownRecoveryProtocol": {
+    "levels": [
+      {
+        "drawdown": 0.05,
+        "action": "Reduce position sizes by 25%. Review last 10 trades for pattern violations.",
+        "behavioralRisk": "Revenge trading and FOMO entries spike at this level."
+      },
+      {
+        "drawdown": 0.1,
+        "action": "Reduce position sizes by 50%. A+ setups only (EMA Ribbon confluences).",
+        "behavioralRisk": "Overtrading frequency typically doubles here."
+      },
+      {
+        "drawdown": 0.15,
+        "action": "Kill switch activates. Close all positions. Full stop.",
+        "behavioralRisk": "Emotional decision-making peaks. This is where accounts die."
+      },
+      {
+        "drawdown": 0.2,
+        "action": "Full stop. No trading until written plan reviewed by CEO.",
+        "behavioralRisk": "Capital preservation mode. Account survival is the only priority."
+      }
+    ]
+  },
+  "currentViolations": {
+    "asOf": "2026-03-08T01:48:00.000Z",
+    "violations": [
+      {
+        "rule": "stopLossRequired",
+        "position": "PHA/USDT LONG 44,570 contracts",
+        "actual": "No stop-loss set",
+        "limit": "Mandatory per risk framework",
+        "severity": "HIGH",
+        "action": "Manual mode — Steve must set stop-loss"
+      },
+      {
+        "rule": "maxTotalExposure",
+        "position": "PHA/USDT",
+        "actual": "7.5x equity ($1,549 notional on $206.66 equity)",
+        "limit": "3.0x max",
+        "severity": "HIGH",
+        "action": "Position reduced 54% but still 2.5x over limit"
+      },
+      {
+        "rule": "drawdownFromPeak",
+        "actual": "20.8% drawdown ($260.81 peak → $206.66 current)",
+        "limit": "15% kill switch / 20% full stop",
+        "severity": "CRITICAL",
+        "action": "Kill switch was reset by CEO — monitoring. Position partially closed."
+      },
+      {
+        "rule": "postMortemRequired",
+        "incident": "2026-02-13 kill switch event (21.22% daily loss)",
+        "actual": "No post-mortem document found",
+        "limit": "Required before next kill switch reset",
+        "severity": "MEDIUM",
+        "action": "Pre-existing. CEO or designated agent must produce written post-mortem."
+      }
+    ],
+    "resolvedSince": "2026-03-08T01:48:00.000Z",
+    "resolved": [
+      "FLOW/USDT maxPositionSize (16.07x) — position closed",
+      "FLOW/USDT stopLossRequired — position closed",
+      "maxMarginUtilization (93.8%) — reduced to 15.4%",
+      "killSwitch — INACTIVE (file absent from disk)",
+      "PHA/USDT exposure reduced from 14.7x to 7.5x (still above limit)"
+    ]
+  }
+}

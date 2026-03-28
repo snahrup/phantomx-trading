@@ -1,0 +1,55 @@
+{
+  "backtestDate": "2026-03-07T18:54:27.215674",
+  "backtesterVersion": "2.0",
+  "dataRange": "2025-12-14 to 2026-03-07",
+  "candles": 500,
+  "leverage": 50,
+  "strategies": [
+    {
+      "name": "EMA Ribbon v2.0",
+      "initialCapital": 200.0,
+      "finalEquity": 209.19,
+      "totalPnl": 9.19,
+      "totalPnlPct": 4.6,
+      "totalTrades": 9,
+      "winRate": 0.556,
+      "avgRR": 1.36,
+      "profitFactor": 1.7,
+      "maxDrawdownPct": 3.2,
+      "sharpeRatio": 1.57,
+      "sortinoRatio": 1.88,
+      "avgNotional": 277.0
+    },
+    {
+      "name": "Extreme Fear Reversal v1.0",
+      "initialCapital": 200.0,
+      "finalEquity": 213.42,
+      "totalPnl": 13.42,
+      "totalPnlPct": 6.7,
+      "totalTrades": 9,
+      "winRate": 0.556,
+      "avgRR": 1.84,
+      "profitFactor": 2.3,
+      "maxDrawdownPct": 2.5,
+      "sharpeRatio": 3.81,
+      "sortinoRatio": 4.96,
+      "avgNotional": 204.0
+    },
+    {
+      "name": "Combined (Regime-Switched)",
+      "initialCapital": 200.0,
+      "finalEquity": 233.82,
+      "totalPnl": 33.82,
+      "totalPnlPct": 16.9,
+      "totalTrades": 16,
+      "winRate": 0.625,
+      "avgRR": 1.72,
+      "profitFactor": 2.86,
+      "maxDrawdownPct": 3.2,
+      "sharpeRatio": 4.47,
+      "sortinoRatio": 5.63,
+      "avgNotional": 243.0
+    }
+  ],
+  "buyHoldPct": -24.7
+}

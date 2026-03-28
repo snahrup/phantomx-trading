@@ -68,3 +68,9 @@ cd
 
 # SQLite database (local data)
 /data/
+
+# Codebase Mapper (auto-generated)
+CODEBASE.md
+CODEBASE.html
+.codebase-map-dirty
+CLAUDE.md

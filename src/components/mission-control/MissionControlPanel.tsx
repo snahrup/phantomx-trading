@@ -25,11 +25,11 @@ export default function MissionControlPanel() {
   const isKilled = useTradingStore(s => s.isKilled);
   const isFeedCollapsed = useTradingStore(s => s.isFeedCollapsed);
   const focusedSymbol = useTradingStore(s => s.focusedPositionSymbol);
-  const positions = useTradingStore(s => s.positions);
+  const positions = useTradingStore(s => s.positions ?? []);
   const setFocused = useTradingStore(s => s.setFocusedPositionSymbol);
   const setSymbol = useTradingStore(s => s.setSymbol);
   const setExecuting = useTradingStore(s => s.setExecuting);
-  const agentActiveSymbols = useTradingStore(s => s.agentActiveSymbols);
+  const agentActiveSymbols = useTradingStore(s => s.agentActiveSymbols ?? []);
 
   const [tradeCloseEvents, setTradeCloseEvents] = useState<TradeCloseEvent[]>([]);
   const reconciledRef = useRef(false);

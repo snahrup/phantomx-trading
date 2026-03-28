@@ -1,0 +1,61 @@
+Generate a high-fidelity UI mockup of an "Agents" management page at 1920x1080 resolution. This is part of an AI company orchestration dashboard for "Phantom Trading Co."
+
+VISUAL STYLE:
+- Warm cream background #FAF9F6, terracotta accent #C2572A, warm near-black text #2D2A26
+- Clean sans-serif font (Inter), 12px radius cards, subtle warm shadows
+- Nearly invisible borders #E8E5E0, generous whitespace
+- Anthropic Claude-inspired: open, fluid, warm, no harsh lines
+
+LAYOUT:
+- Left sidebar (240px, warm gray #F5F2ED): "Agents" nav item is active (terracotta left border)
+- Same 7 nav items as dashboard: Dashboard, Agents (active), Work, Trading, Analytics, Costs, Settings
+- Top status bar: company name, "MODE: MANUAL", "18/22 agents", notification bell, search
+
+MAIN CONTENT:
+Page header: "Agents" in 28px semibold, right-aligned: [Grid | Org Tree] toggle buttons (Grid active with terracotta underline), [Filter: All ▾] dropdown, [+ Hire Agent] terracotta button
+
+FILTER BAR:
+- Pill-shaped filter buttons: "All (22)" active, "Running (18)", "Idle (2)", "Paused (0)", "Error (2)"
+- Active filter has terracotta background, others have warm gray #F0EDE8
+
+AGENT GRID (4 columns, 6 rows visible = 22 agents total):
+Each agent card (white #FDFCFA, 12px radius, subtle shadow):
+- Top-left: checkbox (unchecked, warm gray border)
+- Top: Agent icon (24px, muted gray) + Agent name in 15px semibold
+- Below name: Role in 12px muted text (e.g., "CEO", "Engineer", "Researcher")
+- Status badge: pill-shaped
+  - Running agents: green background #EDF5ED, green text #5A8A5C, "● Running"
+  - Idle agents: gray background #F3F1ED, gray text #8A857F, "○ Idle"
+  - Error agents: red background #F5EDEB, red text #B33A2A, "⚠ Error"
+- "Last heartbeat: 2m ago" in 12px caption text
+- "Model: claude-opus-4" in 12px mono text
+- Bottom: budget utilization bar — thin (4px height) with terracotta fill
+  - Label below: "$410 / $500" in 11px muted text
+
+Agent cards to show (real data):
+Row 1: CEO (Running, opus-4, $410/$500), Founding Engineer (Idle, sonnet-4, $180/$300), Risk Officer (Running, sonnet-4, $95/$150), Head of Trading (Running, sonnet-4, $120/$250)
+Row 2: Head of Research (Running, sonnet-4, $85/$200), Head of Design (Idle, sonnet-4, $45/$300), Strategy Architect (Running, sonnet-4, $215/$250), Scanner Monitor (Error, sonnet-4, $42/$200)
+Row 3: Execution Trader (Running, sonnet-4, $155/$250), Market Research Analyst (Running, sonnet-4, $110/$200), Sentiment Analyst (Running, sonnet-4, $78/$200), Backtester (Running, sonnet-4, $65/$200)
+Row 4: Portfolio Manager (Running, sonnet-4, $90/$200), On-Chain Analyst (Running, sonnet-4, $72/$200), Microstructure Analyst (Running, sonnet-4, $68/$200), Trade Analyst (Running, sonnet-4, $55/$200)
+Row 5: Meta-Strategist (Running, sonnet-4, $45/$200), Head of QA (Idle, sonnet-4, $0/$200), UX Researcher (Idle, sonnet-4, $0/$200), UI Designer (Idle, sonnet-4, $0/$200)
+Row 6: QA Engineer (Idle, sonnet-4, $0/$200), Fix Tracker (Idle, sonnet-4, $0/$200)
+
+BOTTOM BAR (sticky):
+- "6 selected" text, [▶ Resume Selected] [⏸ Pause Selected] [🔄 Trigger Selected] buttons
+- Batch action bar appears when checkboxes are checked
+
+RIGHT SIDE PANEL (360px wide, visible because one agent card appears selected/highlighted):
+- Panel header: "CEO" with close X button
+- Status: "● Running" green badge
+- "Last heartbeat: 2 minutes ago"
+- "Model: claude-opus-4-20250514"
+- "Budget: $410 / $500 (82%)" with amber warning indicator
+- Action buttons: [⏸ Pause] secondary button, [🔄 Trigger Heartbeat] terracotta button
+- "Recent Runs:" section with 3 entries showing timestamp, duration, status (✓/✗), cost
+- [View Full Details →] link at bottom
+
+OVERALL FEEL:
+- Clean, organized grid of agent cards — like a team roster
+- Information-dense but every card is scannable at a glance
+- The warm cream + terracotta palette makes it feel premium and intentional
+- The right panel provides quick actions without leaving the page

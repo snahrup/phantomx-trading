@@ -1,0 +1,59 @@
+Generate a high-fidelity UI mockup of a "Costs" page at 1920x1080 resolution. This is part of an AI company orchestration dashboard for "Phantom Trading Co."
+
+VISUAL STYLE:
+- Warm cream background #FAF9F6, terracotta accent #C2572A, warm near-black text #2D2A26
+- Clean sans-serif font (Inter), 12px radius cards, subtle warm shadows
+- Nearly invisible borders #E8E5E0, generous whitespace
+- Anthropic Claude-inspired: open, fluid, warm, no harsh lines
+
+LAYOUT:
+- Left sidebar (240px, warm gray #F5F2ED): "Costs" nav item active
+- Top status bar
+
+MAIN CONTENT:
+
+HEADER:
+- "Costs" in 28px semibold
+- Right: [MTD (active)] [7D] [30D] [YTD] [Custom] preset buttons
+
+TOP ROW: 3 metric cards
+- Card 1: "Total Spend" — "$847.00" large value, progress bar at 42% (terracotta fill), "of $2,000 monthly budget"
+- Card 2: "Projected Monthly" — "$1,420" large value, "Based on current 8-day run rate", subtitle "Within budget ✓" in green
+- Card 3: "Budget Remaining" — "$1,153.00" large value, "58% remaining", green indicator
+
+MAIN SECTION: "Cost by Agent" table (full width)
+- Clean table, no borders, alternating subtle backgrounds
+- Columns: Agent | Model | Runs | Spent | Budget | Utilization | Bar
+- Sorted by utilization descending:
+  1. Strategy Architect | sonnet-4 | 98 | $215.00 | $250 | 86% ⚠ | ████████████████░░ (amber bar, near limit)
+  2. CEO | opus-4 | 142 | $410.00 | $500 | 82% ⚠ | ███████████████░░░ (amber bar)
+  3. Founding Engineer | sonnet-4 | 87 | $180.00 | $300 | 60% | ████████████░░░░░░ (terracotta bar)
+  4. Execution Trader | sonnet-4 | 64 | $155.00 | $250 | 62% | ████████████░░░░░░
+  5. Head of Trading | sonnet-4 | 45 | $120.00 | $250 | 48% | ██████████░░░░░░░░
+  6. Market Research | sonnet-4 | 76 | $110.00 | $200 | 55% | ███████████░░░░░░░
+  7. Risk Officer | sonnet-4 | 52 | $95.00 | $150 | 63% | ████████████░░░░░░
+  8. Portfolio Manager | sonnet-4 | 38 | $90.00 | $200 | 45% | █████████░░░░░░░░░
+  9. Sentiment Analyst | sonnet-4 | 41 | $78.00 | $200 | 39% | ████████░░░░░░░░░░
+  10. On-Chain Analyst | sonnet-4 | 35 | $72.00 | $200 | 36% | ███████░░░░░░░░░░░
+- Utilization bars: terracotta fill normally, amber when >80%, red when >95%
+- ⚠ warning icon next to agents exceeding 80%
+- Each row 48px height
+
+BOTTOM SECTION: "Daily Cost Trend" chart (full width, 300px height)
+- Stacked area chart showing daily cost by agent
+- 8 days visible (Mar 1 — Mar 8)
+- Each agent a different color from the chart palette:
+  - CEO: terracotta #C2572A
+  - Strategy Architect: sage green #5A8A5C
+  - Founding Engineer: warm amber #B8862A
+  - Others: cool blue #4A7A9A, mauve #8A5A7A, etc.
+- Legend below chart with agent names and color dots
+- Y-axis: $0 — $150 daily
+- Shows gradual increase in daily spending
+
+OVERALL FEEL:
+- Budget tracking dashboard — clear, actionable, scannable
+- Warning indicators draw attention to agents approaching limits
+- Utilization bars make relative spend instantly visible
+- The stacked chart shows spending trends over time
+- Warm, professional — makes budget management feel intentional, not bureaucratic

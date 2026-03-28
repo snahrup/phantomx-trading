@@ -871,7 +871,7 @@ export const useTradingStore = create<TradingState>()(
 }),
     {
       name: 'phantomx-trading-store',
-      version: 17, // v17: Add activeMissionIssueId for Mission Control tracking
+      version: 18, // v18: Fix missionControlConfig missing selectedPairs
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         // NOTE: apiKey/apiSecret intentionally NOT persisted — stored in .env.local
@@ -1041,14 +1041,34 @@ export const useTradingStore = create<TradingState>()(
           const s = persistedState as Record<string, unknown>;
           if (s.isExecuting === undefined) s.isExecuting = false;
           if (s.isPaused === undefined) s.isPaused = false;
-          if (!s.missionControlConfig) s.missionControlConfig = {};
+          if (!s.missionControlConfig || !((s.missionControlConfig as Record<string, unknown>).selectedPairs)) {
+            s.missionControlConfig = DEFAULT_MISSION_CONFIG;
+          }
         }
         // v17: Add activeMissionIssueId for Mission Control tracking
         if (version < 17) {
           const s = persistedState as Record<string, unknown>;
           if (!s.activeMissionIssueId) s.activeMissionIssueId = null;
         }
+        // v18: Fix missionControlConfig missing selectedPairs (v16 migration set it to {})
+        if (version < 18) {
+          const s = persistedState as Record<string, unknown>;
+          const mc = s.missionControlConfig as Record<string, unknown> | undefined;
+          if (!mc || !Array.isArray(mc.selectedPairs)) {
+            s.missionControlConfig = DEFAULT_MISSION_CONFIG;
+          }
+        }
         return persistedState as TradingState;
+      },
+      onRehydrateStorage: () => (state) => {
+        // Validate missionControlConfig after every hydration — shallow merge
+        // from localStorage can leave it missing required array fields.
+        if (state) {
+          const mc = state.missionControlConfig;
+          if (!mc || !Array.isArray(mc.selectedPairs)) {
+            state.missionControlConfig = DEFAULT_MISSION_CONFIG;
+          }
+        }
       },
       // No auto-connect — ConnectionSetup handles the full flow with proper UX feedback
     }

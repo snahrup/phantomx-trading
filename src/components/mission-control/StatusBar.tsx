@@ -35,10 +35,10 @@ export default function StatusBar() {
   const setKilled = useTradingStore(s => s.setKilled);
   const setPausedStore = useTradingStore(s => s.setPaused);
   const accountValue = useTradingStore(s => s.accountValue);
-  const positions = useTradingStore(s => s.positions);
-  const profitGoal = useTradingStore(s => s.missionControlConfig.profitGoal);
+  const positions = useTradingStore(s => s.positions ?? []);
+  const profitGoal = useTradingStore(s => s.missionControlConfig?.profitGoal);
   const reconnecting = useAxonStore(s => s.reconnecting);
-  const agents = useAxonStore(s => s.agents);
+  const agents = useAxonStore(s => s.agents ?? []);
 
   const activeAgents = agents.filter(a => a.status === 'working').length;
   const totalPnl = positions.reduce((sum, p) => sum + (p.unrealizedPnl ?? 0), 0);

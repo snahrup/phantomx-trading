@@ -1,0 +1,269 @@
+{
+  "scanTime": "2026-03-08T14:40:11Z",
+  "results": [
+    {
+      "name": "TRUMP",
+      "symbol": "TRUMP/USDT:USDT",
+      "predicted": -0.00058905,
+      "pred_ann": -64.50097500000001,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "CAT",
+      "symbol": "1000CAT/USDT:USDT",
+      "predicted": -0.00023697,
+      "pred_ann": -25.948215,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "TURBO",
+      "symbol": "TURBO/USDT:USDT",
+      "predicted": -1.915e-05,
+      "pred_ann": -2.096925,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "CHEEMS",
+      "symbol": "1000CHEEMS/USDT:USDT",
+      "predicted": 0.0001,
+      "pred_ann": 10.950000000000001,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "MEME",
+      "symbol": "MEME/USDT:USDT",
+      "predicted": 0.0001,
+      "pred_ann": 10.950000000000001,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "IP",
+      "symbol": "IP/USDT:USDT",
+      "predicted": 5e-05,
+      "pred_ann": 5.4750000000000005,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "LAYER",
+      "symbol": "LAYER/USDT:USDT",
+      "predicted": 5e-05,
+      "pred_ann": 5.4750000000000005,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "PEPE",
+      "symbol": "1000PEPE/USDT:USDT",
+      "predicted": -0.00074939,
+      "pred_ann": -82.058205,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "RED",
+      "symbol": "RED/USDT:USDT",
+      "predicted": 5e-05,
+      "pred_ann": 5.4750000000000005,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "SWARMS",
+      "symbol": "SWARMS/USDT:USDT",
+      "predicted": 0.0001,
+      "pred_ann": 10.950000000000001,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "SHELL",
+      "symbol": "SHELL/USDT:USDT",
+      "predicted": 5e-05,
+      "pred_ann": 5.4750000000000005,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "DRIFT",
+      "symbol": "DRIFT/USDT:USDT",
+      "predicted": 0.0001,
+      "pred_ann": 10.950000000000001,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "BONK",
+      "symbol": "1000BONK/USDT:USDT",
+      "predicted": -0.0001869,
+      "pred_ann": -20.465549999999997,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "MEW",
+      "symbol": "MEW/USDT:USDT",
+      "predicted": 1.454e-05,
+      "pred_ann": 1.59213,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "FARTCOIN",
+      "symbol": "FARTCOIN/USDT:USDT",
+      "predicted": 5e-05,
+      "pred_ann": 5.4750000000000005,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "PEOPLE",
+      "symbol": "PEOPLE/USDT:USDT",
+      "predicted": 0.0001,
+      "pred_ann": 10.950000000000001,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "POPCAT",
+      "symbol": "POPCAT/USDT:USDT",
+      "predicted": 0.0001,
+      "pred_ann": 10.950000000000001,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "FORM",
+      "symbol": "FORM/USDT:USDT",
+      "predicted": -0.00014666,
+      "pred_ann": -16.05927,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "KAITO",
+      "symbol": "KAITO/USDT:USDT",
+      "predicted": 5e-05,
+      "pred_ann": 5.4750000000000005,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "RSR",
+      "symbol": "RSR/USDT:USDT",
+      "predicted": 0.0001,
+      "pred_ann": 10.950000000000001,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "AGLD",
+      "symbol": "AGLD/USDT:USDT",
+      "predicted": 3.626e-05,
+      "pred_ann": 3.97047,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "BAN",
+      "symbol": "BAN/USDT:USDT",
+      "predicted": 5e-05,
+      "pred_ann": 5.4750000000000005,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "GUN",
+      "symbol": "GUN/USDT:USDT",
+      "predicted": 0.0001,
+      "pred_ann": 10.950000000000001,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    },
+    {
+      "name": "AIXBT",
+      "symbol": "AIXBT/USDT:USDT",
+      "predicted": 5e-05,
+      "pred_ann": 5.4750000000000005,
+      "last_settled": 0,
+      "settled_ann": 0,
+      "neg_count": 0,
+      "match": "N/A",
+      "assessment": "NO HISTORY"
+    }
+  ]
+}

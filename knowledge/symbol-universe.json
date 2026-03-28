@@ -1,0 +1,92 @@
+{
+  "description": "Phemex USDT perpetual futures with 50x+ max leverage — the FULL trading universe for Phantom Trading Co.",
+  "lastUpdated": "2026-03-08",
+  "source": "ccxt phemex loadMarkets()",
+  "criteria": "swap, linear, active, settle=USDT, maxLeverage>=50",
+  "totalPairs": 264,
+  "tiers": {
+    "majors_100x": {
+      "description": "100x max leverage — highest liquidity",
+      "symbols": [
+        "BTC/USDT:USDT",
+        "ETH/USDT:USDT"
+      ]
+    },
+    "commodities_100x": {
+      "description": "100x commodity perps — non-crypto",
+      "symbols": [
+        "XAU/USDT:USDT",
+        "XAG/USDT:USDT",
+        "XPD/USDT:USDT",
+        "XPT/USDT:USDT",
+        "COPPER/USDT:USDT"
+      ]
+    },
+    "large_cap_50x": {
+      "description": "50x — large cap, high liquidity alts",
+      "symbols": [
+        "XRP/USDT:USDT", "SOL/USDT:USDT", "BNB/USDT:USDT", "ADA/USDT:USDT",
+        "DOGE/USDT:USDT", "LINK/USDT:USDT", "DOT/USDT:USDT", "AVAX/USDT:USDT",
+        "TON/USDT:USDT", "TRX/USDT:USDT", "NEAR/USDT:USDT", "UNI/USDT:USDT",
+        "ATOM/USDT:USDT", "LTC/USDT:USDT", "BCH/USDT:USDT", "HBAR/USDT:USDT",
+        "SUI/USDT:USDT", "FIL/USDT:USDT", "ICP/USDT:USDT", "AAVE/USDT:USDT",
+        "ARB/USDT:USDT", "OP/USDT:USDT", "INJ/USDT:USDT", "STX/USDT:USDT",
+        "RENDER/USDT:USDT", "FET/USDT:USDT", "SEI/USDT:USDT", "APT/USDT:USDT",
+        "TAO/USDT:USDT", "ONDO/USDT:USDT", "JUP/USDT:USDT"
+      ]
+    },
+    "mid_cap_50x": {
+      "description": "50x — mid cap alts, good volatility",
+      "symbols": [
+        "WIF/USDT:USDT", "DYDX/USDT:USDT", "GMX/USDT:USDT", "RUNE/USDT:USDT",
+        "LDO/USDT:USDT", "CRV/USDT:USDT", "COMP/USDT:USDT", "GALA/USDT:USDT",
+        "SAND/USDT:USDT", "MANA/USDT:USDT", "AXS/USDT:USDT", "FLOW/USDT:USDT",
+        "THETA/USDT:USDT", "GRT/USDT:USDT", "AR/USDT:USDT", "PYTH/USDT:USDT",
+        "TIA/USDT:USDT", "ORDI/USDT:USDT", "MASK/USDT:USDT", "BLUR/USDT:USDT",
+        "ENJ/USDT:USDT", "SUSHI/USDT:USDT", "KAS/USDT:USDT", "STRK/USDT:USDT",
+        "ETHFI/USDT:USDT", "ENA/USDT:USDT", "WLD/USDT:USDT", "BEAM/USDT:USDT",
+        "EIGEN/USDT:USDT", "GRASS/USDT:USDT", "HYPE/USDT:USDT", "VIRTUAL/USDT:USDT",
+        "PENGU/USDT:USDT", "BERA/USDT:USDT", "SONIC/USDT:USDT"
+      ]
+    },
+    "micro_cap_50x": {
+      "description": "50x — micro/small cap, highest volatility, Steve's focus (GUN, FLOW, PHA etc)",
+      "symbols": [
+        "GUN/USDT:USDT", "PHA/USDT:USDT", "HOOK/USDT:USDT", "ACH/USDT:USDT",
+        "JASMY/USDT:USDT", "RSR/USDT:USDT", "MTL/USDT:USDT", "MAGIC/USDT:USDT",
+        "SPELL/USDT:USDT", "SKL/USDT:USDT", "AGLD/USDT:USDT", "ANKR/USDT:USDT",
+        "PEOPLE/USDT:USDT", "HIGH/USDT:USDT", "LQTY/USDT:USDT", "TRU/USDT:USDT",
+        "SUPER/USDT:USDT", "BIGTIME/USDT:USDT", "MEME/USDT:USDT", "TURBO/USDT:USDT",
+        "1000PEPE/USDT:USDT", "1000FLOKI/USDT:USDT", "1000BONK/USDT:USDT",
+        "1000SHIB/USDT:USDT", "POPCAT/USDT:USDT", "MEW/USDT:USDT", "BOME/USDT:USDT",
+        "PNUT/USDT:USDT", "ACT/USDT:USDT", "GOAT/USDT:USDT", "MOODENG/USDT:USDT",
+        "FARTCOIN/USDT:USDT", "AIXBT/USDT:USDT", "TRUMP/USDT:USDT", "ANIME/USDT:USDT",
+        "CHILLGUY/USDT:USDT", "PIPPIN/USDT:USDT", "GRIFFAIN/USDT:USDT",
+        "ZEREBRO/USDT:USDT", "SWARMS/USDT:USDT", "COOKIE/USDT:USDT",
+        "MUBARAK/USDT:USDT", "PARTI/USDT:USDT", "STO/USDT:USDT",
+        "1000CAT/USDT:USDT", "1000CHEEMS/USDT:USDT", "1000WHY/USDT:USDT",
+        "1000000BABYDOGE/USDT:USDT", "1000000MOG/USDT:USDT",
+        "SPX/USDT:USDT", "DRIFT/USDT:USDT", "BAN/USDT:USDT",
+        "RED/USDT:USDT", "KAITO/USDT:USDT", "FORM/USDT:USDT",
+        "EPIC/USDT:USDT", "LAYER/USDT:USDT", "IP/USDT:USDT",
+        "SHELL/USDT:USDT", "GPS/USDT:USDT"
+      ]
+    }
+  },
+  "allSymbols50x": [
+    "BTC/USDT:USDT", "ETH/USDT:USDT", "XRP/USDT:USDT", "ADA/USDT:USDT",
+    "SOL/USDT:USDT", "UNI/USDT:USDT", "DOT/USDT:USDT", "LINK/USDT:USDT",
+    "ATOM/USDT:USDT", "LTC/USDT:USDT", "DOGE/USDT:USDT", "HOOK/USDT:USDT",
+    "TWT/USDT:USDT", "BNB/USDT:USDT", "MANA/USDT:USDT", "APE/USDT:USDT",
+    "LUNC/USDT:USDT", "FLOW/USDT:USDT", "NEO/USDT:USDT", "ACH/USDT:USDT",
+    "BAND/USDT:USDT", "VET/USDT:USDT", "SUSHI/USDT:USDT", "ENJ/USDT:USDT",
+    "XTZ/USDT:USDT", "JASMY/USDT:USDT", "THETA/USDT:USDT", "TRX/USDT:USDT",
+    "ONE/USDT:USDT", "RUNE/USDT:USDT", "AXS/USDT:USDT", "ETC/USDT:USDT",
+    "RSR/USDT:USDT", "FIL/USDT:USDT", "AVAX/USDT:USDT", "GMT/USDT:USDT",
+    "MTL/USDT:USDT", "LUNA2/USDT:USDT", "CRV/USDT:USDT", "APT/USDT:USDT",
+    "MASK/USDT:USDT", "CELO/USDT:USDT", "ZEC/USDT:USDT", "EGLD/USDT:USDT",
+    "MAGIC/USDT:USDT", "GALA/USDT:USDT", "LRC/USDT:USDT", "1000SHIB/USDT:USDT",
+    "GRT/USDT:USDT", "AR/USDT:USDT", "GUN/USDT:USDT", "PHA/USDT:USDT"
+  ],
+  "notes": "Scanner should scan ALL tiers. Strategy filters apply per-strategy (EFR focuses on RSI extremes, FRC on funding rates, etc). The ALT GATE ($5M volume filter) should be REMOVED — micro-caps are the primary focus for high-leverage plays."
+}

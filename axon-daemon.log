@@ -1,0 +1,13 @@
+2026-03-19 07:49:05,294 [INFO] __main__: ============================================================
+2026-03-19 07:49:05,295 [INFO] __main__: Axon Headless Daemon
+2026-03-19 07:49:05,295 [INFO] __main__:   Port:     8400
+2026-03-19 07:49:05,295 [INFO] __main__:   Database: company.db
+2026-03-19 07:49:05,295 [INFO] __main__:   Company:  Phantom Trading Co.
+2026-03-19 07:49:05,295 [INFO] __main__: ============================================================
+INFO:     Started server process [61976]
+INFO:     Waiting for application startup.
+2026-03-19 07:49:08,052 [INFO] daemon.scheduler: Daemon scheduler starting (company filter: Phantom Trading Co.)
+2026-03-19 07:49:08,053 [INFO] company.heartbeat: Heartbeat scheduler started (check_interval=10.0s)
+2026-03-19 07:49:08,053 [INFO] __main__: Axon daemon ready
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8400 (Press CTRL+C to quit)

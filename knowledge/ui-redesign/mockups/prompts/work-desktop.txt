@@ -1,0 +1,79 @@
+Generate a high-fidelity UI mockup of a "Work" page (Kanban board + Goals) at 1920x1080 resolution. This is part of an AI company orchestration dashboard for "Phantom Trading Co."
+
+VISUAL STYLE:
+- Warm cream background #FAF9F6, terracotta accent #C2572A, warm near-black text #2D2A26
+- Clean sans-serif font (Inter), 12px radius cards, subtle warm shadows
+- Nearly invisible borders #E8E5E0, generous whitespace
+- Anthropic Claude-inspired: open, fluid, warm, no harsh lines
+
+LAYOUT:
+- Left sidebar (240px, warm gray #F5F2ED): "Work" nav item active (terracotta left border)
+- Top status bar: company name, "MODE: MANUAL", "18/22 agents", notification bell, search
+
+MAIN CONTENT:
+
+TOP SECTION — Goals (collapsible, shown expanded):
+- Header: "Goals" with collapse chevron, right side: [+ New Goal] ghost button
+- 3 horizontal goal progress rows:
+  1. "Build profitable trading strategies" — progress bar at 40% (terracotta fill), "2/5 KRs complete"
+  2. "Automate risk management framework" — progress bar at 70% (sage green fill #5A8A5C), "7/10 KRs"
+  3. "Ship dashboard redesign" — progress bar at 15% (terracotta fill, low), "1/7 KRs"
+- Each goal row: subtle warm gray background, 8px radius, 12px padding
+
+KANBAN BOARD:
+Page header: "Work" in 28px semibold, right-aligned: [Kanban | List] toggle (Kanban active), [Project: All ▾] dropdown, [Priority ▾] filter, [+ New Issue] terracotta button
+
+4 columns with subtle warm gray backgrounds:
+
+Column 1: "Backlog" (4) — muted header text
+- Card: "PAP-15" tag, "Define risk parameter limits" title, red priority dot "Critical", assignee avatar "Risk Officer"
+- Card: "PAP-16" tag, "Paper trading validation framework", yellow priority dot "High", assignee "Backtester"
+- Card: "PAP-17", "Agent communication protocol", yellow "High", "Founding Engineer"
+- Card: "PAP-20", "Implement notification system", green "Medium", "Head of Design"
+
+Column 2: "In Progress" (6) — blue-ish header accent
+- Card: "PAP-8", "Design 3 aggressive trading strategies", yellow "High", "Strategy Architect", terracotta dot indicating long-running
+- Card: "PAP-12", "EMA ribbon trend following strategy", yellow "High", "Strategy Architect"
+- Card: "PAP-13", "Liquidity sweep reversal strategy", yellow "High", "Strategy Architect"
+- Card: "PAP-14", "BTC weekend fade strategy", green "Medium", "Strategy Architect"
+- Card: "PAP-18", "Dashboard redesign implementation", yellow "High", "Head of Design"
+- Card: "PAP-19", "Playwright E2E test suite", green "Medium", "QA Engineer"
+
+Column 3: "Review" (2)
+- Card: "PAP-11", "QA loop pipeline architecture", yellow "High", "Head of QA"
+- Card: "PAP-10", "Market regime assessment framework", green "Medium", "Market Research"
+
+Column 4: "Done" (8) — checkmark icon in header
+- Card: "PAP-1", "Company setup and agent provisioning", ✓ completed style (slightly faded)
+- Card: "PAP-2", "Agent persona files", ✓
+- Card: "PAP-3", "PhantomX integration verification", ✓
+- (5 more faded completed cards, showing scroll indicator)
+
+ISSUE CARDS:
+- White background #FDFCFA, 8px radius, subtle shadow
+- Top: "PAP-XX" in 11px mono terracotta text
+- Title: 14px regular, warm black
+- Bottom row: priority dot (red/yellow/green) + assignee name in 12px muted text
+- Cards have slight hover shadow effect
+- Drag handle dots visible on left side of each card
+
+RIGHT SIDE — Issue Detail Panel (visible, 360px):
+- Shows details for "PAP-8" which appears selected/highlighted in the Kanban
+- Header: "PAP-8" in terracotta mono, "Design 3 Aggressive Trading Strategies" title
+- Status: [In Progress ▾] dropdown
+- Priority: [🟡 High ▾] dropdown
+- Assignee: [Strategy Architect ▾] with avatar
+- Project: [Core Trading ▾]
+- Due date: "2026-03-15"
+- Description preview: "Design three aggressive crypto trading strategies optimized for 50x leverage perpetual futures on Phemex..."
+- Comments section (2 visible):
+  - "CEO — 2h ago: This is the critical path. Prioritize BTC and ETH pairs first."
+  - "Strategy Architect — 1h ago: Starting with EMA ribbon trend following. Backtesting on 4H timeframe."
+- [Add comment...] input at bottom
+
+OVERALL FEEL:
+- Clean Kanban with generous card spacing
+- Goal progress bars at top give context for why work matters
+- Right panel enables editing without leaving the board
+- Drag-and-drop implied by card layout
+- Warm, professional — not a generic Trello clone

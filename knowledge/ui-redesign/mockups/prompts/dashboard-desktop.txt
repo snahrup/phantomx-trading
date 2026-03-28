@@ -1,0 +1,72 @@
+Generate a high-fidelity UI mockup of a modern web dashboard at 1920x1080 resolution. This is the main "Command Center" dashboard for an AI-powered crypto trading company management platform called "Phantom Trading Co."
+
+VISUAL STYLE:
+- Warm cream/off-white background color #FAF9F6 (NOT pure white)
+- Terracotta/burnt orange accent color #C2572A for primary buttons, active states, and key indicators
+- Warm near-black text #2D2A26 (NOT pure black)
+- Clean sans-serif font (Inter or similar)
+- Rounded corners: 12px on cards, 8px on buttons, pill-shaped badges
+- Subtle warm-toned shadows on cards (not harsh drop shadows)
+- Nearly invisible borders #E8E5E0 (1px, barely visible)
+- NO harsh lines or heavy borders anywhere
+- Generous whitespace — content breathes, nothing cramped
+- Inspired by Anthropic's Claude interface design principles: open, fluid, warm
+
+LAYOUT:
+- Left sidebar: 240px wide, warm gray background #F5F2ED
+  - Logo/company name "Phantom Trading Co." at top
+  - 7 nav items with Lucide-style line icons: Dashboard (active, terracotta left border accent), Agents, Work, Trading, Analytics, Costs, Settings
+  - Active item has subtle terracotta left border and slightly warm background
+  - Light/dark theme toggle at bottom
+- Main content area fills remaining width with 24px padding
+
+MAIN CONTENT - TOP ROW (6 metric cards in a row):
+- Card 1: "Agents" — icon: users, value: "18 active", subtitle: "2 errors", small green up arrow with "+12%"
+- Card 2: "Daily P&L" — icon: trending-up, value: "+$1,247.50", subtitle: "+3.2% today", green text
+- Card 3: "Open Issues" — icon: clipboard-list, value: "14", subtitle: "3 critical", red dot indicator
+- Card 4: "Monthly Cost" — icon: dollar-sign, value: "$847 / $2,000", progress bar at 42% fill with terracotta color
+- Card 5: "Goals" — icon: target, value: "2/5 complete", progress bar at 40%
+- Card 6: "Kill Switch" — icon: shield, value: "ARMED", green dot, text "Click to toggle"
+- Each card: white background #FDFCFA, 12px radius, subtle shadow, 16px padding
+
+MIDDLE SECTION (two columns, 60/40 split):
+LEFT (60%): "Agent Grid" — heading "Agents" in 18px semibold
+- 4x3 grid of compact agent cards (12 visible)
+- Each agent card:
+  - Agent name in 14px semibold (e.g., "CEO", "Founding Engineer", "Risk Officer", "Strategy Architect", "Scanner Monitor", "Head of Trading", "Head of Research", "Head of Design", "Execution Trader", "Market Research", "Sentiment Analyst", "Backtester")
+  - Status pill badge: green "Running" or gray "Idle" or red "Error"
+  - "Last: 2m ago" in 12px gray text
+  - Thin budget bar at bottom (terracotta fill)
+  - White card background, 8px radius, subtle shadow
+
+RIGHT (40%): "Pending Actions" — heading in 18px semibold
+- 3 stacked action cards:
+  1. Orange/amber left border: "Approval: Strategy Architect requests budget increase" with [Approve] [Reject] buttons in terracotta and gray
+  2. Red left border: "Failed: Scanner Monitor — ECONNREFUSED at 00:32" with [Retry] [Dismiss] buttons
+  3. Amber left border: "Budget: CEO at 82% — $410 / $500 this month" with [View Costs] link
+
+BOTTOM SECTION (two columns, 50/50):
+LEFT: "Positions" table — clean table with NO borders, just spacing
+- Headers: Symbol, Side, Size, Entry, Unrl P&L, ROE
+- Row 1: BTCUSDT, LONG, 0.05 BTC, 67,420, +$312.50 (green), +4.63% (green)
+- Row 2: ETHUSDT, SHORT, 2.0 ETH, 3,850, -$47.20 (red), -1.23% (red)
+- Row 3: SOLUSDT, LONG, 50 SOL, 148.20, +$89.00 (green), +1.20% (green)
+- Alternating very subtle row backgrounds
+
+RIGHT: "Activity" timeline — vertical timeline with dots
+- "00:45 CEO completed heartbeat — delegated PAP-12 to Strategy Architect"
+- "00:43 Strategy Architect analyzing EMA ribbon setup on BTCUSDT"
+- "00:32 Scanner Monitor heartbeat FAILED — ECONNREFUSED" (red text)
+- "00:28 Founding Engineer synced Nexus context — 3 discoveries shared"
+- "00:26 Head of Design completed layout implementation for PAP-19"
+- Each entry with a colored dot (green for success, red for failure, blue for info)
+
+TOP BAR (above main content, below sidebar header level):
+- Thin status bar showing: "Phantom Trading Co." | "MODE: MANUAL" (amber badge) | "18/22 agents active" | notification bell icon with red "3" badge | search icon (Cmd+K)
+
+OVERALL FEEL:
+- Warm, professional, information-dense but not overwhelming
+- Like a Bloomberg terminal designed by Anthropic — high density with taste
+- Everything visible at a glance — a board member's single pane of glass
+- Muted, sophisticated color palette — nothing shouty or neon
+- The terracotta accent color should appear sparingly but consistently

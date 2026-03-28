@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "phantom-trading-signal-interchange-v1",
+  "title": "Phantom Trading Co. — Signal Interchange Format v1",
+  "description": "Canonical schema for inter-agent signal communication. All agents MUST emit signals in this format. Aligns with TradingSignal in src/types/trading.ts.",
+  "version": "1.0.0",
+  "created": "2026-03-08T15:00:00Z",
+  "createdBy": "head-of-trading",
+
+  "type": "object",
+  "required": [
+    "signalId",
+    "timestamp",
+    "source",
+    "pair",
+    "direction",
+    "confidence",
+    "strategyId",
+    "regime",
+    "regimeSource",
+    "entry",
+    "stopLoss",
+    "timeframe",
+    "expiresAt"
+  ],
+
+  "properties": {
+    "signalId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique signal identifier. Maps to TradingSignal.id"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC when the signal was generated"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["scanner-monitor", "strategy-architect", "head-of-trading", "head-of-research", "manual"],
+      "description": "Agent role that generated the signal. Maps to TradingSignal.source"
+    },
+    "pair": {
+      "type": "string",
+      "pattern": "^[A-Z]+/USDT:USDT$",
+      "description": "Trading pair in ccxt format. Maps to TradingSignal.asset. Example: 'BTC/USDT:USDT'"
+    },
+    "direction": {
+      "type": "string",
+      "enum": ["long", "short"],
+      "description": "Trade direction. Maps to TradingSignal.direction (TradeDirection type)"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Signal confidence 0-100. Maps to TradingSignal.confidence. Min 60 for pipeline acceptance."
+    },
+    "strategyId": {
+      "type": "string",
+      "enum": [
+        "strat-ema-ribbon-v2.0",
+        "strat-efr-v1.0",
+        "strat-efr-v1.1",
+        "strat-frc-v1.0",
+        "strat-liquidity-sweep-v1.0"
+      ],
+      "description": "Unique strategy identifier. Maps to TradingSignal.strategyId"
+    },
+    "strategyName": {
+      "type": "string",
+      "description": "Human-readable strategy name. Maps to TradingSignal.strategy"
+    },
+    "regime": {
+      "type": "string",
+      "enum": ["trending_up", "trending_down", "ranging", "volatile", "unknown"],
+      "description": "Market regime at signal time. Must match MarketRegime type exactly."
+    },
+    "regimeSource": {
+      "type": "string",
+      "enum": ["api", "agent-computed"],
+      "description": "How regime was determined. 'api' = from GET /api/market/regime (canonical). 'agent-computed' = agent's own ADX calculation. Prefer 'api' always."
+    },
+    "entry": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Target entry price. Maps to TradingSignal.entry"
+    },
+    "stopLoss": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Stop-loss price. Required for all signals. Maps to TradingSignal.stop"
+    },
+    "targets": {
+      "type": "array",
+      "items": { "type": "number", "exclusiveMinimum": 0 },
+      "minItems": 1,
+      "description": "Take-profit levels [TP1, TP2, ...]. Maps to TradingSignal.targets"
+    },
+    "triggerDetails": {
+      "type": "string",
+      "description": "What conditions triggered entry. Maps to TradingSignal.triggerDetails. Example: 'RSI crossed above 30, MACD histogram crossed 0, EMA8 crossed EMA21'"
+    },
+    "invalidation": {
+      "type": "string",
+      "description": "What would invalidate this signal before entry. Example: 'RSI drops below 25' or 'Price breaks below $60K'"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC when signal becomes stale. Maps to TradingSignal.expiresAt. Max 24h for EFR/LSR, 8h for FRC."
+    },
+    "timeframe": {
+      "type": "string",
+      "enum": ["15m", "1h", "4h", "8h", "1d"],
+      "description": "Candle timeframe the signal was computed on"
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["major", "mid-cap", "small-cap"],
+      "description": "Asset tier for position sizing. Major: BTC/ETH. Mid-cap: SOL/LINK/DOT/AVAX/ARB/OP. Small-cap: everything else."
+    },
+    "fundingRate": {
+      "type": "object",
+      "description": "Funding rate data, if relevant to the signal (required for FRC, optional otherwise)",
+      "properties": {
+        "value": {
+          "type": "number",
+          "description": "Funding rate as decimal (e.g., -0.00038 for -0.038%/8h)"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["predicted", "settled"],
+          "description": "CRITICAL: 'predicted' = next funding estimate (not yet settled). 'settled' = last executed funding payment. FRC v1.0 requires 3 consecutive SETTLED negatives."
+        },
+        "annualized": {
+          "type": "number",
+          "description": "Annualized rate (value * 3 * 365 * 100 for percentage)"
+        },
+        "consecutiveNegativeSettled": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of consecutive settled negative periods. FRC trigger requires >= 3."
+        }
+      },
+      "required": ["value", "type"]
+    },
+    "positionSizing": {
+      "type": "object",
+      "description": "Pre-calculated position sizing at current equity",
+      "properties": {
+        "equity": { "type": "number", "description": "Account equity at signal time" },
+        "riskPercent": { "type": "number", "description": "Risk per trade as decimal (e.g., 0.015 for 1.5%)" },
+        "recoveryMultiplier": { "type": "number", "description": "Recovery scaling factor (0.5-1.0)" },
+        "riskAmount": { "type": "number", "description": "Dollar risk = equity * riskPercent * recoveryMultiplier" },
+        "stopDistancePercent": { "type": "number", "description": "Stop distance as decimal" },
+        "notional": { "type": "number", "description": "Notional = riskAmount / stopDistancePercent" },
+        "margin": { "type": "number", "description": "Margin = notional / leverage" },
+        "leverage": { "type": "integer", "default": 50 }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Strategy-specific data. Maps to TradingSignal.metadata",
+      "additionalProperties": true
+    }
+  },
+
+  "examples": [
+    {
+      "signalId": "sig-20260308-001",
+      "timestamp": "2026-03-08T16:00:00Z",
+      "source": "scanner-monitor",
+      "pair": "OP/USDT:USDT",
+      "direction": "long",
+      "confidence": 72,
+      "strategyId": "strat-efr-v1.1",
+      "strategyName": "Extreme Fear Reversal v1.1",
+      "regime": "volatile",
+      "regimeSource": "api",
+      "entry": 0.115,
+      "stopLoss": 0.1127,
+      "targets": [0.1196, 0.1242],
+      "triggerDetails": "RSI crossed above 30, MACD histogram improving, EMA(8) approaching EMA(21)",
+      "invalidation": "RSI drops below 25 or price breaks below $0.110",
+      "expiresAt": "2026-03-09T16:00:00Z",
+      "timeframe": "4h",
+      "tier": "small-cap",
+      "positionSizing": {
+        "equity": 154.93,
+        "riskPercent": 0.0075,
+        "recoveryMultiplier": 0.5,
+        "riskAmount": 0.58,
+        "stopDistancePercent": 0.02,
+        "notional": 29.0,
+        "margin": 0.58,
+        "leverage": 50
+      }
+    }
+  ],
+
+  "pipelineRules": {
+    "signalLifecycle": "pending → approved/rejected → executed → closed/expired",
+    "minimumConfidence": 60,
+    "requiredFields": "All 'required' fields must be present or signal is auto-rejected",
+    "regimeSourcePreference": "Agents MUST use 'api' (GET /api/market/regime) when available. 'agent-computed' only as fallback.",
+    "fundingRateRule": "For FRC signals, fundingRate object is REQUIRED with type='settled' and consecutiveNegativeSettled >= 3. Predicted rates inform analysis only, never trigger entries.",
+    "expirationDefaults": {
+      "strat-efr-v1.0": "24h",
+      "strat-efr-v1.1": "24h",
+      "strat-ema-ribbon-v2.0": "12h",
+      "strat-frc-v1.0": "8h",
+      "strat-liquidity-sweep-v1.0": "4h"
+    }
+  }
+}

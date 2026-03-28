@@ -1,0 +1,77 @@
+Generate a high-fidelity UI mockup of an "Agent Detail" page at 1920x1080 resolution, showing the Overview tab for the CEO agent. This is part of an AI company orchestration dashboard for "Phantom Trading Co."
+
+VISUAL STYLE:
+- Warm cream background #FAF9F6, terracotta accent #C2572A, warm near-black text #2D2A26
+- Clean sans-serif font (Inter), 12px radius cards, subtle warm shadows
+- Nearly invisible borders #E8E5E0, generous whitespace
+- Anthropic Claude-inspired: open, fluid, warm, no harsh lines
+
+LAYOUT:
+- Left sidebar (240px, warm gray #F5F2ED): "Agents" nav item active
+- Top status bar
+
+MAIN CONTENT:
+
+PAGE HEADER:
+- "← Back to Agents" link in 13px muted text with left arrow
+- "CEO" in 28px semibold, with green "● Running" status badge to the right
+- Right-aligned action buttons: [⏸ Pause] secondary outlined button, [🔄 Trigger Heartbeat] terracotta primary button
+
+TAB BAR:
+- [Overview (active, terracotta underline)] [Runs] [Configuration] [Permissions]
+
+OVERVIEW TAB CONTENT:
+
+TOP ROW: 4 metric cards
+- Card 1: "Status" — large green dot with "Running" text, "Since 2h 15m ago" subtitle
+- Card 2: "Total Runs" — "142" large value, "This month" subtitle, "+23 vs last month" green trend
+- Card 3: "Success Rate" — "94.4%" large value, "134/142 succeeded" subtitle
+- Card 4: "Total Cost" — "$410.00" large value, "$500 budget (82%)" subtitle with amber warning indicator
+
+MIDDLE SECTION: "Health Timeline" card (full width)
+- Heading: "Heartbeat Health — Last 7 Days"
+- 7 rows, one per day, each showing 24 cells (one per hour):
+  - Mon Mar 1: all green cells (24/24 success)
+  - Tue Mar 2: 23 green, 1 red at hour 6 (1 failure)
+  - Wed Mar 3: 18 green, 6 gray (offline 12:00-18:00, paused)
+  - Thu Mar 4: all green
+  - Fri Mar 5: 22 green, 2 red
+  - Sat Mar 6: 12 green, 12 gray (weekend pause)
+  - Sun Mar 7: 20 green, 4 remaining (current day, partially complete)
+- Color key: Green #5A8A5C = success, Red #B33A2A = failed, Gray #E8E5E0 = idle/paused
+- Each cell is a small rounded square (16x16px) with 2px gap
+- Day labels on left: "Mon", "Tue", etc. in 12px muted text
+- Hour labels on top: "0", "6", "12", "18" in 12px muted text
+
+BOTTOM SECTION (two columns, 60/40):
+
+LEFT (60%): "Recent Runs" table
+- Heading: "Recent Runs" with "View All →" link
+- Clean table, no borders:
+  - Columns: Run ID | Started | Duration | Status | Tokens | Cost
+  - Row 1: dac8f6a8 | 00:50:49 | 1m 09s | ✓ Succeeded (green) | 217k | $0.29
+  - Row 2: b7c3e2f1 | 00:35:12 | 0m 45s | ✓ Succeeded | 156k | $0.18
+  - Row 3: a1d8f3c9 | 00:20:01 | 2m 30s | ✗ Failed (red) | 312k | $0.42
+  - Row 4: e5b2a7d4 | 00:05:33 | 1m 15s | ✓ Succeeded | 198k | $0.24
+  - Row 5: c8f1d6e3 | 23:50:10 | 0m 55s | ✓ Succeeded | 142k | $0.16
+- Run IDs in mono font, 12px
+- Failed rows have subtle red-tinted background #F5EDEB
+- Clicking a row would expand to show run output
+
+RIGHT (40%): "Agent Info" card
+- "Model: claude-opus-4-20250514" in mono
+- "Role: CEO"
+- "Reports to: Board (Steve)"
+- "Adapter: claude_local"
+- "Working Directory: C:\Users\snahrup\CascadeProjects\phantomx"
+- "Instructions: agents/ceo/AGENTS.md"
+- "Monthly Budget: $500.00"
+- "Budget Used: $410.00 (82%)" with thin amber progress bar
+- Each field: label in 12px medium muted, value in 14px regular
+
+OVERALL FEEL:
+- Clean agent profile page — like a character sheet for an AI agent
+- The health heatmap gives instant visual history
+- Recent runs table provides operational detail
+- Metric cards summarize the agent's performance at a glance
+- Warm, professional — an agent you'd want on your team

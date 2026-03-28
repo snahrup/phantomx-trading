@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "phantom-trading-regime-classification-v1",
+  "title": "Phantom Trading Co. — Regime Classification Standard v1",
+  "description": "Canonical regime classification schema. All agents MUST consume regime from GET /api/market/regime, NOT compute their own. Aligns with MarketRegime and RegimeClassification in src/types/trading.ts.",
+  "version": "1.0.0",
+  "created": "2026-03-08T15:00:00Z",
+  "createdBy": "head-of-trading",
+
+  "canonicalSource": {
+    "endpoint": "GET /api/market/regime",
+    "parameters": {
+      "symbol": "Trading pair (e.g., BTCUSDT)",
+      "timeframe": "Candle timeframe (default: 4h)",
+      "limit": "Number of candles for computation (recommend: 100)"
+    },
+    "rule": "ALL agents MUST use this endpoint for regime classification. Agent-computed ADX values are NOT authoritative and MUST NOT be used for pipeline decisions. If the API is unavailable, use 'unknown' regime — never guess."
+  },
+
+  "regimes": {
+    "trending_up": {
+      "definition": "ADX > 30 AND trendStrength > 0.01 (high confidence), OR ADX 20-30 AND trendStrength > 0.005 (transitional, 0.5 confidence)",
+      "adxRange": [20, 100],
+      "strongThreshold": 30,
+      "transitionalRange": [20, 30],
+      "trendStrengthRange": [0.005, 1.0],
+      "activeStrategies": ["strat-ema-ribbon-v2.0"],
+      "pausedStrategies": ["strat-liquidity-sweep-v1.0"],
+      "riskMultiplier": 1.0,
+      "description": "Confirmed uptrend. EMA Ribbon entries on pullbacks to EMA(21). Full position sizing."
+    },
+    "trending_down": {
+      "definition": "ADX > 30 AND trendStrength < -0.01 (high confidence), OR ADX 20-30 AND trendStrength < -0.005 (transitional, 0.5 confidence)",
+      "adxRange": [20, 100],
+      "strongThreshold": 30,
+      "transitionalRange": [20, 30],
+      "trendStrengthRange": [-1.0, -0.005],
+      "activeStrategies": ["strat-ema-ribbon-v2.0"],
+      "pausedStrategies": ["strat-liquidity-sweep-v1.0"],
+      "riskMultiplier": 1.0,
+      "description": "Confirmed downtrend. EMA Ribbon short entries. Full position sizing."
+    },
+    "ranging": {
+      "definition": "ADX < 20 AND volatilityPercentile < 60",
+      "adxRange": [0, 20],
+      "activeStrategies": ["strat-liquidity-sweep-v1.0", "strat-frc-v1.0"],
+      "pausedStrategies": ["strat-ema-ribbon-v2.0"],
+      "riskMultiplier": 0.8,
+      "description": "No directional bias. LSR on equal high/low sweeps. FRC if funding conditions met. Reduced sizing."
+    },
+    "volatile": {
+      "definition": "ATR > 2x SMA(ATR, 20) OR volatilityPercentile > 80",
+      "activeStrategies": ["strat-efr-v1.0", "strat-efr-v1.1", "strat-frc-v1.0"],
+      "pausedStrategies": [],
+      "riskMultiplier": 0.6,
+      "description": "High volatility environment. EFR and FRC active. Reduced sizing due to whipsaw risk."
+    },
+    "unknown": {
+      "definition": "Cannot classify — insufficient data or API unavailable",
+      "activeStrategies": [],
+      "pausedStrategies": ["ALL"],
+      "riskMultiplier": 0.0,
+      "description": "No trading in unknown regime. Wait for classification."
+    }
+  },
+
+  "computation": {
+    "adxPeriod": 14,
+    "adxSmoothing": "Wilder",
+    "thresholds": {
+      "ranging": { "adx": { "max": 20 } },
+      "transition": { "adx": { "min": 20, "max": 30 }, "note": "ADX 20-30 is a transition zone. Classifier assigns 0.5 confidence in this zone. Note: hysteresis is DOCUMENTED here but NOT yet implemented in regime-classifier.ts — classifier re-classifies fresh each call." },
+      "trending": { "adx": { "min": 30 }, "transitional": { "adx": { "min": 20, "max": 30 }, "note": "ADX 20-30 can classify as trending with 0.5 confidence if trendStrength exceeds 0.005. This is by design — weak trends get low confidence." } }
+    },
+    "atrPeriod": 20,
+    "volatileThreshold": "ATR(current) > 2.0 * SMA(ATR, 20)",
+    "trendDirection": "Determined by +DI vs -DI from ADX computation. trendStrength = (+DI - -DI) / (+DI + -DI)",
+    "hysteresis": {
+      "rule": "Once a regime is classified, it persists until the OPPOSITE threshold is crossed. This prevents flip-flopping at boundaries.",
+      "example": "If regime is 'trending_up' (ADX 27), it stays 'trending_up' until ADX drops below 20 (not 25). ADX 24 in a previously trending regime = still trending."
+    },
+    "candleRequirement": "Minimum 100 candles for reliable ADX computation. 50-candle window produces noisy classifications."
+  },
+
+  "strategyRouting": {
+    "source": "src/lib/strategy/regime-router.ts",
+    "function": "routeStrategies(regime, marketData)",
+    "rule": "The regime router is the ONLY authority for strategy activation. No agent may activate a strategy outside its designated regimes.",
+    "registeredStrategies": [
+      {
+        "id": "strat-ema-ribbon-v2.0",
+        "regimes": ["trending_up", "trending_down"],
+        "additionalGates": ["adx > 25"]
+      },
+      {
+        "id": "strat-efr-v1.0",
+        "regimes": ["volatile"],
+        "additionalGates": ["rsi14 < 35", "atrRatio > 1.5"]
+      },
+      {
+        "id": "strat-efr-v1.1",
+        "regimes": ["volatile"],
+        "additionalGates": ["rsi14 < 35"],
+        "note": "Alt-specific EFR. Operates on per-symbol regime, not BTC regime."
+      },
+      {
+        "id": "strat-frc-v1.0",
+        "regimes": ["volatile", "ranging", "trending_up"],
+        "additionalGates": ["fundingRate < -0.01%/8h (SETTLED, not predicted)", "3 consecutive negative SETTLED periods", "price > EMA(55)"]
+      },
+      {
+        "id": "strat-liquidity-sweep-v1.0",
+        "regimes": ["ranging", "volatile"],
+        "additionalGates": ["adx < 25"]
+      }
+    ]
+  },
+
+  "agentInstructions": {
+    "scannerMonitor": "Use GET /api/market/regime for each pair before checking strategy conditions. Include regime and regimeSource in all scan outputs.",
+    "strategyArchitect": "Design strategies with explicit regime requirements. Reference this schema's regime definitions.",
+    "headOfTrading": "Validate that all signals include regime from the canonical source before forwarding to execution.",
+    "executionTrader": "Reject any signal where regimeSource is 'agent-computed' unless API is confirmed down.",
+    "microstructureAnalyst": "Include regime in execution feasibility assessments — volatile regimes need wider slippage estimates."
+  },
+
+  "knownDiscrepancies": {
+    "adxDiscrepancy_2026_03_08": {
+      "description": "Strategy Architect computed BTC ADX 23.8, CEO reported 27.4. Likely cause: different candle windows or Wilder smoothing seed.",
+      "resolution": "This schema mandates using the API endpoint as the single source of truth. Agent-computed values are for analysis only, never for pipeline decisions.",
+      "practicalImpact": "None at time of discrepancy — no EMA Ribbon entry conditions were met regardless of which ADX value was used."
+    },
+    "schemaCodeDiscrepancy_2026_03_08": {
+      "description": "Schema v1.0 documented trending threshold as ADX > 25. Actual code in src/lib/market/regime-classifier.ts:149 uses ADX > 30 for high-confidence trending, with ADX 20-30 as a transitional zone (0.5 confidence). Identified by Meta-Strategist HB12.",
+      "resolution": "Schema corrected by CEO (silver-falcon) to match code. Trending definitions now reflect ADX > 30 (strong) and ADX 20-30 (transitional). Transition zone note updated. Hysteresis documented as NOT YET implemented.",
+      "fixedAt": "2026-03-08T14:35:00Z",
+      "fixedBy": "CEO"
+    }
+  }
+}

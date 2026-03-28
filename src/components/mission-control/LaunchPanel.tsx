@@ -90,7 +90,7 @@ export default function LaunchPanel() {
 
   const handleLaunch = async () => {
     // Guard: prevent launching if no pairs selected or already active
-    if (config.selectedPairs.length === 0 || isExecuting || isKilled) return;
+    if (!config.selectedPairs?.length || isExecuting || isKilled) return;
 
     setLaunching(true);
     setLaunchError(null);
@@ -290,7 +290,7 @@ export default function LaunchPanel() {
     }
   };
 
-  const canLaunch = !launching && !isExecuting && !isKilled && config.selectedPairs.length > 0;
+  const canLaunch = !launching && !isExecuting && !isKilled && (config.selectedPairs?.length ?? 0) > 0;
 
   return (
     <div className="flex items-center justify-center h-full overflow-y-auto py-4">
