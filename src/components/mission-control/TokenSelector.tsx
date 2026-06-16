@@ -102,7 +102,7 @@ export default function TokenSelector({ selected: rawSelected, onChange, onFilte
     let pairs: string[];
     switch (filterId) {
       case '50x':
-        pairs = symbols.filter(s => s.maxLeverage >= 50).map(s => s.symbol);
+        pairs = symbols.filter(s => s.maxLeverage === 50).map(s => s.symbol);
         break;
       case 'top10':
         pairs = symbols.slice(0, 10).map(s => s.symbol);

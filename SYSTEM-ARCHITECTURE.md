@@ -8,6 +8,29 @@
 
 ---
 
+## ⚠️ VERIFIED RUNTIME TOPOLOGY (updated 2026-06-15) — READ THIS FIRST
+
+Older diagrams below conflated three separate services and put "Conductor" inside the `nexus` repo. That is **wrong** and has misled multiple sessions. Below is the **source-confirmed** layout. **Conductor is its own repo** (`~/CascadeProjects/conductor`), not a folder in `nexus/`.
+
+| Component | Repo / Path | Start command | Port | Role |
+|---|---|---|---|---|
+| **Conductor** (the backend) | `~/CascadeProjects/conductor` | `node dist/index.js` | **3777** | The actual backend. Owns the SQLite DB: sessions, animal names, memory, messages, activity, SSE. **Every Claude hook + the Codex bridge registers here.** Source: `conductor/src/index.ts` (`CONDUCTOR_PORT`, "replaces Nexus v1"). |
+| **Gateway** | `~/CascadeProjects/nexus/server` (`nexus-gateway`, Hono) | `node dist/index.js` | **3800** | Proxies the Conductor and adds tasks, transcript titles, health aggregation. Source: `nexus/server/src/index.ts` (`PORT=3800`). |
+| **Dashboard** (Mission Control) | `~/CascadeProjects/nexus/app` (React/Vite) | `vite` | **3810** | The UI Steve actually looks at. Proxies `/api` → `:3800`. **It is `:3810`, NOT `:5173`.** Source: `nexus/app/vite.config.ts`. |
+| **Codex→Nexus bridge** | `~/.codex/mcp-nexus/server.js` | MCP stdio (Codex auto-starts) | — | Registers each Codex session with the Conductor on `:3777`. |
+| **Claude hooks** | `~/CascadeProjects/nexus/hooks/*.js` (wired in `~/.claude/settings.json`) | CC lifecycle | — | Register Claude sessions with the Conductor on `:3777`. |
+
+**Data flow Steve sees:** `dashboard :3810  →  gateway :3800  →  conductor :3777  →  SQLite`.
+
+**Gotchas that have repeatedly burned sessions:**
+- `node conductor/index.js` (mentioned later in this file) is **wrong**. Conductor is a separate repo: `cd ~/CascadeProjects/conductor && node dist/index.js`.
+- `conductor/hooks/` is a **dead duplicate**. The LIVE hooks are `nexus/hooks/` (see `~/.claude/settings.json`).
+- The thing on **:3777 is the Conductor backend** — not the gateway, not the dashboard. "Nexus" is the umbrella name for all of it.
+- To restart the backend you rebuild + restart `~/CascadeProjects/conductor` (`tsc` → `node dist/index.js`). All sessions depend on it, so a restart briefly blips session tracking everywhere.
+- There is **no** `~/CascadeProjects/SYSTEM-ARCHITECTURE.md` at the repo root; the synced copies live in `nexus/`, `Auto-Claude/`, and `phantomx/`.
+
+---
+
 ## Quick Reference — The Three Repos
 
 | Repo | Path | What It Is | Port | Stack |
@@ -60,7 +83,8 @@
 │  │    nexus/             │     │   (Perpetual Futures)  │             │
 │  │  Gateway :3800        │     └──────────────────────┘              │
 │  │  Conductor :3777      │                                           │
-│  │  Dashboard :5173 (dev)│     ┌──────────────────────┐              │
+│  │  (separate repo!)     │                                           │
+│  │  Dashboard :3810      │     ┌──────────────────────┐              │
 │  └──────────────────────┘     │   Claude Agent SDK     │             │
 │                                │   (In-process LLM)    │             │
 │  ┌──────────────────────┐     └──────────────────────┘              │
@@ -415,9 +439,9 @@ Axon Daemon :8400                Next.js :3000                 Exchange
 | Port | Service | Repo | Notes |
 |------|---------|------|-------|
 | **3000** | PhantomX (Next.js) | phantomx | Trading frontend |
-| **3777** | Nexus Conductor | nexus | Core session orchestrator |
-| **3800** | Nexus Gateway | nexus | Aggregation proxy + dashboard |
-| **5173** | Nexus Dashboard (Vite dev) | nexus | Dev mode only |
+| **3777** | Nexus Conductor (backend) | **conductor** (separate repo `~/CascadeProjects/conductor`) | Core backend — owns the session/memory/message DB |
+| **3800** | Nexus Gateway (`nexus-gateway`) | nexus/server | Aggregation proxy over the Conductor |
+| **3810** | Nexus Dashboard (Vite) | nexus/app | Mission Control UI — the screen Steve looks at |
 | **8400** | Axon API (FastAPI) | Auto-Claude | Agent daemon |
 | **9222** | Electron Remote Debug | Auto-Claude | E2E testing only |
 
@@ -503,8 +527,8 @@ PORT=3800                           # Gateway port
 ## Starting the Full Stack
 
 ```bash
-# 1. Start Nexus Conductor (session tracking)
-cd ~/CascadeProjects/nexus && node conductor/index.js
+# 1. Start Nexus Conductor (session tracking) — SEPARATE repo, NOT inside nexus/
+cd ~/CascadeProjects/conductor && node dist/index.js
 
 # 2. Start Axon daemon (agent heartbeats)
 cd ~/CascadeProjects/Auto-Claude/apps/backend
